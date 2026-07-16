@@ -6,6 +6,7 @@ const router = useRouter()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const { sidebarCollapsed } = storeToRefs(appStore)
+const mobileMenuOpen = shallowRef(false)
 
 const selectedKeys = computed(() => [route.path])
 const pageTitle = computed(() => String(route.meta.title ?? '管理后台'))
@@ -18,11 +19,29 @@ const menuItems: MenuProps['items'] = [
   { key: 'quality', label: '检测中心', icon: h('span', '◉'), disabled: true },
   { key: 'brand', label: '品牌中心', icon: h('span', '♢'), disabled: true },
   { key: 'analytics', label: '数据统计', icon: h('span', '▥'), disabled: true },
-  { key: 'system', label: '系统管理', icon: h('span', '⚙'), disabled: true },
+  {
+    key: 'system',
+    label: '系统管理',
+    icon: h('span', '⚙'),
+    children: [
+      { key: '/system/employees', label: '员工账号管理' },
+      { key: '/system/roles', label: '角色权限管理' },
+    ],
+  },
 ]
 
 async function handleMenuClick({ key }: { key: string | number }) {
   await router.push(String(key))
+  mobileMenuOpen.value = false
+}
+
+function toggleNavigation() {
+  if (window.matchMedia('(max-width: 767px)').matches) {
+    mobileMenuOpen.value = !mobileMenuOpen.value
+    return
+  }
+
+  appStore.toggleSidebar()
 }
 
 async function handleLogout() {
@@ -33,13 +52,22 @@ async function handleLogout() {
 
 <template>
   <a-layout class="min-h-screen">
+    <button
+      v-if="mobileMenuOpen"
+      type="button"
+      class="fixed inset-0 z-40 border-0 bg-slate-950/45 md:hidden"
+      aria-label="关闭导航菜单"
+      @click="mobileMenuOpen = false"
+    />
+
     <a-layout-sider
       v-model:collapsed="sidebarCollapsed"
       :width="232"
       :collapsed-width="72"
       :trigger="null"
       collapsible
-      class="admin-sider bg-brand-navy"
+      class="admin-sider fixed inset-y-0 left-0 z-50 bg-brand-navy transition-transform duration-200 md:relative md:z-auto"
+      :class="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
     >
       <div class="h-18 flex items-center gap-3 overflow-hidden px-5 text-white">
         <div class="h-9 w-9 shrink-0 flex items-center justify-center rounded-2 border border-white/15 bg-white/12 font-700">
@@ -59,6 +87,7 @@ async function handleLogout() {
         mode="inline"
         :items="menuItems"
         :selected-keys="selectedKeys"
+        :default-open-keys="['system']"
         @click="handleMenuClick"
       />
 
@@ -66,7 +95,7 @@ async function handleLogout() {
         <button
           type="button"
           class="h-10 w-full flex items-center justify-center gap-2 rounded-2 border-0 bg-white/8 text-xs text-white/70 hover:bg-white/12 hover:text-white"
-          @click="appStore.toggleSidebar"
+          @click="toggleNavigation"
         >
           <span>{{ sidebarCollapsed ? '»' : '«' }}</span>
           <span v-if="!sidebarCollapsed">收起菜单</span>
@@ -75,29 +104,29 @@ async function handleLogout() {
     </a-layout-sider>
 
     <a-layout>
-      <a-layout-header class="h-18 flex items-center justify-between border-b border-slate-100 bg-white px-6 leading-none">
+      <a-layout-header class="h-16 flex items-center justify-between border-b border-slate-100 bg-white px-3 leading-none sm:px-4 md:h-18 md:px-6">
         <div class="flex items-center gap-4">
           <button
             type="button"
             class="h-9 w-9 flex items-center justify-center rounded-2 border-0 bg-slate-50 text-lg text-slate-600 hover:bg-blue-50 hover:text-blue-600"
-            @click="appStore.toggleSidebar"
+            @click="toggleNavigation"
           >
             ☰
           </button>
-          <h1 class="m-0 text-lg font-700 text-slate-900">
+          <h1 class="m-0 text-base font-700 text-slate-900 sm:text-lg">
             {{ pageTitle }}
           </h1>
         </div>
 
-        <div class="flex items-center gap-5">
-          <div class="relative text-xl text-slate-500">
+        <div class="flex items-center gap-2 sm:gap-3 md:gap-5">
+          <div class="relative hidden text-xl text-slate-500 sm:block">
             ♢
             <span class="absolute right-[-5px] top-[-6px] h-4 min-w-4 flex items-center justify-center rounded-full bg-red-500 px-1 text-[9px] text-white">12</span>
           </div>
-          <div class="h-7 w-px bg-slate-100" />
+          <div class="hidden h-7 w-px bg-slate-100 sm:block" />
           <div class="flex items-center gap-3">
             <a-avatar class="bg-blue-600">张</a-avatar>
-            <div class="leading-tight">
+            <div class="hidden leading-tight sm:block">
               <div class="text-sm font-600 text-slate-800">
                 {{ authStore.profile.name }}
               </div>
@@ -106,13 +135,16 @@ async function handleLogout() {
               </div>
             </div>
           </div>
-          <a-button type="text" size="small" @click="handleLogout">
+          <a-button class="hidden sm:inline-flex" type="text" size="small" @click="handleLogout">
             退出登录
+          </a-button>
+          <a-button class="sm:hidden" type="text" size="small" @click="handleLogout">
+            退出
           </a-button>
         </div>
       </a-layout-header>
 
-      <a-layout-content class="bg-brand-surface p-5">
+      <a-layout-content class="min-w-0 bg-brand-surface p-3 sm:p-4 md:p-5">
         <RouterView />
       </a-layout-content>
     </a-layout>

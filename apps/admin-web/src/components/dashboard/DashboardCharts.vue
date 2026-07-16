@@ -51,18 +51,18 @@ function formatValue(value: number) {
 </script>
 
 <template>
-  <section class="grid grid-cols-[1.45fr_1fr] gap-4">
-    <div class="page-card">
-      <div class="mb-4 flex items-center justify-between">
+  <section class="grid grid-cols-1 gap-4 xl:grid-cols-[1.45fr_1fr]">
+    <div class="page-card min-w-0">
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 class="m-0 text-base font-700 text-slate-900">扫码趋势统计</h3>
-        <div class="flex rounded-2 bg-slate-100 p-1 text-xs">
+        <div class="flex self-start rounded-2 bg-slate-100 p-1 text-xs">
           <span class="rounded-1.5 bg-blue-600 px-3 py-1.5 text-white">近7天</span>
           <span class="px-3 py-1.5 text-slate-500">近30天</span>
           <span class="px-3 py-1.5 text-slate-500">近90天</span>
         </div>
       </div>
 
-      <svg class="h-60 w-full" :viewBox="`0 0 ${chartWidth} ${chartHeight}`" role="img" aria-label="近七日扫码次数折线图">
+      <svg class="h-52 w-full sm:h-60" :viewBox="`0 0 ${chartWidth} ${chartHeight}`" role="img" aria-label="近七日扫码次数折线图">
         <defs>
           <linearGradient id="chart-area" x1="0" y1="0" x2="0" y2="1">
             <stop stop-color="#2563EB" stop-opacity=".22" />
@@ -104,15 +104,15 @@ function formatValue(value: number) {
 
     <div class="page-card">
       <h3 class="m-0 text-base font-700 text-slate-900">二维码状态分布</h3>
-      <div class="mt-7 flex items-center justify-around gap-7">
-        <div class="relative h-48 w-48 shrink-0 rounded-full" :style="{ background: donutBackground }">
-          <div class="absolute inset-9 flex flex-col items-center justify-center rounded-full bg-white shadow-inner">
+      <div class="mt-7 flex flex-col items-center justify-around gap-7 sm:flex-row">
+        <div class="relative h-40 w-40 shrink-0 rounded-full sm:h-48 sm:w-48" :style="{ background: donutBackground }">
+          <div class="absolute inset-7 flex flex-col items-center justify-center rounded-full bg-white shadow-inner sm:inset-9">
             <span class="text-xs text-slate-400">总数</span>
             <strong class="mt-1 text-xl text-slate-900">258,692</strong>
           </div>
         </div>
 
-        <div class="min-w-52 flex-1 space-y-4">
+        <div class="w-full min-w-0 flex-1 space-y-4 sm:min-w-52">
           <div v-for="item in qrStatuses" :key="item.name" class="grid grid-cols-[12px_1fr_auto] items-center gap-2 text-xs">
             <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: item.color }" />
             <span class="text-slate-600">{{ item.name }}</span>

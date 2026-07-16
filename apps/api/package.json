@@ -4,12 +4,21 @@
   "private": true,
   "scripts": {
     "dev": "egg-bin dev --port 7001",
-    "check": "node --check app/controller/health.js && node --check app/controller/auth.js && node --check app/controller/dashboard.js && node --check app/service/auth.js && node --check app/middleware/auth.js && node --check app/router.js && node --check config/config.default.js"
+    "db:migrate": "sequelize-cli db:migrate --config database/config.js --migrations-path database/migrations",
+    "db:seed": "sequelize-cli db:seed:all --config database/config.js --seeders-path database/seeders",
+    "db:reset": "sequelize-cli db:migrate:undo:all --config database/config.js --migrations-path database/migrations && pnpm db:migrate && pnpm db:seed",
+    "check": "node --check app/controller/health.js && node --check app/controller/auth.js && node --check app/controller/dashboard.js && node --check app/controller/system.js && node --check app/service/auth.js && node --check app/service/system.js && node --check app/middleware/auth.js && node --check app/router.js && node --check config/config.default.js"
   },
   "dependencies": {
-    "egg": "3.34.0"
+    "bcryptjs": "3.0.2",
+    "dotenv": "16.6.1",
+    "egg-sequelize": "6.0.0",
+    "egg": "3.34.0",
+    "mysql2": "3.14.4",
+    "sequelize": "6.37.7"
   },
   "devDependencies": {
-    "egg-bin": "6.13.0"
+    "egg-bin": "6.13.0",
+    "sequelize-cli": "6.6.3"
   }
 }

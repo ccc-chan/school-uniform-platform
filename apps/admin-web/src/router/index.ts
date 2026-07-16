@@ -3,6 +3,8 @@ import { hasAuthSession } from '@/stores/auth'
 
 const LoginView = () => import('@/views/LoginView.vue')
 const DashboardView = () => import('@/views/DashboardView.vue')
+const EmployeeAccountsView = () => import('@/views/system/EmployeeAccountsView.vue')
+const RolePermissionsView = () => import('@/views/system/RolePermissionsView.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -32,6 +34,18 @@ const router = createRouter({
             title: '首页概览',
             requiresAuth: true,
           },
+        },
+        {
+          path: 'system/employees',
+          name: 'system-employees',
+          component: EmployeeAccountsView,
+          meta: { title: '员工账号管理', requiresAuth: true },
+        },
+        {
+          path: 'system/roles',
+          name: 'system-roles',
+          component: RolePermissionsView,
+          meta: { title: '角色权限管理', requiresAuth: true },
         },
       ],
     },

@@ -10,6 +10,7 @@
 - Ant Design Vue
 - Vue Router + Pinia
 - Node.js + Egg
+- MySQL 8 + Sequelize
 - pnpm workspace
 
 ## 环境要求
@@ -19,7 +20,31 @@
 
 ## 本地启动
 
-分别启动两个终端：
+复制环境变量并启动数据库：
+
+```bash
+cp .env.example .env
+docker compose up -d mysql
+pnpm --dir apps/api db:migrate
+pnpm --dir apps/api db:seed
+```
+
+数据库首次初始化后，默认管理员账号为 `admin`，密码为 `admin123`。数据库只保存 bcrypt 密码摘要。
+
+常用数据库命令：
+
+```bash
+# 执行尚未运行的迁移
+pnpm --dir apps/api db:migrate
+
+# 写入初始化数据
+pnpm --dir apps/api db:seed
+
+# 回滚全部迁移并重新初始化（会清空数据库）
+pnpm --dir apps/api db:reset
+```
+
+然后分别启动两个终端：
 
 ```bash
 pnpm dev:api

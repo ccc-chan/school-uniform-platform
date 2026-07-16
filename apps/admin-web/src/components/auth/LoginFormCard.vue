@@ -51,13 +51,13 @@ function handleSubmit() {
 </script>
 
 <template>
-  <section class="flex items-center justify-center px-14 py-10">
+  <section class="flex items-center justify-center px-5 py-8 sm:px-10 sm:py-10 lg:px-14">
     <div class="w-full max-w-100">
-      <div class="mb-8">
+      <div class="mb-6 sm:mb-8">
         <div class="mb-5 h-12 w-12 flex items-center justify-center rounded-3 bg-blue-600 text-xl font-700 text-white shadow-lg shadow-blue-200">
           校
         </div>
-        <h1 class="m-0 text-7 font-700 tracking-tight text-slate-900">
+        <h1 class="m-0 text-6 font-700 tracking-tight text-slate-900 sm:text-7">
           欢迎登录
         </h1>
         <p class="mb-0 mt-2 text-sm text-slate-500">
@@ -95,7 +95,7 @@ function handleSubmit() {
         </a-form-item>
 
         <a-form-item label="验证码" name="captcha">
-          <div class="grid grid-cols-[1fr_112px] gap-3">
+          <div class="grid grid-cols-[minmax(0,1fr)_96px] gap-2 sm:grid-cols-[minmax(0,1fr)_112px] sm:gap-3">
             <a-input
               v-model:value="form.captcha"
               size="large"
@@ -109,7 +109,7 @@ function handleSubmit() {
           </div>
         </a-form-item>
 
-        <div class="mb-6 flex items-center justify-between">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
           <a-checkbox v-model:checked="form.remember">
             记住登录状态
           </a-checkbox>

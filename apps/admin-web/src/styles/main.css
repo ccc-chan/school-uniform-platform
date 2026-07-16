@@ -15,13 +15,14 @@
 html,
 body,
 #app {
-  min-width: 1180px;
+  width: 100%;
   min-height: 100%;
   margin: 0;
 }
 
 body {
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 button,
@@ -40,4 +41,19 @@ button:disabled {
 ::selection {
   color: #ffffff;
   background: #2563eb;
+}
+
+@media (max-width: 639px) {
+  .responsive-modal .ant-modal {
+    top: 8px;
+    width: calc(100% - 16px) !important;
+    max-width: none;
+    margin: 0 8px;
+    padding-bottom: 8px;
+  }
+
+  .responsive-modal .ant-modal-body {
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+  }
 }

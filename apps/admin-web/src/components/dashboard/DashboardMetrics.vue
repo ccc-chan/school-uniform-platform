@@ -11,7 +11,7 @@ function formatValue(value: number) {
 </script>
 
 <template>
-  <section class="grid grid-cols-5 gap-4">
+  <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
     <div
       v-for="item in items"
       :key="item.label"

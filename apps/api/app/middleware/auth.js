@@ -6,7 +6,7 @@ module.exports = () => {
     const token = authorization.startsWith('Bearer ')
       ? authorization.slice(7)
       : ''
-    const profile = ctx.service.auth.resolveToken(token)
+    const profile = await ctx.service.auth.resolveToken(token)
 
     if (!profile) {
       ctx.status = 401

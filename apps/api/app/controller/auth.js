@@ -17,7 +17,7 @@ class AuthController extends Controller {
       return
     }
 
-    const session = ctx.service.auth.authenticate({
+    const session = await ctx.service.auth.authenticate({
       account: String(account).trim(),
       password: String(password),
       captcha: String(captcha).trim(),
@@ -43,7 +43,7 @@ class AuthController extends Controller {
   async logout() {
     const { ctx } = this
 
-    ctx.service.auth.revokeToken(ctx.state.authToken)
+    await ctx.service.auth.revokeToken(ctx.state.authToken)
     ctx.body = {
       code: 200,
       message: '退出成功',
