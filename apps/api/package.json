@@ -1,0 +1,15 @@
+{
+  "name": "@school-uniform/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "egg-bin dev --port 7001",
+    "check": "node --check app/controller/health.js && node --check app/controller/auth.js && node --check app/controller/dashboard.js && node --check app/service/auth.js && node --check app/middleware/auth.js && node --check app/router.js && node --check config/config.default.js"
+  },
+  "dependencies": {
+    "egg": "3.34.0"
+  },
+  "devDependencies": {
+    "egg-bin": "6.13.0"
+  }
+}
