@@ -260,8 +260,34 @@ class AuthService extends Service {
     return permissions
   }
 
+  genericPermissionCode(code) {
+    if (code === 'view' || code.endsWith('.view') || code.includes('.field.')) {
+      return 'view'
+    }
+    if (
+      code === 'create' ||
+      /\.(create|generate|batch_generate|bind)$/.test(code)
+    ) {
+      return 'create'
+    }
+    if (
+      code === 'edit' ||
+      /\.(edit|status|manage|approve|reject)$/.test(code)
+    ) {
+      return 'edit'
+    }
+    if (code === 'delete' || /\.(delete|void)$/.test(code)) {
+      return 'delete'
+    }
+    if (code === 'export' || /\.(export|download)$/.test(code)) {
+      return 'export'
+    }
+    return code
+  }
+
   async hasPermission(employeeId, code) {
-    return (await this.getPermissions(employeeId)).includes(code)
+    return (await this.getPermissions(employeeId))
+      .includes(this.genericPermissionCode(code))
   }
 
   async resolveToken(token) {

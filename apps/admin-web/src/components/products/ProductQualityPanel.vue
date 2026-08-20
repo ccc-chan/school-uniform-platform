@@ -4,12 +4,10 @@ import type { ProductQualityReport } from '@/api/products'
 defineProps<{
   reports: readonly ProductQualityReport[]
   canView: boolean
-  canUpload: boolean
   canPreview: boolean
 }>()
 
 const emit = defineEmits<{
-  upload: []
   preview: [id: number]
 }>()
 
@@ -28,7 +26,6 @@ function reportConclusion(report: ProductQualityReport) {
   <section class="quality-panel">
     <header class="quality-panel__header">
       <h3>质检报告</h3>
-      <a-button v-if="canUpload" @click="emit('upload')">上传报告</a-button>
     </header>
 
     <p v-if="!canView" class="quality-panel__empty">

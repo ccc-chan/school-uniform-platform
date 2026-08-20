@@ -4,12 +4,10 @@ import type { ProductProductionBatch } from '@/api/products'
 defineProps<{
   batch: ProductProductionBatch
   canView: boolean
-  canGenerate: boolean
   canPrint: boolean
 }>()
 
 const emit = defineEmits<{
-  generate: []
   labels: []
 }>()
 </script>
@@ -18,9 +16,6 @@ const emit = defineEmits<{
   <section class="qr-panel">
     <header class="qr-panel__header">
       <h3>二维码</h3>
-      <a-button v-if="canGenerate" type="primary" @click="emit('generate')">
-        批量生成
-      </a-button>
     </header>
 
     <p v-if="!canView" class="qr-panel__empty">

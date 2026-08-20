@@ -56,7 +56,34 @@ export const useAuthStore = defineStore('auth', () => {
   function hasMenu(code: string) {
     return menuCodes.value.includes(code)
   }
-  function hasPermission(code: string) { return permissions.value.includes(code) }
+  function genericPermissionCode(code: string) {
+    if (code === 'view' || code.endsWith('.view') || code.includes('.field.')) {
+      return 'view'
+    }
+    if (
+      code === 'create' ||
+      /\.(create|generate|batch_generate|bind)$/.test(code)
+    ) {
+      return 'create'
+    }
+    if (
+      code === 'edit' ||
+      /\.(edit|status|manage|approve|reject)$/.test(code)
+    ) {
+      return 'edit'
+    }
+    if (code === 'delete' || /\.(delete|void)$/.test(code)) {
+      return 'delete'
+    }
+    if (code === 'export' || /\.(export|download)$/.test(code)) {
+      return 'export'
+    }
+    return code
+  }
+
+  function hasPermission(code: string) {
+    return permissions.value.includes(genericPermissionCode(code))
+  }
 
   async function login(credentials: LoginCredentials): Promise<LoginResult> {
     try {

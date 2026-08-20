@@ -9,14 +9,11 @@ const emit = defineEmits<{
   submit: [value: RoleInput]
 }>()
 const menuOptions = [
-  { label: '首页概览', value: 'dashboard' },
-  { label: '产品中心', value: 'products' },
-  { label: '二维码中心', value: 'qrcodes' },
-  { label: '生产中心', value: 'production' },
-  { label: '检测中心', value: 'quality' },
-  { label: '品牌中心', value: 'brand' },
-  { label: '数据统计', value: 'analytics' },
-  { label: '系统管理', value: 'system' },
+  { label: '仪表盘', value: 'shortcut_dashboard' },
+  { label: '产品管理', value: 'shortcut_products' },
+  { label: '标签打印', value: 'shortcut_label_print' },
+  { label: '公司设置', value: 'shortcut_company_settings' },
+  { label: '系统管理', value: 'shortcut_system' },
 ]
 const operationOptions = [
   { label: '查看', value: 'view' },
@@ -24,29 +21,10 @@ const operationOptions = [
   { label: '编辑', value: 'edit' },
   { label: '删除', value: 'delete' },
   { label: '导出', value: 'export' },
-  { label: '审核', value: 'audit' },
-  { label: '产品列表', value: 'product.view' },
-  { label: '产品图片字段', value: 'product.field.image' },
-  { label: '产品编号字段', value: 'product.field.code' },
-  { label: '产品名称字段', value: 'product.field.name' },
-  { label: '产品分类字段', value: 'product.field.category' },
-  { label: '产品季节字段', value: 'product.field.season' },
-  { label: '产品状态字段', value: 'product.field.status' },
-  { label: '产品创建时间字段', value: 'product.field.created_at' },
-  { label: '新建产品', value: 'product.create' },
-  { label: '编辑产品', value: 'product.edit' },
-  { label: '更新产品状态', value: 'product.status' },
-  { label: '删除产品', value: 'product.delete' },
-  { label: '查看二维码数据', value: 'qrcode.view' },
-  { label: '生成二维码', value: 'qrcode.generate' },
-  { label: '批量生成二维码', value: 'qrcode.batch_generate' },
-  { label: '绑定二维码', value: 'qrcode.bind' },
-  { label: '查看二维码编号字段', value: 'qrcode.field.code' },
-  { label: '查看绑定产品字段', value: 'qrcode.field.product' },
-  { label: '查看二维码状态字段', value: 'qrcode.field.status' },
-  { label: '查看二维码创建时间字段', value: 'qrcode.field.created_at' },
-  { label: '查看数据统计', value: 'analytics.view' },
 ]
+const operationPermissionCodes = new Set(
+  operationOptions.map(({ value }) => value),
+)
 const form = reactive<RoleInput>({
   name: '',
   code: '',
@@ -128,7 +106,9 @@ watch(
             description: item.description,
             dataScope: item.dataScope,
             menuPermissions: [...item.menuPermissions],
-            operationPermissions: [...item.operationPermissions],
+            operationPermissions: item.operationPermissions.filter((code) =>
+              operationPermissionCodes.has(code),
+            ),
             status: item.status,
           }
         : {

@@ -103,22 +103,6 @@ function openLabels() {
   })
 }
 
-function generateQrCodes() {
-  if (!detail.value) return
-  router.push({
-    path: '/qrcodes/batch-generate',
-    query: { productId: detail.value.product.id },
-  })
-}
-
-function uploadQualityReport() {
-  if (!detail.value) return
-  router.push({
-    path: '/quality/reports/upload',
-    query: { productId: detail.value.product.id },
-  })
-}
-
 async function previewQualityReport(reportId: number) {
   try {
     const blob = await getQualityReportBlob(reportId)
@@ -180,18 +164,14 @@ watch(id, () => load(null), { immediate: true })
           <ProductQrPanel
             :batch="selectedBatch"
             :can-view="detail.access.qrcode"
-            :can-generate="auth.hasPermission('qrcode.generate')"
             :can-print="auth.hasPermission('qrcode.view')"
-            @generate="generateQrCodes"
             @labels="openLabels"
           />
 
           <ProductQualityPanel
             :reports="detail.qualityReports"
             :can-view="detail.access.quality"
-            :can-upload="auth.hasPermission('quality.report.create')"
             :can-preview="auth.hasPermission('quality.report.download')"
-            @upload="uploadQualityReport"
             @preview="previewQualityReport"
           />
 

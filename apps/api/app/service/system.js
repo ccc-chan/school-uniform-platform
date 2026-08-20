@@ -11,22 +11,19 @@ const { Service } = require('egg')
 const scopeLabels = { all: '全部数据', department_and_children: '本部门及下级部门', department: '本部门数据', self: '本人数据' }
 const scopeValues = Object.fromEntries(Object.entries(scopeLabels).map(([key, value]) => [value, key]))
 const editableMenuCodes = new Set([
-  'dashboard',
-  'products',
-  'qrcodes',
-  'production',
-  'quality',
-  'brand',
-  'analytics',
-  'system',
+  'shortcut_dashboard',
+  'shortcut_products',
+  'shortcut_label_print',
+  'shortcut_company_settings',
+  'shortcut_system',
 ])
-const shortcutCodesBySource = {
-  dashboard: ['shortcut_dashboard'],
-  products: ['shortcut_products'],
-  qrcodes: ['shortcut_label_print'],
-  system: ['shortcut_system'],
-  brand: ['shortcut_company_settings'],
-}
+const editableOperationCodes = new Set([
+  'view',
+  'create',
+  'edit',
+  'delete',
+  'export',
+])
 
 /**
  * 管理员工、角色授权、操作日志和通用系统文件。
@@ -102,7 +99,9 @@ class SystemService extends Service {
       menuPermissions: (item.menus || [])
         .map((menu) => menu.code)
         .filter((code) => editableMenuCodes.has(code)),
-      operationPermissions: (item.permissions || []).map((permission) => permission.code),
+      operationPermissions: (item.permissions || [])
+        .map((permission) => permission.code)
+        .filter((code) => editableOperationCodes.has(code)),
       employeeCount: Number(item.get('employeeCount') || item.employees?.length || 0),
       status: item.status,
       createdAt: this.ctx.helper.formatDateTime(item.createdAt),
@@ -319,24 +318,21 @@ class SystemService extends Service {
   async deleteEmployee(id, currentUserId) { if (id === currentUserId) return { self: true };const result=await this.app.model.transaction(async (transaction) => { const employee = await this.app.model.Employee.findByPk(id, { transaction }); if (!employee) return null; await this.log('删除员工', 'employee', employee.id, { account: employee.account }, transaction); await employee.destroy({ transaction }); return { success: true } });if(result?.success){await this.ctx.service.cache.removeUserSessions(id);await this.invalidateAuthorization()}return result }
 
   async applyRolePermissions(role, payload, transaction) {
-    // 角色编辑器只提交原始业务菜单，分组和快捷入口由后端自动补齐。
+    // 角色编辑器只提交当前快捷菜单，后端自动补齐其父分组。
     const selectedMenuCodes = [
       ...new Set(
         (payload.menuPermissions || [])
           .filter((code) => editableMenuCodes.has(code)),
       ),
     ]
-    const shortcutMenuCodes = selectedMenuCodes.flatMap(
-      (code) => shortcutCodesBySource[code] || [],
-    )
-    const menuCodes = [...selectedMenuCodes]
-
-    if (shortcutMenuCodes.length) {
-      menuCodes.push('shortcut_group', ...shortcutMenuCodes)
-    }
+    const menuCodes = selectedMenuCodes.length
+      ? ['shortcut_group', ...selectedMenuCodes]
+      : []
 
     const menus = await this.app.model.Menu.findAll({ where: { code: menuCodes }, transaction })
-    const permissions = await this.app.model.Permission.findAll({ where: { code: payload.operationPermissions || [] }, transaction })
+    const operationCodes = (payload.operationPermissions || [])
+      .filter((code) => editableOperationCodes.has(code))
+    const permissions = await this.app.model.Permission.findAll({ where: { code: operationCodes }, transaction })
     await role.setMenus(menus, { transaction }); await role.setPermissions(permissions, { transaction })
   }
 

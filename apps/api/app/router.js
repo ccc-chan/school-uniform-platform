@@ -33,19 +33,17 @@ module.exports = (app) => {
 
   // 菜单权限控制模块可见性，操作权限进一步限制增删改等具体能力。
   const superAdmin = app.middleware.superAdmin()
-  const dashboardMenu = app.middleware.menuPermission({ code: 'dashboard' })
-  const productMenu = app.middleware.menuPermission({ code: 'products' })
+  const dashboardMenu = app.middleware.menuPermission({ code: 'shortcut_dashboard' })
+  const productMenu = app.middleware.menuPermission({ code: 'shortcut_products' })
   const productPermission = code => app.middleware.operationPermission({ code })
-  const qrcodeMenu = app.middleware.menuPermission({ code: 'qrcodes' })
+  const qrcodeMenu = app.middleware.menuPermission({ code: 'shortcut_label_print' })
   const qrcodePermission = code => app.middleware.operationPermission({ code })
-  const productionMenu = app.middleware.menuPermission({ code: 'production' })
+  const productionMenu = app.middleware.menuPermission({ code: 'shortcut_products' })
   const productionPermission = code => app.middleware.operationPermission({ code })
-  const qualityMenu = app.middleware.menuPermission({ code: 'quality' })
+  const qualityMenu = app.middleware.menuPermission({ code: 'shortcut_products' })
   const qualityPermission = code => app.middleware.operationPermission({ code })
-  const brandMenu = app.middleware.menuPermission({ code: 'brand' })
+  const brandMenu = app.middleware.menuPermission({ code: 'shortcut_company_settings' })
   const brandPermission = code => app.middleware.operationPermission({ code })
-  const analyticsMenu = app.middleware.menuPermission({ code: 'analytics' })
-  const analyticsPermission = code => app.middleware.operationPermission({ code })
 
   // 品牌内容类型与权限码一一对应，防止客户端通过未知类型绕过权限检查。
   const brandAssetPermissions = {
@@ -62,7 +60,7 @@ module.exports = (app) => {
     }
     await brandPermission(code)(ctx, next)
   }
-  const systemMenu = app.middleware.menuPermission({ code: 'system' })
+  const systemMenu = app.middleware.menuPermission({ code: 'shortcut_system' })
 
   // 公开基础接口。
   router.get('/api/v1/health', controller.health.index)
@@ -165,11 +163,7 @@ module.exports = (app) => {
   router.patch('/api/v1/brand/assets/:type/:id/status', auth, brandMenu, brandAssetPermission, controller.brand.updateAssetStatus)
   router.delete('/api/v1/brand/assets/:type/:id', auth, brandMenu, brandAssetPermission, controller.brand.deleteAsset)
 
-  // 数据分析中心。
-  router.get('/api/v1/analytics/options', auth, analyticsMenu, analyticsPermission('analytics.view'), controller.analytics.options)
-  router.get('/api/v1/analytics/overview', auth, analyticsMenu, analyticsPermission('analytics.view'), controller.analytics.overview)
-
-  // 系统管理；删除账号、角色和文件还需要超级管理员权限。
+  // 系统管理；删除账号和角色还需要超级管理员权限。
   router.get('/api/v1/system/employees', auth, systemMenu, controller.system.employees)
   router.post('/api/v1/system/employees', auth, systemMenu, controller.system.createEmployee)
   router.put('/api/v1/system/employees/:id', auth, systemMenu, controller.system.updateEmployee)
@@ -182,8 +176,4 @@ module.exports = (app) => {
   router.patch('/api/v1/system/roles/:id/status', auth, systemMenu, controller.system.updateRoleStatus)
   router.delete('/api/v1/system/roles/:id', auth, systemMenu, superAdmin, controller.system.deleteRole)
   router.get('/api/v1/system/operation-logs', auth, systemMenu, controller.system.operationLogs)
-  router.get('/api/v1/system/files', auth, systemMenu, controller.system.files)
-  router.post('/api/v1/system/files', auth, systemMenu, controller.system.uploadFile)
-  router.get('/api/v1/system/files/:id/download', auth, systemMenu, controller.system.downloadFile)
-  router.delete('/api/v1/system/files/:id', auth, systemMenu, superAdmin, controller.system.deleteFile)
 }
