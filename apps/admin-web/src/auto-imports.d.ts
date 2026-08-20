@@ -70,6 +70,7 @@ declare global {
   const toValue: typeof import('vue').toValue
   const triggerRef: typeof import('vue').triggerRef
   const unref: typeof import('vue').unref
+  const useAnalytics: typeof import('./composables/useAnalytics').useAnalytics
   const useAppStore: typeof import('./stores/app').useAppStore
   const useAttrs: typeof import('vue').useAttrs
   const useAuthStore: typeof import('./stores/auth').useAuthStore
@@ -78,6 +79,12 @@ declare global {
   const useId: typeof import('vue').useId
   const useLink: typeof import('vue-router').useLink
   const useModel: typeof import('vue').useModel
+  const usePagedList: typeof import('./composables/usePagedList').usePagedList
+  const useProductionResource: typeof import('./composables/useProductionResource').useProductionResource
+  const useProducts: typeof import('./composables/useProducts').useProducts
+  const useQrOptions: typeof import('./composables/useQrOptions').useQrOptions
+  const useQrOverview: typeof import('./composables/useQrOverview').useQrOverview
+  const useQualityReports: typeof import('./composables/useQualityReports').useQualityReports
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter
   const useSlots: typeof import('vue').useSlots
@@ -92,6 +99,9 @@ declare global {
   // @ts-ignore
   export type { Component, Slot, Slots, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, ShallowRef, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
+  // @ts-ignore
+  export type { PagedListParams, PagedListResult } from './composables/usePagedList'
+  import('./composables/usePagedList')
   // @ts-ignore
   export type { LoginCredentials, LoginResult } from './stores/auth'
   import('./stores/auth')
@@ -166,6 +176,7 @@ declare module 'vue' {
     readonly toValue: UnwrapRef<typeof import('vue')['toValue']>
     readonly triggerRef: UnwrapRef<typeof import('vue')['triggerRef']>
     readonly unref: UnwrapRef<typeof import('vue')['unref']>
+    readonly useAnalytics: UnwrapRef<typeof import('./composables/useAnalytics')['useAnalytics']>
     readonly useAppStore: UnwrapRef<typeof import('./stores/app')['useAppStore']>
     readonly useAttrs: UnwrapRef<typeof import('vue')['useAttrs']>
     readonly useAuthStore: UnwrapRef<typeof import('./stores/auth')['useAuthStore']>
@@ -174,6 +185,12 @@ declare module 'vue' {
     readonly useId: UnwrapRef<typeof import('vue')['useId']>
     readonly useLink: UnwrapRef<typeof import('vue-router')['useLink']>
     readonly useModel: UnwrapRef<typeof import('vue')['useModel']>
+    readonly usePagedList: UnwrapRef<typeof import('./composables/usePagedList')['usePagedList']>
+    readonly useProductionResource: UnwrapRef<typeof import('./composables/useProductionResource')['useProductionResource']>
+    readonly useProducts: UnwrapRef<typeof import('./composables/useProducts')['useProducts']>
+    readonly useQrOptions: UnwrapRef<typeof import('./composables/useQrOptions')['useQrOptions']>
+    readonly useQrOverview: UnwrapRef<typeof import('./composables/useQrOverview')['useQrOverview']>
+    readonly useQualityReports: UnwrapRef<typeof import('./composables/useQualityReports')['useQualityReports']>
     readonly useRoute: UnwrapRef<typeof import('vue-router')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router')['useRouter']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>

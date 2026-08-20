@@ -1,3 +1,12 @@
+/*
+ * @Author: Chan
+ * @Date: 2026-07-15 15:32:32
+ * @LastEditors: chan
+ * @LastEditTime: 2026-07-16 14:50:55
+ * @FilePath: /school-uniform-platform/apps/admin-web/vite.config.ts
+ * @Description:
+ *
+ */
 import { fileURLToPath, URL } from 'node:url'
 import vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
@@ -7,6 +16,7 @@ import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  envDir: '../..',
   plugins: [
     vue(),
     AutoImport({
@@ -35,7 +45,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5174,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:7001',

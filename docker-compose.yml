@@ -19,5 +19,34 @@ services:
       timeout: 5s
       retries: 20
 
+  # Redis 保存登录会话、验证码、权限缓存和分布式限流计数。
+  redis:
+    image: redis:7.4-alpine
+    container_name: school-uniform-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:-school_uniform_redis_dev}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - school_uniform_redis_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "-a",
+          "${REDIS_PASSWORD:-school_uniform_redis_dev}",
+          "ping"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
 volumes:
   school_uniform_mysql_data:
+  school_uniform_redis_data:

@@ -6,14 +6,15 @@
     "dev": "egg-bin dev --port 7001",
     "db:migrate": "sequelize-cli db:migrate --config database/config.js --migrations-path database/migrations",
     "db:seed": "sequelize-cli db:seed:all --config database/config.js --seeders-path database/seeders",
-    "db:reset": "sequelize-cli db:migrate:undo:all --config database/config.js --migrations-path database/migrations && pnpm db:migrate && pnpm db:seed",
-    "check": "node --check app/controller/health.js && node --check app/controller/auth.js && node --check app/controller/dashboard.js && node --check app/controller/system.js && node --check app/service/auth.js && node --check app/service/system.js && node --check app/middleware/auth.js && node --check app/router.js && node --check config/config.default.js"
+    "db:reset": "sequelize-cli db:migrate:undo:all --config database/config.js --migrations-path database/migrations && npm run db:migrate && npm run db:seed",
+    "check": "node --check app/controller/health.js && node --check app/controller/auth.js && node --check app/controller/dashboard.js && node --check app/controller/products.js && node --check app/controller/qrcodes.js && node --check app/controller/production.js && node --check app/controller/quality.js && node --check app/controller/brand.js && node --check app/controller/analytics.js && node --check app/controller/system.js && node --check app/service/cache.js && node --check app/service/auth.js && node --check app/service/products.js && node --check app/service/qrcodes.js && node --check app/service/production.js && node --check app/service/quality.js && node --check app/service/brand.js && node --check app/service/analytics.js && node --check app/service/system.js && node --check app/middleware/auth.js && node --check app/middleware/menu_permission.js && node --check app/middleware/rate_limit.js && node --check app/router.js && node --check config/config.default.js"
   },
   "dependencies": {
     "bcryptjs": "3.0.2",
     "dotenv": "16.6.1",
-    "egg-sequelize": "6.0.0",
     "egg": "3.34.0",
+    "egg-redis": "2.6.1",
+    "egg-sequelize": "6.0.0",
     "mysql2": "3.14.4",
     "sequelize": "6.37.7"
   },

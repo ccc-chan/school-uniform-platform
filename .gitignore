@@ -8,3 +8,5 @@ dist/
 run/
 logs/
 .pnpm-store/
+logs/
+.playwright-cli/

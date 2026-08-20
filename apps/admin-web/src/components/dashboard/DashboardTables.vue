@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ActivityItem, RankingItem } from '@/types/dashboard'
 
-defineProps<{
+const props = defineProps<{
   activities: ActivityItem[]
   rankings: RankingItem[]
 }>()
@@ -13,6 +13,9 @@ const activityColumns = [
   { title: '详情', dataIndex: 'detail', key: 'detail' },
   { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
 ]
+const activityTableItems = computed(
+  () => props.activities as unknown as Record<string, unknown>[],
+)
 
 function formatValue(value: number) {
   return new Intl.NumberFormat('en-US').format(value)
@@ -27,22 +30,22 @@ function formatValue(value: number) {
         <a-button type="link" size="small">查看全部</a-button>
       </div>
 
-      <a-table
+      <ConfigTable
         size="small"
-        :scroll="{ x: 720 }"
+        :scroll-x="720"
         :columns="activityColumns"
-        :data-source="activities"
-        :pagination="false"
+        :items="activityTableItems"
         row-key="id"
       >
-        <template #bodyCell="{ column, record }">
+        <template #cell="{ column, record, value }">
           <template v-if="column.key === 'status'">
             <a-tag :color="record.status === '成功' ? 'success' : 'processing'">
               {{ record.status }}
             </a-tag>
           </template>
+          <OverflowTooltip v-else :content="value" />
         </template>
-      </a-table>
+      </ConfigTable>
     </div>
 
     <div class="page-card min-w-0">
@@ -67,7 +70,10 @@ function formatValue(value: number) {
         >
           {{ index + 1 }}
         </span>
-        <span class="truncate pr-2 text-slate-700">{{ item.name }}</span>
+        <OverflowTooltip
+          class="pr-2 text-slate-700"
+          :content="item.name"
+        />
         <strong class="text-right text-slate-800">{{ formatValue(item.scans) }}</strong>
       </div>
     </div>

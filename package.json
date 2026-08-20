@@ -2,15 +2,18 @@
   "name": "school-uniform-digital-identity-platform",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.7.0",
+  "workspaces": [
+    "apps/*"
+  ],
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.12.0",
+    "npm": ">=10"
   },
   "scripts": {
-    "dev:web": "pnpm --dir apps/admin-web dev",
-    "dev:api": "pnpm --dir apps/api dev",
-    "build": "pnpm --dir apps/admin-web build",
-    "typecheck": "pnpm --dir apps/admin-web typecheck",
-    "check:api": "pnpm --dir apps/api check"
+    "dev:web": "npm run dev --workspace=@school-uniform/admin-web",
+    "dev:api": "npm run dev --workspace=@school-uniform/api",
+    "build": "npm run build --workspace=@school-uniform/admin-web",
+    "typecheck": "npm run typecheck --workspace=@school-uniform/admin-web",
+    "check:api": "npm run check --workspace=@school-uniform/api"
   }
 }

@@ -11,12 +11,12 @@
 - Vue Router + Pinia
 - Node.js + Egg
 - MySQL 8 + Sequelize
-- pnpm workspace
+- npm workspaces
 
 ## 环境要求
 
 - Node.js >= 22.12
-- pnpm 11
+- npm >= 10
 
 ## 本地启动
 
@@ -25,8 +25,8 @@
 ```bash
 cp .env.example .env
 docker compose up -d mysql
-pnpm --dir apps/api db:migrate
-pnpm --dir apps/api db:seed
+npm run db:migrate --workspace=@school-uniform/api
+npm run db:seed --workspace=@school-uniform/api
 ```
 
 数据库首次初始化后，默认管理员账号为 `admin`，密码为 `admin123`。数据库只保存 bcrypt 密码摘要。
@@ -35,20 +35,20 @@ pnpm --dir apps/api db:seed
 
 ```bash
 # 执行尚未运行的迁移
-pnpm --dir apps/api db:migrate
+npm run db:migrate --workspace=@school-uniform/api
 
 # 写入初始化数据
-pnpm --dir apps/api db:seed
+npm run db:seed --workspace=@school-uniform/api
 
 # 回滚全部迁移并重新初始化（会清空数据库）
-pnpm --dir apps/api db:reset
+npm run db:reset --workspace=@school-uniform/api
 ```
 
 然后分别启动两个终端：
 
 ```bash
-pnpm dev:api
-pnpm dev:web
+npm run dev:api
+npm run dev:web
 ```
 
 - 管理端：http://localhost:5173

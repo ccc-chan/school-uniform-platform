@@ -11,15 +11,31 @@ const chartHeight = 220
 const chartPaddingX = 42
 const chartPaddingTop = 20
 const chartPaddingBottom = 36
-const minValue = 500
-const maxValue = 2000
+
+const chartMax = computed(() => {
+  const value = Math.max(...props.scanPoints.map((point) => point.value), 0)
+  if (!value) return 4
+
+  const magnitude = 10 ** Math.floor(Math.log10(value))
+  return Math.ceil(value / magnitude) * magnitude
+})
+
+const chartTicks = computed(() =>
+  [0.25, 0.5, 0.75, 1].map((ratio) =>
+    Math.round(chartMax.value * ratio),
+  ),
+)
 
 const plottedPoints = computed(() =>
   props.scanPoints.map((point, index) => {
     const usableWidth = chartWidth - chartPaddingX * 2
     const usableHeight = chartHeight - chartPaddingTop - chartPaddingBottom
-    const x = chartPaddingX + (usableWidth * index) / (props.scanPoints.length - 1)
-    const y = chartPaddingTop + ((maxValue - point.value) / (maxValue - minValue)) * usableHeight
+    const divisor = Math.max(props.scanPoints.length - 1, 1)
+    const x = chartPaddingX + (usableWidth * index) / divisor
+    const y =
+      chartPaddingTop +
+      ((chartMax.value - point.value) / chartMax.value) * usableHeight
+
     return { ...point, x, y }
   }),
 )
@@ -42,8 +58,14 @@ const donutBackground = computed(() => {
     cursor += item.percent
     return `${item.color} ${start}% ${cursor}%`
   })
-  return `conic-gradient(${segments.join(', ')})`
+  return segments.length && cursor
+    ? `conic-gradient(${segments.join(', ')})`
+    : '#E2E8F0'
 })
+
+const qrTotal = computed(() =>
+  props.qrStatuses.reduce((total, item) => total + item.value, 0),
+)
 
 function formatValue(value: number) {
   return new Intl.NumberFormat('en-US').format(value)
@@ -70,18 +92,18 @@ function formatValue(value: number) {
           </linearGradient>
         </defs>
 
-        <g v-for="tick in [500, 1000, 1500, 2000]" :key="tick">
+        <g v-for="tick in chartTicks" :key="tick">
           <line
             :x1="chartPaddingX"
             :x2="chartWidth - chartPaddingX"
-            :y1="chartPaddingTop + ((maxValue - tick) / (maxValue - minValue)) * (chartHeight - chartPaddingTop - chartPaddingBottom)"
-            :y2="chartPaddingTop + ((maxValue - tick) / (maxValue - minValue)) * (chartHeight - chartPaddingTop - chartPaddingBottom)"
+            :y1="chartPaddingTop + ((chartMax - tick) / chartMax) * (chartHeight - chartPaddingTop - chartPaddingBottom)"
+            :y2="chartPaddingTop + ((chartMax - tick) / chartMax) * (chartHeight - chartPaddingTop - chartPaddingBottom)"
             stroke="#E8EEF6"
             stroke-width="1"
           />
           <text
             x="4"
-            :y="chartPaddingTop + ((maxValue - tick) / (maxValue - minValue)) * (chartHeight - chartPaddingTop - chartPaddingBottom) + 4"
+            :y="chartPaddingTop + ((chartMax - tick) / chartMax) * (chartHeight - chartPaddingTop - chartPaddingBottom) + 4"
             fill="#94A3B8"
             font-size="10"
           >{{ formatValue(tick) }}</text>
@@ -108,7 +130,9 @@ function formatValue(value: number) {
         <div class="relative h-40 w-40 shrink-0 rounded-full sm:h-48 sm:w-48" :style="{ background: donutBackground }">
           <div class="absolute inset-7 flex flex-col items-center justify-center rounded-full bg-white shadow-inner sm:inset-9">
             <span class="text-xs text-slate-400">总数</span>
-            <strong class="mt-1 text-xl text-slate-900">258,692</strong>
+            <strong class="mt-1 text-xl text-slate-900">
+              {{ formatValue(qrTotal) }}
+            </strong>
           </div>
         </div>
 

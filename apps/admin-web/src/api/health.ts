@@ -1,3 +1,4 @@
+// 健康检查直接使用 fetch，不依赖登录会话和统一业务响应解包。
 export interface HealthResult {
   code: number
   message: string

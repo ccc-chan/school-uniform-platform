@@ -11,11 +11,14 @@
   },
   "dependencies": {
     "ant-design-vue": "4.2.6",
+    "exceljs": "4.4.0",
     "pinia": "3.0.4",
+    "qrcode": "1.5.4",
     "vue": "3.5.39",
     "vue-router": "5.1.0"
   },
   "devDependencies": {
+    "@types/qrcode": "1.5.6",
     "@vitejs/plugin-vue": "6.0.7",
     "typescript": "6.0.3",
     "unocss": "66.7.5",
