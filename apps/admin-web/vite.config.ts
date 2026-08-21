@@ -13,44 +13,50 @@ import UnoCSS from 'unocss/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 
-export default defineConfig({
-  envDir: '../..',
-  plugins: [
-    vue(),
-    AutoImport({
-      imports: [
-        'vue',
-        'vue-router',
-        'pinia',
-        {
-          'vue-router': ['createRouter', 'createWebHistory'],
-        },
-      ],
-      dirs: ['src/composables', 'src/stores'],
-      dts: 'src/auto-imports.d.ts',
-      vueTemplate: true,
-    }),
-    Components({
-      dts: 'src/components.d.ts',
-      directives: true,
-      resolvers: [AntDesignVueResolver({ importStyle: 'css-in-js' })],
-    }),
-    UnoCSS(),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
-  },
-  server: {
-    port: 5174,
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:7001',
-        changeOrigin: true,
+export default defineConfig(({ mode }) => {
+  const envDir = fileURLToPath(new URL('../..', import.meta.url))
+  const env = loadEnv(mode, envDir, '')
+
+  return {
+    envDir,
+    plugins: [
+      vue(),
+      AutoImport({
+        imports: [
+          'vue',
+          'vue-router',
+          'pinia',
+          {
+            'vue-router': ['createRouter', 'createWebHistory'],
+          },
+        ],
+        dirs: ['src/composables', 'src/stores'],
+        dts: 'src/auto-imports.d.ts',
+        vueTemplate: true,
+      }),
+      Components({
+        dts: 'src/components.d.ts',
+        directives: true,
+        resolvers: [AntDesignVueResolver({ importStyle: 'css-in-js' })],
+      }),
+      UnoCSS(),
+    ],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
-  },
+    server: {
+      port: 5174,
+      proxy: {
+        '/api': {
+          target:
+            env.API_PROXY_TARGET || 'http://111.228.47.54',
+          changeOrigin: true,
+        },
+      },
+    },
+  }
 })

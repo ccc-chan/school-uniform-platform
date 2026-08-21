@@ -1,11 +1,28 @@
 'use strict'
 
+const path = require('node:path')
+const dotenv = require('dotenv')
+
+const appEnv =
+  process.env.APP_ENV ||
+  (process.env.NODE_ENV === 'production' ? 'prod' : 'dev')
+
+dotenv.config({
+  path: path.resolve(__dirname, `../../../.env.${appEnv}`),
+  override: false,
+})
+
 module.exports = (appInfo) => ({
   // 统一补充操作日志上下文，便于审计业务请求。
   middleware: ['operationLogDetail'],
 
-  // Egg 使用 keys 签名 Cookie 等框架数据。
-  keys: `${appInfo.name}_school_uniform_digital_identity`,
+  // 生产环境从环境变量读取独立签名密钥。
+  keys:
+    process.env.APP_KEYS ||
+    `${appInfo.name}_school_uniform_digital_identity`,
+
+  // API 只通过内部 Docker 网络接受 Nginx 请求，可以信任代理转发的客户端 IP。
+  proxy: ['test', 'prod'].includes(process.env.APP_ENV),
 
   security: {
     csrf: {
@@ -37,6 +54,18 @@ module.exports = (appInfo) => ({
         process.env.REDIS_PASSWORD || 'school_uniform_redis_dev',
       db: Number(process.env.REDIS_DB || 0),
     },
+  },
+
+  // 本地和测试环境通过 MinIO 保存上传文件。
+  storage: {
+    driver: process.env.STORAGE_DRIVER || 'minio',
+    endpoint: process.env.STORAGE_ENDPOINT || '127.0.0.1',
+    port: Number(process.env.STORAGE_PORT || 9000),
+    useSSL: process.env.STORAGE_USE_SSL === 'true',
+    bucket: process.env.STORAGE_BUCKET || 'school-uniform-dev',
+    accessKey: process.env.STORAGE_ACCESS_KEY || 'school_uniform',
+    secretKey:
+      process.env.STORAGE_SECRET_KEY || 'school_uniform_minio_dev',
   },
 
   // 数据库连接信息优先读取环境变量，本地开发使用后备值。

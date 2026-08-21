@@ -1,7 +1,6 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: school-uniform-mysql
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${DB_NAME:-school_uniform}
@@ -22,7 +21,6 @@ services:
   # Redis 保存登录会话、验证码、权限缓存和分布式限流计数。
   redis:
     image: redis:7.4-alpine
-    container_name: school-uniform-redis
     restart: unless-stopped
     command:
       - redis-server
@@ -47,6 +45,43 @@ services:
       timeout: 5s
       retries: 20
 
+  # MinIO 为本地和测试环境提供兼容 S3 的对象存储。
+  minio:
+    image: minio/minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-school_uniform}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-school_uniform_minio_dev}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - school_uniform_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-school_uniform}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-school_uniform_minio_dev}
+      MINIO_BUCKET: ${STORAGE_BUCKET:-school-uniform-dev}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >
+        mc alias set local http://minio:9000
+        "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
+        mc mb --ignore-existing "local/$$MINIO_BUCKET"
+
 volumes:
   school_uniform_mysql_data:
   school_uniform_redis_data:
+  school_uniform_minio_data:

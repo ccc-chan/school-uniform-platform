@@ -1,9 +1,18 @@
 'use strict'
 
-// Sequelize CLI 从仓库根目录加载与应用运行时相同的数据库环境变量。
-require('dotenv').config({ path: require('node:path').resolve(__dirname, '../../../.env') })
+const path = require('node:path')
+const dotenv = require('dotenv')
 
-// 三种 CLI 环境当前共用一套连接映射，具体数据库由环境变量区分。
+// 数据库命令与 API 使用相同的 APP_ENV 选择规则。
+const appEnv =
+  process.env.APP_ENV ||
+  (process.env.NODE_ENV === 'production' ? 'prod' : 'dev')
+
+dotenv.config({
+  path: path.resolve(__dirname, `../../../.env.${appEnv}`),
+  override: false,
+})
+
 const shared = {
   username: process.env.DB_USER || 'school_uniform',
   password: process.env.DB_PASSWORD || 'school_uniform_dev',
@@ -15,4 +24,8 @@ const shared = {
   logging: false,
 }
 
-module.exports = { development: shared, test: shared, production: shared }
+module.exports = {
+  development: shared,
+  test: shared,
+  production: shared,
+}

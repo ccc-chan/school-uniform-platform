@@ -3,9 +3,13 @@ dist/
 .DS_Store
 *.log
 *.tsbuildinfo
+
+# 实际环境文件可能包含密码，禁止提交。
 .env
 .env.*
 !.env.example
+!.env.*.example
+
 run/
 logs/
 .pnpm-store/

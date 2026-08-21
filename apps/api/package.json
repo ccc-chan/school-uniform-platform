@@ -3,11 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "egg-bin dev --port 7001",
-    "db:migrate": "sequelize-cli db:migrate --config database/config.js --migrations-path database/migrations",
-    "db:seed": "sequelize-cli db:seed:all --config database/config.js --seeders-path database/seeders",
-    "db:reset": "sequelize-cli db:migrate:undo:all --config database/config.js --migrations-path database/migrations && npm run db:migrate && npm run db:seed",
-    "check": "node --check app/controller/health.js && node --check app/controller/auth.js && node --check app/controller/dashboard.js && node --check app/controller/products.js && node --check app/controller/qrcodes.js && node --check app/controller/production.js && node --check app/controller/quality.js && node --check app/controller/brand.js && node --check app/controller/analytics.js && node --check app/controller/system.js && node --check app/service/cache.js && node --check app/service/auth.js && node --check app/service/products.js && node --check app/service/qrcodes.js && node --check app/service/production.js && node --check app/service/quality.js && node --check app/service/brand.js && node --check app/service/analytics.js && node --check app/service/system.js && node --check app/middleware/auth.js && node --check app/middleware/menu_permission.js && node --check app/middleware/rate_limit.js && node --check app/router.js && node --check config/config.default.js"
+    "start": "node server.js",
+    "dev": "APP_ENV=dev egg-bin dev --port 7001",
+    "dev:test": "APP_ENV=test egg-bin dev --port 7001",
+    "db:migrate": "npm run db:migrate:dev",
+    "db:migrate:dev": "APP_ENV=dev sequelize-cli db:migrate --env development --config database/config.js --migrations-path database/migrations",
+    "db:migrate:test": "APP_ENV=test sequelize-cli db:migrate --env test --config database/config.js --migrations-path database/migrations",
+    "db:migrate:prod": "APP_ENV=prod sequelize-cli db:migrate --env production --config database/config.js --migrations-path database/migrations",
+    "db:seed": "npm run db:seed:dev",
+    "db:seed:dev": "APP_ENV=dev sequelize-cli db:seed:all --env development --config database/config.js --seeders-path database/seeders",
+    "db:seed:test": "APP_ENV=test sequelize-cli db:seed:all --env test --config database/config.js --seeders-path database/seeders",
+    "db:seed:prod": "APP_ENV=prod sequelize-cli db:seed:all --env production --config database/config.js --seeders-path database/seeders",
+    "db:reset": "npm run db:reset:dev",
+    "db:reset:dev": "APP_ENV=dev sequelize-cli db:migrate:undo:all --env development --config database/config.js --migrations-path database/migrations && npm run db:migrate:dev && npm run db:seed:dev",
+    "db:reset:test": "APP_ENV=test sequelize-cli db:migrate:undo:all --env test --config database/config.js --migrations-path database/migrations && npm run db:migrate:test && npm run db:seed:test",
+    "check": "node --check server.js && node --check app/controller/health.js && node --check app/controller/auth.js && node --check app/controller/dashboard.js && node --check app/controller/products.js && node --check app/controller/qrcodes.js && node --check app/controller/production.js && node --check app/controller/quality.js && node --check app/controller/brand.js && node --check app/controller/analytics.js && node --check app/controller/system.js && node --check app/service/cache.js && node --check app/service/auth.js && node --check app/service/products.js && node --check app/service/qrcodes.js && node --check app/service/production.js && node --check app/service/quality.js && node --check app/service/brand.js && node --check app/service/analytics.js && node --check app/service/system.js && node --check app/middleware/auth.js && node --check app/middleware/menu_permission.js && node --check app/middleware/rate_limit.js && node --check app/router.js && node --check config/config.default.js && node --check database/config.js"
   },
   "dependencies": {
     "bcryptjs": "3.0.2",
@@ -15,6 +25,7 @@
     "egg": "3.34.0",
     "egg-redis": "2.6.1",
     "egg-sequelize": "6.0.0",
+    "minio": "8.0.5",
     "mysql2": "3.14.4",
     "sequelize": "6.37.7"
   },

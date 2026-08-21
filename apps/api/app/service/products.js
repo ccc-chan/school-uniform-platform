@@ -1,6 +1,5 @@
 'use strict'
 
-const crypto = require('node:crypto')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const path = require('node:path')
@@ -308,19 +307,25 @@ class ProductsService extends Service {
       throw new Error('仅支持 JPG、PNG、WEBP 图片')
     }
 
-    const ext = path.extname(file.filename).toLowerCase()
-    const storedName = `${crypto.randomUUID()}${ext}`
-    const dir = path.join(this.app.baseDir, 'storage', 'uploads')
+    const storedName = this.ctx.service.storage.objectKey(
+      'products',
+      file.filename,
+    )
+    const size = (await fsp.stat(file.filepath)).size
 
-    await fsp.mkdir(dir, { recursive: true })
-    await fsp.copyFile(file.filepath, path.join(dir, storedName))
+    await this.ctx.service.storage.putFile(
+      storedName,
+      file.filepath,
+      size,
+      file.mime,
+    )
 
     return this.app.model.File.create({
       originalName: file.filename,
       storedName,
       mimeType: file.mime,
       category: 'product_image',
-      size: (await fsp.stat(file.filepath)).size,
+      size,
       uploadedBy: this.ctx.state.user.id,
     })
   }
@@ -342,9 +347,7 @@ class ProductsService extends Service {
       return this.json(item)
     } catch (e) {
       await image.destroy()
-      await fsp
-        .unlink(path.join(this.app.baseDir, 'storage', 'uploads', image.storedName))
-        .catch(() => {})
+      await this.ctx.service.storage.delete(image.storedName).catch(() => {})
       throw e
     }
   }
@@ -388,13 +391,14 @@ class ProductsService extends Service {
     })
     if (!item) return null
 
-    const target = path.join(this.app.baseDir, 'storage', 'uploads', item.storedName)
-    try {
-      await fsp.access(target)
-    } catch {
-      return null
+    if (item.storedName.includes('/')) {
+      const stream = await this.ctx.service.storage.getStream(item.storedName)
+      return stream ? { item, stream } : null
     }
 
+    // 兼容切换 MinIO 前已经保存在 storage/uploads 的历史图片。
+    const target = path.join(this.app.baseDir, 'storage', 'uploads', item.storedName)
+    try { await fsp.access(target) } catch { return null }
     return { item, stream: fs.createReadStream(target) }
   }
 
@@ -403,9 +407,13 @@ class ProductsService extends Service {
     if (!item) return
 
     await item.destroy()
-    await fsp
-      .unlink(path.join(this.app.baseDir, 'storage', 'uploads', item.storedName))
-      .catch(() => {})
+    if (item.storedName.includes('/')) {
+      await this.ctx.service.storage.delete(item.storedName).catch(() => {})
+    } else {
+      await fsp
+        .unlink(path.join(this.app.baseDir, 'storage', 'uploads', item.storedName))
+        .catch(() => {})
+    }
   }
 
   async destroy(id) {
