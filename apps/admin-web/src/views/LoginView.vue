@@ -2,7 +2,7 @@
  * @Author: Chan
  * @Date: 2026-07-15 17:16:56
  * @LastEditors: chan
- * @LastEditTime: 2026-08-21 15:43:49
+ * @LastEditTime: 2026-08-21 16:43:05
  * @FilePath: /school-uniform-platform/apps/admin-web/src/views/LoginView.vue
  * @Description: 
  * 
@@ -77,7 +77,7 @@ async function handleSubmit(credentials: LoginCredentials) {
         </div>
 
         <div class="relative mt-8">
-          <div class="text-7 font-700 leading-tight">一衣一码，品质可溯1</div>
+          <div class="text-7 font-700 leading-tight">一衣一码，品质可溯2</div>
           <p class="mb-0 mt-2 text-sm leading-6 text-blue-100">
             为每一件校服建立可信的数字身份证
           </p>
