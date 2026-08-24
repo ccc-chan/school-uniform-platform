@@ -186,7 +186,7 @@ export function useQrLabelPrint() {
     return { width: preset?.width ?? 30, height: preset?.height ?? 90 }
   })
 
-  async function loadBatches() {
+  async function loadBatches(preferredBatchNo = '') {
     loadingBatches.value = true
     try {
       batches.value = await getQrLabelBatches()
@@ -197,9 +197,9 @@ export function useQrLabelPrint() {
         return
       }
       const nextBatch = batches.value.some(
-        (item) => item.batchNo === selectedBatchNo.value,
+        (item) => item.batchNo === preferredBatchNo,
       )
-        ? selectedBatchNo.value
+        ? preferredBatchNo
         : batches.value[0].batchNo
       await selectBatch(nextBatch)
     } finally {

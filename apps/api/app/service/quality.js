@@ -10,6 +10,16 @@ const { Service } = require('egg')
 const itemStatuses = new Set(['enabled', 'disabled'])
 const reportStatuses = new Set(['approved', 'rejected'])
 const conclusions = new Set(['qualified', 'unqualified'])
+const quickReportTypes = {
+  certificate: '合格证书',
+  fabric: '布料检测',
+  quality: '质检报告',
+}
+const quickFileExtensions = {
+  'application/pdf': '.pdf',
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+}
 
 const fieldPermissions = {
   productId: 'quality.field.product',
@@ -323,6 +333,87 @@ class QualityService extends Service {
     }
   }
 
+  async createQuickReport(value, file) {
+    const extension = quickFileExtensions[file?.mime]
+    if (!file || !extension) invalid('请上传 PDF、JPG 或 PNG 质检文件')
+    const fileStat = await fsp.stat(file.filepath)
+    if (fileStat.size > 20 * 1024 * 1024) invalid('上传文件不能超过 20MB')
+
+    const productId = positiveInteger(value.productId, '产品')
+    const batchNo = required(value.batchNo, '生产批次', 100)
+    const reportType = String(value.reportType || '')
+    const conclusion = String(value.conclusion || '')
+    if (!quickReportTypes[reportType]) invalid('报告类型无效')
+    if (!conclusions.has(conclusion)) invalid('检测结果无效')
+
+    const [product, productionBatch] = await Promise.all([
+      this.app.model.Product.findByPk(productId),
+      this.app.model.ProductionBatch.findOne({
+        where: { productId, batchNo },
+      }),
+    ])
+    if (!product) invalid('所选产品不存在')
+    if (!productionBatch) invalid('生产批次不存在，或批次与产品不一致')
+
+    const storedName = `${crypto.randomUUID()}${extension}`
+    const uploadDir = path.join(this.app.baseDir, 'storage', 'uploads')
+    const targetPath = path.join(uploadDir, storedName)
+    await fsp.mkdir(uploadDir, { recursive: true })
+    await fsp.copyFile(file.filepath, targetPath)
+
+    try {
+      const reportId = await this.app.model.transaction(async (transaction) => {
+        const today = new Date().toISOString().slice(0, 10)
+        const expiry = new Date(`${today}T00:00:00.000Z`)
+        expiry.setUTCFullYear(expiry.getUTCFullYear() + 1)
+        const validUntil = expiry.toISOString().slice(0, 10)
+        const inspectionNo = `QK${Date.now()}${crypto.randomBytes(3).toString('hex').toUpperCase()}`
+        const remarks = [
+          `生产批次：${batchNo}`,
+          String(value.remarks || '').trim(),
+        ].filter(Boolean).join('\n').slice(0, 500)
+
+        const fileItem = await this.app.model.File.create({
+          originalName: file.filename,
+          storedName,
+          mimeType: file.mime,
+          category: 'report',
+          size: fileStat.size,
+          uploadedBy: this.ctx.state.user.id,
+        }, { transaction })
+        const item = await this.app.model.QualityReport.create({
+          reportNo: `QR${Date.now()}${Math.floor(Math.random() * 900 + 100)}`,
+          name: quickReportTypes[reportType],
+          productId,
+          institution: '产品批次质检',
+          inspectionNo,
+          inspectionDate: today,
+          validUntil,
+          fileId: fileItem.id,
+          conclusion,
+          status: 'approved',
+          resultItems: [],
+          remarks,
+          submittedBy: this.ctx.state.user.id,
+          reviewedBy: this.ctx.state.user.id,
+          reviewedAt: new Date(),
+        }, { transaction })
+        await this.log('上传质检报告', 'quality_report', item.id, {
+          reportNo: item.reportNo,
+          batchNo,
+          reportType,
+          conclusion,
+          status: item.status,
+        }, transaction)
+        return Number(item.id)
+      })
+      return this.getReport(reportId)
+    } catch (error) {
+      await fsp.unlink(targetPath).catch(() => undefined)
+      throw error
+    }
+  }
+
   async reviewReport(id, value) {
     // 仅待审核报告允许处理，防止重复审核覆盖原审核人和时间。
     const status = String(value.status || '')
@@ -363,6 +454,57 @@ class QualityService extends Service {
       fileName: report.file.originalName,
     })
     return { item: report.file, stream: fs.createReadStream(filePath) }
+  }
+
+  async deleteReport(id) {
+    const result = await this.app.model.transaction(async (transaction) => {
+      const report = await this.app.model.QualityReport.findByPk(id, {
+        transaction,
+      })
+      if (!report) return null
+
+      const file = report.fileId
+        ? await this.app.model.File.findByPk(report.fileId, { transaction })
+        : null
+
+      await this.log(
+        '删除质检报告',
+        'quality_report',
+        report.id,
+        {
+          reportNo: report.reportNo,
+          fileName: file?.originalName || '',
+        },
+        transaction,
+      )
+
+      await report.destroy({ transaction })
+      if (file) await file.destroy({ transaction })
+
+      return { storedName: file?.storedName || '' }
+    })
+
+    if (!result) return null
+
+    if (result.storedName) {
+      const targetPath = path.join(
+        this.app.baseDir,
+        'storage',
+        'uploads',
+        result.storedName,
+      )
+      await fsp.unlink(targetPath).catch((error) => {
+        if (error.code !== 'ENOENT') {
+          this.ctx.logger.error(
+            '[quality-report] physical delete failed for %s: %s',
+            targetPath,
+            error.message,
+          )
+        }
+      })
+    }
+
+    return true
   }
 
   async listItems(query) {

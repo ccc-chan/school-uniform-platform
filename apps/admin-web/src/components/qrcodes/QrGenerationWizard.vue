@@ -6,10 +6,15 @@ import {
   type QrProductOption,
 } from '@/api/qrcodes'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   products: readonly QrProductOption[]
   loadingProducts: boolean
-}>()
+  initialProductId?: number
+  initialQuantity?: number
+}>(), {
+  initialProductId: 0,
+  initialQuantity: 1000,
+})
 const emit = defineEmits<{
   cancel: []
   success: [value: QrGenerationResult]
@@ -18,8 +23,8 @@ const emit = defineEmits<{
 const current = shallowRef(0)
 const submitting = shallowRef(false)
 const form = reactive({
-  productId: 0,
-  quantity: 1000,
+  productId: props.initialProductId,
+  quantity: props.initialQuantity,
   prefix: 'SU',
   notes: '',
 })

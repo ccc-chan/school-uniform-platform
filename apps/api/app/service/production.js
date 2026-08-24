@@ -120,17 +120,22 @@ class ProductionService extends Service {
       },
       batches: {
         batchNo: item.batchNo,
-        orderId: Number(item.orderId),
-        orderNo: item.order?.orderNo || '',
+        orderId: item.orderId ? Number(item.orderId) : undefined,
+        orderNo: item.orderNo || item.order?.orderNo || '',
         productId: Number(item.productId),
         productCode: item.product?.code || '',
         productName: item.product?.name || '',
         quantity: Number(item.quantity),
         productionDate: item.productionDate,
-        factoryId: Number(item.factoryId),
-        factoryName: item.factory?.name || '',
-        responsibleEmployeeId: Number(item.responsibleEmployeeId),
-        responsibleEmployeeName: item.responsibleEmployee?.name || '',
+        factoryId: item.factoryId ? Number(item.factoryId) : undefined,
+        factoryName: item.factoryName || item.factory?.name || '',
+        responsibleEmployeeId: item.responsibleEmployeeId
+          ? Number(item.responsibleEmployeeId)
+          : undefined,
+        responsibleEmployeeName:
+          item.responsibleEmployeeName ||
+          item.responsibleEmployee?.name ||
+          '',
         notes: item.notes || '',
       },
       processes: {
@@ -221,7 +226,13 @@ class ProductionService extends Service {
     const like = { [Op.like]: `%${keyword}%` }
     const keys = {
       orders: ['orderNo', 'customerName', '$product.name$'],
-      batches: ['batchNo', '$order.order_no$', '$product.name$', '$factory.name$'],
+      batches: [
+        'batchNo',
+        'orderNo',
+        '$product.name$',
+        'factoryName',
+        'responsibleEmployeeName',
+      ],
       processes: ['flowName', 'nodeName', 'description'],
       records: ['content', '$batch.batch_no$', '$employee.name$', '$process.node_name$'],
       factories: ['code', 'name', 'contactName', 'contactPhone'],
@@ -300,11 +311,15 @@ class ProductionService extends Service {
       status,
     }
     if (resource === 'batches') return {
-      orderId: positiveInteger(value.orderId, '生产订单'),
+      orderId: null,
+      orderNo: required(value.orderNo, '生产订单', 120),
+      productId: positiveInteger(value.productId, '生产产品'),
       quantity: positiveInteger(value.quantity, '生产数量'),
       productionDate: validDate(value.productionDate, '生产日期'),
-      factoryId: positiveInteger(value.factoryId, '生产工厂'),
-      responsibleEmployeeId: positiveInteger(value.responsibleEmployeeId, '负责人'),
+      factoryId: null,
+      factoryName: required(value.factoryName, '生产工厂', 120),
+      responsibleEmployeeId: null,
+      responsibleEmployeeName: required(value.responsibleEmployeeName, '负责人', 80),
       status,
       notes: String(value.notes || '').trim().slice(0, 500),
     }
@@ -353,15 +368,10 @@ class ProductionService extends Service {
       return payload
     }
     if (resource === 'batches') {
-      const order = await model.ProductionOrder.findByPk(payload.orderId, { transaction })
-      if (!order || order.status === 'cancelled') invalid('所选生产订单不存在或已取消')
-      const allocated = Number(await model.ProductionBatch.sum('quantity', {
-        where: { orderId: order.id, id: { [Op.ne]: currentId || 0 } }, transaction,
-      }) || 0)
-      if (allocated + payload.quantity > Number(order.quantity)) invalid('生产批次数量不能超过订单剩余数量')
-      if (!await model.ProductionFactory.findOne({ where: { id: payload.factoryId, status: 'enabled' }, transaction })) invalid('所选工厂不存在或已停用')
-      if (!await model.Employee.findOne({ where: { id: payload.responsibleEmployeeId, status: 'enabled' }, transaction })) invalid('所选负责人不存在或已停用')
-      return { ...payload, productId: Number(order.productId) }
+      if (!await model.Product.findByPk(payload.productId, { transaction })) {
+        invalid('生产产品不存在')
+      }
+      return payload
     }
     if (resource === 'records') {
       const [batch, employee, process] = await Promise.all([

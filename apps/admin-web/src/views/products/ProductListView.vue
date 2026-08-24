@@ -13,8 +13,11 @@ import type { Product, ProductQrCodeType } from '@/api/products'
 import { useProducts } from '@/composables/useProducts'
 import { useAuthStore } from '@/stores/auth'
 import { confirmAction } from '@/utils/modal'
-const router = useRouter(),
+const route = useRoute(),
+  router = useRouter(),
   auth = useAuthStore()
+const drawerOpen = shallowRef(false)
+const editingProductId = shallowRef<number | null>(null)
 const {
   items,
   loading,
@@ -43,7 +46,52 @@ async function selectQrCodeType(value: ProductQrCodeType | '') {
   await safe(search, '二维码类型筛选失败')
 }
 const view = (p: Product) => router.push(`/products/${p.id}`)
-const edit = (p: Product) => router.push(`/products/${p.id}/edit`)
+
+function openCreateDrawer() {
+  editingProductId.value = null
+  drawerOpen.value = true
+}
+
+function edit(p: Product) {
+  editingProductId.value = p.id
+  drawerOpen.value = true
+}
+
+function closeDrawer() {
+  drawerOpen.value = false
+  editingProductId.value = null
+
+  if (route.name === 'product-edit') {
+    void router.replace('/products')
+  }
+}
+
+async function handleProductSaved(
+  _product: Product,
+  mode: 'create' | 'edit',
+) {
+  closeDrawer()
+  message.success(mode === 'edit' ? '产品已更新' : '产品已创建')
+  await safe(load, '产品列表刷新失败')
+}
+
+watch(
+  [() => route.name, () => route.params.id],
+  ([routeName, routeId]) => {
+    if (routeName !== 'product-edit') return
+
+    const productId = Number(routeId)
+    if (!Number.isInteger(productId) || productId <= 0) {
+      message.error('产品编号无效')
+      void router.replace('/products')
+      return
+    }
+
+    editingProductId.value = productId
+    drawerOpen.value = true
+  },
+  { immediate: true },
+)
 const toggle = (p: Product) =>
   safe(async () => {
     await toggleStatus(p)
@@ -72,7 +120,7 @@ onMounted(() => safe(load, '产品数据加载失败'))
         v-if="has('product.create')"
         class="product-list-page__create"
         type="primary"
-        @click="router.push('/products/new')"
+        @click="openCreateDrawer"
       >
         <span aria-hidden="true">＋</span>
         新建产品
@@ -121,6 +169,13 @@ onMounted(() => safe(load, '产品数据加载失败'))
         />
       </div>
     </div>
+
+    <ProductCreateDrawer
+      :open="drawerOpen"
+      :product-id="editingProductId"
+      @close="closeDrawer"
+      @saved="handleProductSaved"
+    />
   </section>
 </template>
 

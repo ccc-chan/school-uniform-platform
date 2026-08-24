@@ -9,12 +9,7 @@
 -->
 <script setup lang="ts">
 import { message } from 'ant-design-vue'
-import {
-  createProduct,
-  getProduct,
-  updateProduct,
-  type ProductInput,
-} from '@/api/products'
+import { getProduct, updateProduct, type ProductInput } from '@/api/products'
 const route = useRoute(),
   router = useRouter(),
   id = computed(() => Number(route.params.id || 0)),
@@ -60,10 +55,8 @@ async function submit() {
   }
   saving.value = true
   try {
-    id.value
-      ? await updateProduct(id.value, { ...form })
-      : await createProduct({ ...form })
-    message.success(id.value ? '产品已更新' : '产品已创建')
+    await updateProduct(id.value, { ...form })
+    message.success('产品已更新')
     await router.push('/products')
   } catch (e) {
     message.error(e instanceof Error ? e.message : '保存失败')
@@ -77,7 +70,7 @@ onMounted(load)
   <section class="mx-auto max-w-300">
     <div class="page-card">
       <div class="mb-6">
-        <h2 class="page-title">{{ id ? '编辑产品' : '新建产品' }}</h2>
+        <h2 class="page-title">编辑产品</h2>
         <p class="mb-0 mt-2 text-secondary">填写产品基础信息、规格与执行标准</p>
       </div>
       <ProductForm

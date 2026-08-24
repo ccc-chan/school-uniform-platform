@@ -10,10 +10,13 @@ import QualityReportFileFields from './QualityReportFileFields.vue'
 import QualityReportResultsEditor from './QualityReportResultsEditor.vue'
 import type { QualityReportBasicInput } from './types'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   options: QualityOptions
   submitting: boolean
-}>()
+  initialProductId?: number
+}>(), {
+  initialProductId: 0,
+})
 
 const emit = defineEmits<{
   submit: [value: QualityReportCreate]
@@ -24,7 +27,7 @@ const today = new Date().toISOString().slice(0, 10)
 
 const form = reactive<QualityReportBasicInput>({
   name: '',
-  productId: undefined,
+  productId: props.initialProductId || undefined,
   institution: '',
   inspectionNo: '',
   inspectionDate: today,

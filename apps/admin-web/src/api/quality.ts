@@ -8,6 +8,7 @@ export type QualityReportStatus =
   | 'expired'
 export type QualityConclusion = 'qualified' | 'unqualified'
 export type QualityItemStatus = 'enabled' | 'disabled'
+export type QuickQualityReportType = 'certificate' | 'fabric' | 'quality'
 
 export interface QualityResultItem {
   itemId: number
@@ -102,6 +103,15 @@ export interface QualityReportCreate {
   file: File
 }
 
+export interface QuickQualityReportCreate {
+  productId: number
+  batchNo: string
+  reportType: QuickQualityReportType
+  conclusion: QualityConclusion
+  remarks: string
+  file: File
+}
+
 export type QualityInspectionItemInput = Pick<
   QualityInspectionItem,
   'code' | 'name' | 'category' | 'standardRequirement' | 'unit' | 'status'
@@ -147,6 +157,20 @@ export function createQualityReport(data: QualityReportCreate) {
   })
 }
 
+export function createQuickQualityReport(data: QuickQualityReportCreate) {
+  const body = new FormData()
+  body.append('productId', String(data.productId))
+  body.append('batchNo', data.batchNo)
+  body.append('reportType', data.reportType)
+  body.append('conclusion', data.conclusion)
+  body.append('remarks', data.remarks)
+  body.append('file', data.file)
+  return request<QualityReport>('/api/v1/quality/reports/quick', {
+    method: 'POST',
+    body,
+  })
+}
+
 export function reviewQualityReport(
   id: number,
   status: 'approved' | 'rejected',
@@ -155,6 +179,12 @@ export function reviewQualityReport(
   return request<QualityReport>(`/api/v1/quality/reports/${id}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ status, note }),
+  })
+}
+
+export function deleteQualityReport(id: number) {
+  return request<null>(`/api/v1/quality/reports/${id}`, {
+    method: 'DELETE',
   })
 }
 

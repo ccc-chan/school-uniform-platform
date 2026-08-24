@@ -126,11 +126,12 @@ const fields = computed<ConfigFormField[]>(() => {
   const statuses = statusOptions.value
   const map: Record<ManagedResource, ConfigFormField[]> = {
     batches: [
-      { key: 'orderId', label: '生产订单', type: 'select', required: true, options: options.value.orders.map((item) => ({ label: `${item.orderNo} · ${item.productName}`, value: item.id })) },
+      { key: 'orderNo', label: '生产订单', type: 'input', required: true, placeholder: '请输入生产订单', componentProps: { maxlength: 120 } },
+      { key: 'productId', label: '生产产品', type: 'select', required: true, options: options.value.products.map((item) => ({ label: `${item.code} · ${item.name}`, value: item.id })) },
       { key: 'quantity', label: '生产数量', type: 'number', required: true, componentProps: { min: 1, precision: 0 } },
       { key: 'productionDate', label: '生产日期', type: 'date', required: true },
-      { key: 'factoryId', label: '生产工厂', type: 'select', required: true, options: options.value.factories.map((item) => ({ label: `${item.code} · ${item.name}`, value: item.id })) },
-      { key: 'responsibleEmployeeId', label: '负责人', type: 'select', required: true, options: options.value.employees.map((item) => ({ label: item.name, value: item.id })) },
+      { key: 'factoryName', label: '生产工厂', type: 'input', required: true, placeholder: '请输入生产工厂', componentProps: { maxlength: 120 } },
+      { key: 'responsibleEmployeeName', label: '负责人', type: 'input', required: true, placeholder: '请输入负责人', componentProps: { maxlength: 80 } },
       { key: 'status', label: '批次状态', type: 'select', required: true, options: statuses },
       { key: 'notes', label: '批次说明', type: 'textarea', span: 2, componentProps: { rows: 3, maxlength: 500 } },
     ],

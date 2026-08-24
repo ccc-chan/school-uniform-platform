@@ -152,9 +152,15 @@ class ProductsService extends Service {
     const product = await this.app.model.Product.findByPk(id)
     if (!product) return null
 
-    const canViewProduction = permissions.includes('production.view')
-    const canViewQr = permissions.includes('qrcode.view')
-    const canViewQuality = permissions.includes('quality.view')
+    const hasPermission = (code) =>
+      permissions.includes(code) ||
+      permissions.includes(
+        this.ctx.service.auth.genericPermissionCode(code),
+      )
+
+    const canViewProduction = hasPermission('production.view')
+    const canViewQr = hasPermission('qrcode.view')
+    const canViewQuality = hasPermission('quality.view')
 
     const [rows, qualityRows] = await Promise.all([
       canViewProduction
@@ -250,11 +256,11 @@ class ProductsService extends Service {
           : 100000 + Number(item.id),
         custom: !item.processId,
       }
-      if (permissions.includes('production.field.status')) step.status = item.status
-      if (permissions.includes('production.field.employee')) {
+      if (hasPermission('production.field.status')) step.status = item.status
+      if (hasPermission('production.field.employee')) {
         step.employeeName = item.employee?.name || ''
       }
-      if (permissions.includes('production.field.date')) {
+      if (hasPermission('production.field.date')) {
         step.startedAt = this.ctx.helper.formatDateTime(item.startedAt)
         step.completedAt = this.ctx.helper.formatDateTime(item.completedAt)
       }
@@ -274,29 +280,35 @@ class ProductsService extends Service {
         return {
           id: Number(item.id),
           batchNo: item.batchNo,
-          ...(permissions.includes('production.field.quantity')
+          ...(hasPermission('production.field.quantity')
             ? { quantity: Number(item.quantity) }
             : {}),
-          ...(permissions.includes('production.field.date')
+          ...(hasPermission('production.field.date')
             ? { productionDate: item.productionDate }
             : {}),
-          ...(permissions.includes('production.field.status')
+          ...(hasPermission('production.field.status')
             ? { status: item.status }
             : {}),
-          ...(permissions.includes('production.field.factory')
-            ? { factoryName: item.factory?.name || '' }
+          ...(hasPermission('production.field.factory')
+            ? { factoryName: item.factoryName || item.factory?.name || '' }
             : {}),
-          ...(permissions.includes('production.field.employee')
-            ? { responsibleEmployeeName: item.responsibleEmployee?.name || '' }
+          ...(hasPermission('production.field.employee')
+            ? {
+                responsibleEmployeeName:
+                  item.responsibleEmployeeName ||
+                  item.responsibleEmployee?.name ||
+                  '',
+              }
             : {}),
           qrTotal: qrBatches.reduce((sum, row) => sum + row.total, 0),
-          qrBatches: permissions.includes('qrcode.field.status') ? qrBatches : [],
+          qrBatches: hasPermission('qrcode.field.status') ? qrBatches : [],
           productionSteps: groupedProductionSteps.get(Number(item.id)) || [],
         }
       }),
-      qualityReports: qualityRows.map((item) =>
-        this.ctx.service.quality.reportJson(item, permissions),
-      ),
+      qualityReports: qualityRows.map((item) => ({
+        ...this.ctx.service.quality.reportJson(item, permissions),
+        conclusion: item.conclusion,
+      })),
       access: {
         production: canViewProduction,
         qrcode: canViewQr,

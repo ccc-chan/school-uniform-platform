@@ -12,7 +12,20 @@ const categories = new Set([
 
 const seasons = new Set(['spring', 'summer', 'autumn', 'winter', 'all_season'])
 const qrCodeTypes = new Set(['product', 'batch', 'school'])
-const productSizes = new Set(['xs', 's', 'm', 'l', 'xl', 'xxl'])
+const productSizes = new Set([
+  'xs',
+  's',
+  'm',
+  'l',
+  'xl',
+  'xxl',
+  '120',
+  '130',
+  '140',
+  '150',
+  '160',
+  '170',
+])
 
 // 将多选字段统一转换为去除空白后的字符串数组。
 const array = (value) =>

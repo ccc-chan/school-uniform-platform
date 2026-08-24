@@ -8,7 +8,15 @@ const route = useRoute()
 const { batches, loadingBatches, loadBatches } = useQrOptions()
 const initialProductId = computed(() => Number(route.query.productId || 0))
 const initialProductionBatch = computed(() => String(route.query.productionBatch || ''))
-const returnPath = computed(() => initialProductId.value ? `/products/${initialProductId.value}` : '/qrcodes')
+const initialGenerationBatchId = computed(() =>
+  Number(route.query.generationBatchId || 0),
+)
+const initialQuantity = computed(() => Number(route.query.quantity || 1))
+const returnPath = computed(() =>
+  initialProductId.value
+    ? `/products/${initialProductId.value}`
+    : '/qrcodes/label-print',
+)
 
 onMounted(async () => {
   try {
@@ -30,6 +38,8 @@ onMounted(async () => {
       :loading-batches="loadingBatches"
       :initial-product-id="initialProductId"
       :initial-production-batch="initialProductionBatch"
+      :initial-generation-batch-id="initialGenerationBatchId"
+      :initial-quantity="initialQuantity"
       @cancel="router.push(returnPath)"
       @success="router.push(returnPath)"
     />

@@ -11,9 +11,13 @@ const props = withDefaults(defineProps<{
   loadingBatches: boolean
   initialProductId?: number
   initialProductionBatch?: string
+  initialGenerationBatchId?: number
+  initialQuantity?: number
 }>(), {
   initialProductId: 0,
   initialProductionBatch: '',
+  initialGenerationBatchId: 0,
+  initialQuantity: 1,
 })
 const emit = defineEmits<{
   cancel: []
@@ -24,7 +28,7 @@ const current = shallowRef(0)
 const submitting = shallowRef(false)
 const form = reactive({
   generationBatchId: 0,
-  quantity: 1,
+  quantity: props.initialQuantity,
   productSku: '',
   productionBatch: '',
 })
@@ -52,6 +56,16 @@ watch(
   () => props.initialProductionBatch,
   (value) => {
     if (value) form.productionBatch = value
+  },
+  { immediate: true },
+)
+
+watch(
+  [() => props.initialGenerationBatchId, availableBatches],
+  ([batchId, batches]) => {
+    if (batches.some((item) => item.id === batchId)) {
+      form.generationBatchId = batchId
+    }
   },
   { immediate: true },
 )

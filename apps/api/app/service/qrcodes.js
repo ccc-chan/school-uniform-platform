@@ -365,7 +365,12 @@ class QrcodesService extends Service {
       defaultPageSize: 100,
       maxPageSize: 500,
     })
-    const replacements = { batchNo, limit: pageSize, offset }
+    const keyword = String(query.keyword || '').trim().slice(0, 100)
+    const codeFilter = keyword ? 'AND q.code LIKE :keyword' : ''
+    const filterReplacements = {
+      batchNo,
+      ...(keyword ? { keyword: `%${keyword}%` } : {}),
+    }
     const [batchRows, items, countRows] = await Promise.all([
       this.app.model.query(
         `SELECT
@@ -384,7 +389,7 @@ class QrcodesService extends Service {
           AND q.status IN ('bound', 'activated')
         ORDER BY q.id ASC
         LIMIT 1`,
-        { replacements, type: QueryTypes.SELECT },
+        { replacements: { batchNo }, type: QueryTypes.SELECT },
       ),
       this.app.model.query(
         `SELECT
@@ -394,22 +399,27 @@ class QrcodesService extends Service {
         FROM qr_codes q
         WHERE q.production_batch = :batchNo
           AND q.status IN ('bound', 'activated')
+          ${codeFilter}
         ORDER BY q.id ASC
         LIMIT :limit OFFSET :offset`,
-        { replacements, type: QueryTypes.SELECT },
+        {
+          replacements: { ...filterReplacements, limit: pageSize, offset },
+          type: QueryTypes.SELECT,
+        },
       ),
       this.app.model.query(
         `SELECT COUNT(q.id) AS total
         FROM qr_codes q
         WHERE q.production_batch = :batchNo
-          AND q.status IN ('bound', 'activated')`,
-        { replacements, type: QueryTypes.SELECT },
+          AND q.status IN ('bound', 'activated')
+          ${codeFilter}`,
+        { replacements: filterReplacements, type: QueryTypes.SELECT },
       ),
     ])
 
     const batch = batchRows[0]
     const total = Number(countRows[0]?.total || 0)
-    if (!batch || !total) return null
+    if (!batch) return null
 
     return {
       batch: {

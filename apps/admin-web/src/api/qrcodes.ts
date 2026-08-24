@@ -163,11 +163,13 @@ export function getQrLabelBatch(
   batchNo: string,
   page = 1,
   pageSize = 500,
+  keyword = '',
 ) {
   const query = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   })
+  if (keyword) query.set('keyword', keyword)
   return request<QrLabelBatchPage>(
     `/api/v1/qrcodes/label-print/batches/${encodeURIComponent(batchNo)}?${query}`,
   )

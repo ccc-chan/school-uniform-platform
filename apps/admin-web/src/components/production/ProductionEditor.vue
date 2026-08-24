@@ -59,6 +59,8 @@ function submit() {
     :title="item ? `编辑${title}` : `新增${title}`"
     :width="720"
     :confirm-loading="saving"
+    ok-text="确认"
+    cancel-text="取消"
     wrap-class-name="responsive-modal"
     @cancel="emit('update:open', false)"
     @ok="submit"

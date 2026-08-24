@@ -23,7 +23,7 @@ function stepDate(step: ProductProductionStep) {
   <section class="production-timeline">
     <header class="production-timeline__header">
       <h3>生产流程</h3>
-      <a-button v-if="canManage" @click="emit('add')">添加环节</a-button>
+      <a-button v-if="canManage" @click="emit('add')">＋ 添加</a-button>
     </header>
 
     <p v-if="!canView" class="production-timeline__empty">
@@ -74,5 +74,101 @@ function stepDate(step: ProductProductionStep) {
 </template>
 
 <style scoped>
-.production-timeline{border:1px solid #dfe7f1;border-radius:14px;background:#fff;padding:16px}.production-timeline__header{display:flex;align-items:center;justify-content:space-between;gap:20px}.production-timeline__header h3{margin:0;color:#172033;font-size:14px}.production-timeline__list{margin:12px 0 0;padding:0;list-style:none}.production-timeline__list li{position:relative;display:flex;min-height:42px;align-items:flex-start;padding:4px 0 15px 26px}.production-timeline__list li:not(:last-child)::before{position:absolute;top:16px;bottom:-2px;left:7px;width:1px;background:#dbe4ef;content:''}.production-timeline__dot{position:absolute;top:9px;left:2px;width:11px;height:11px;border:2px solid #fff;border-radius:50%;background:#3b82f6;box-shadow:0 0 0 1px #3b82f6}.production-timeline__item--latest .production-timeline__dot{background:#22c55e;box-shadow:0 0 0 1px #22c55e}.production-timeline__content{display:flex;min-width:0;flex:1;align-items:center;gap:8px;min-height:24px}.production-timeline__content strong{overflow:hidden;color:#263247;font-size:12px;text-overflow:ellipsis;white-space:nowrap}.production-timeline__content span{flex:0 0 auto;color:#94a3b8;font-size:11px}.production-timeline__delete{flex:0 0 auto;margin:-2px 0 0 8px}.production-timeline__delete svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.production-timeline__empty{margin:18px 0 4px;color:#94a3b8;font-size:12px;text-align:center}@media(max-width:560px){.production-timeline__content{align-items:flex-start;flex-direction:column;gap:3px}}
+.production-timeline {
+  min-height: 248px;
+  border: 1px solid #dfe7f1;
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px 20px;
+}
+.production-timeline__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.production-timeline__header h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 14px;
+}
+.production-timeline__header :deep(.ant-btn) {
+  height: 30px;
+  border-radius: 8px;
+  color: #526078;
+  font-size: 11px;
+}
+.production-timeline__list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.production-timeline__list li {
+  position: relative;
+  display: flex;
+  min-height: 47px;
+  align-items: flex-start;
+  padding: 3px 0 13px 28px;
+}
+.production-timeline__list li:not(:last-child)::before {
+  position: absolute;
+  top: 15px;
+  bottom: -1px;
+  left: 7px;
+  width: 1px;
+  background: #dbe4ef;
+  content: '';
+}
+.production-timeline__dot {
+  position: absolute;
+  top: 8px;
+  left: 2px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+.production-timeline__item--latest .production-timeline__dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 1px #22c55e;
+}
+.production-timeline__content {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+.production-timeline__content strong {
+  overflow: hidden;
+  color: #263247;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.production-timeline__content span {
+  color: #94a3b8;
+  font-size: 10px;
+}
+.production-timeline__delete {
+  flex: 0 0 auto;
+  margin: -2px 0 0 8px;
+}
+.production-timeline__delete svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.production-timeline__empty {
+  margin: 56px 0 4px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+}
 </style>

@@ -29,6 +29,7 @@ const {
   selectBatch,
   print,
 } = useQrLabelPrint()
+const route = useRoute()
 
 async function run(action: () => Promise<void>, fallback: string) {
   try {
@@ -46,7 +47,15 @@ async function handlePrint() {
   await run(print, '标签打印准备失败')
 }
 
-onMounted(() => run(loadBatches, '生产批次加载失败'))
+onMounted(async () => {
+  await run(
+    () => loadBatches(String(route.query.batchNo || '')),
+    '生产批次加载失败',
+  )
+  if (route.query.action === 'print' && selectedBatch.value) {
+    await handlePrint()
+  }
+})
 </script>
 
 <template>

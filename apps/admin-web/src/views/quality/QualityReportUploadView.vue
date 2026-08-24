@@ -9,9 +9,14 @@ import {
 import QualityReportForm from '@/components/quality/QualityReportForm.vue'
 
 const router = useRouter()
+const route = useRoute()
 const loading = shallowRef(true)
 const submitting = shallowRef(false)
 const options = shallowRef<QualityOptions>({ products: [], items: [] })
+const initialProductId = computed(() => Number(route.query.productId || 0))
+const returnPath = computed(() =>
+  initialProductId.value ? `/products/${initialProductId.value}` : '/products',
+)
 
 async function load() {
   try {
@@ -28,7 +33,9 @@ async function submit(value: QualityReportCreate) {
   try {
     const report = await createQualityReport(value)
     message.success('检测报告上传成功')
-    await router.replace(`/quality/reports/${report.id}`)
+    await router.replace(
+      initialProductId.value ? returnPath.value : `/quality/reports/${report.id}`,
+    )
   } catch (error) {
     message.error(error instanceof Error ? error.message : '检测报告上传失败')
   } finally {
@@ -58,8 +65,9 @@ onMounted(load)
       v-else
       :options="options"
       :submitting="submitting"
+      :initial-product-id="initialProductId"
       @submit="submit"
-      @cancel="router.push('/quality/reports')"
+      @cancel="router.push(returnPath)"
     />
   </section>
 </template>

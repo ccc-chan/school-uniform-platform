@@ -4,8 +4,11 @@ import type { RouteRecordRaw, Router } from 'vue-router'
 const DashboardView = () => import('@/views/DashboardView.vue')
 const ProductListView = () => import('@/views/products/ProductListView.vue')
 const ProductDetailView = () => import('@/views/products/ProductDetailView.vue')
-const ProductFormView = () => import('@/views/products/ProductFormView.vue')
+const QrGenerateView = () => import('@/views/qrcodes/QrGenerateView.vue')
+const QrBindView = () => import('@/views/qrcodes/QrBindView.vue')
 const QrLabelPrintView = () => import('@/views/qrcodes/QrLabelPrintView.vue')
+const QualityReportUploadView = () =>
+  import('@/views/quality/QualityReportUploadView.vue')
 const BrandProfileView = () => import('@/views/brand/BrandProfileView.vue')
 const EmployeeAccountsView = () =>
   import('@/views/system/EmployeeAccountsView.vue')
@@ -38,21 +41,9 @@ const definitions: Record<string, RouteRecordRaw[]> = {
       },
     },
     {
-      path: 'products/new',
-      name: 'product-new',
-      component: ProductFormView,
-      meta: {
-        title: '新建产品',
-        requiresAuth: true,
-        menuCode: 'shortcut_products',
-        requiredPermission: 'product.create',
-        breadcrumb: [{ title: '产品管理', path: '/products' }],
-      },
-    },
-    {
       path: 'products/:id/edit',
       name: 'product-edit',
-      component: ProductFormView,
+      component: ProductListView,
       meta: {
         title: '编辑产品',
         requiresAuth: true,
@@ -72,8 +63,41 @@ const definitions: Record<string, RouteRecordRaw[]> = {
         requiredPermission: 'product.view',
       },
     },
+    {
+      path: 'quality/reports/upload',
+      name: 'quality-report-upload',
+      component: QualityReportUploadView,
+      meta: {
+        title: '上传检测报告',
+        requiresAuth: true,
+        menuCode: 'shortcut_products',
+        requiredPermission: 'quality.report.create',
+      },
+    },
   ],
   shortcut_label_print: [
+    {
+      path: 'qrcodes/generate',
+      name: 'qrcode-generate',
+      component: QrGenerateView,
+      meta: {
+        title: '生成二维码',
+        requiresAuth: true,
+        menuCode: 'shortcut_label_print',
+        requiredPermission: 'qrcode.generate',
+      },
+    },
+    {
+      path: 'qrcodes/bind',
+      name: 'qrcode-bind',
+      component: QrBindView,
+      meta: {
+        title: '二维码绑定',
+        requiresAuth: true,
+        menuCode: 'shortcut_label_print',
+        requiredPermission: 'qrcode.bind',
+      },
+    },
     {
       path: 'qrcodes/label-print',
       name: 'qrcode-label-print',

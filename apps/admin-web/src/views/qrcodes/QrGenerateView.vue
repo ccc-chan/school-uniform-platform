@@ -1,10 +1,34 @@
 <script setup lang="ts">
 import { message } from 'ant-design-vue'
+import type { QrGenerationResult } from '@/api/qrcodes'
 import QrGenerationWizard from '@/components/qrcodes/QrGenerationWizard.vue'
 import { useQrOptions } from '@/composables/useQrOptions'
 
 const router = useRouter()
+const route = useRoute()
 const { products, loadingProducts, loadProducts } = useQrOptions()
+const initialProductId = computed(() => Number(route.query.productId || 0))
+const initialQuantity = computed(() => Number(route.query.quantity || 1000))
+const initialProductionBatch = computed(() =>
+  String(route.query.productionBatch || ''),
+)
+const returnPath = computed(() =>
+  initialProductId.value
+    ? `/products/${initialProductId.value}`
+    : '/qrcodes/label-print',
+)
+
+function handleSuccess(result: QrGenerationResult) {
+  router.push({
+    path: '/qrcodes/bind',
+    query: {
+      generationBatchId: result.id,
+      productId: initialProductId.value || undefined,
+      quantity: initialQuantity.value,
+      productionBatch: initialProductionBatch.value || undefined,
+    },
+  })
+}
 
 onMounted(async () => {
   try {
@@ -24,8 +48,10 @@ onMounted(async () => {
     <QrGenerationWizard
       :products="products"
       :loading-products="loadingProducts"
-      @cancel="router.push('/qrcodes')"
-      @success="router.push('/qrcodes')"
+      :initial-product-id="initialProductId"
+      :initial-quantity="initialQuantity"
+      @cancel="router.push(returnPath)"
+      @success="handleSuccess"
     />
   </section>
 </template>

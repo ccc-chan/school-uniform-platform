@@ -2,9 +2,7 @@
 import { message } from 'ant-design-vue'
 import {
   createProductionItem,
-  getProductionOptions,
   type ProductionInput,
-  type ProductionOptions,
 } from '@/api/production'
 import type { ConfigFormField } from '@/components/common/types'
 import ProductionEditor from '@/components/production/ProductionEditor.vue'
@@ -19,33 +17,16 @@ const emit = defineEmits<{
   created: [batchId: number]
 }>()
 
-const options = shallowRef<ProductionOptions>({
-  products: [],
-  employees: [],
-  factories: [],
-  orders: [],
-  batches: [],
-  processes: [],
-})
-const loadingOptions = shallowRef(false)
 const saving = shallowRef(false)
-
-const productOrders = computed(() =>
-  options.value.orders.filter(
-    (item) => item.productId === props.productId,
-  ),
-)
 
 const fields = computed<ConfigFormField[]>(() => [
   {
-    key: 'orderId',
+    key: 'orderNo',
     label: '生产订单',
-    type: 'select',
+    type: 'input',
     required: true,
-    options: productOrders.value.map((item) => ({
-      label: `${item.orderNo} · ${item.productName}`,
-      value: item.id,
-    })),
+    placeholder: '请输入生产订单',
+    componentProps: { maxlength: 120 },
   },
   {
     key: 'quantity',
@@ -61,24 +42,20 @@ const fields = computed<ConfigFormField[]>(() => [
     required: true,
   },
   {
-    key: 'factoryId',
+    key: 'factoryName',
     label: '生产工厂',
-    type: 'select',
+    type: 'input',
     required: true,
-    options: options.value.factories.map((item) => ({
-      label: `${item.code} · ${item.name}`,
-      value: item.id,
-    })),
+    placeholder: '请输入生产工厂',
+    componentProps: { maxlength: 120 },
   },
   {
-    key: 'responsibleEmployeeId',
+    key: 'responsibleEmployeeName',
     label: '负责人',
-    type: 'select',
+    type: 'input',
     required: true,
-    options: options.value.employees.map((item) => ({
-      label: item.name,
-      value: item.id,
-    })),
+    placeholder: '请输入负责人',
+    componentProps: { maxlength: 80 },
   },
   {
     key: 'status',
@@ -109,26 +86,15 @@ function today() {
 }
 
 const defaults = computed<ProductionInput>(() => ({
-  orderId: productOrders.value[0]?.id,
-  quantity: productOrders.value[0]?.quantity || 1,
+  productId: props.productId,
+  orderNo: '',
+  factoryName: '',
+  responsibleEmployeeName: '',
+  quantity: 1,
   productionDate: today(),
   status: 'planned',
   notes: '',
 }))
-
-async function loadOptions() {
-  loadingOptions.value = true
-  try {
-    options.value = await getProductionOptions()
-  } catch (error) {
-    message.error(
-      error instanceof Error ? error.message : '生产选项加载失败',
-    )
-    emit('update:open', false)
-  } finally {
-    loadingOptions.value = false
-  }
-}
 
 async function save(value: ProductionInput) {
   saving.value = true
@@ -146,13 +112,6 @@ async function save(value: ProductionInput) {
   }
 }
 
-watch(
-  () => props.open,
-  (open) => {
-    if (open) void loadOptions()
-  },
-  { immediate: true },
-)
 </script>
 
 <template>
@@ -162,7 +121,7 @@ watch(
     :item="null"
     :fields="fields"
     :defaults="defaults"
-    :saving="saving || loadingOptions"
+    :saving="saving"
     @update:open="emit('update:open', $event)"
     @submit="save"
   />

@@ -58,6 +58,21 @@ class QualityController extends Controller {
     }
   }
 
+  async quickCreateReport() {
+    const file = this.ctx.request.files?.[0]
+    try {
+      await this.run(async () => {
+        const item = await this.ctx.service.quality.createQuickReport(
+          this.ctx.request.body || {},
+          file,
+        )
+        this.ok(item, '质检报告上传成功')
+      })
+    } finally {
+      await this.ctx.cleanupRequestFiles()
+    }
+  }
+
   async reviewReport() {
     await this.run(async () => {
       const item = await this.ctx.service.quality.reviewReport(
@@ -65,6 +80,17 @@ class QualityController extends Controller {
         this.ctx.request.body || {},
       )
       return item ? this.ok(item, '审核状态已更新') : this.fail('检测报告不存在', 404)
+    })
+  }
+
+  async deleteReport() {
+    await this.run(async () => {
+      const removed = await this.ctx.service.quality.deleteReport(
+        Number(this.ctx.params.id),
+      )
+      return removed
+        ? this.ok(null, '质检报告删除成功')
+        : this.fail('检测报告不存在', 404)
     })
   }
 
