@@ -242,6 +242,106 @@ class QrcodesService extends Service {
     })
   }
 
+  async generateProductionBatch(batchId) {
+    return this.app.model.transaction(async (transaction) => {
+      const productionBatch =
+        await this.app.model.ProductionBatch.findByPk(batchId, {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        })
+
+      if (!productionBatch) throw userError('生产批次不存在')
+
+      const product = await this.app.model.Product.findOne({
+        where: {
+          id: productionBatch.productId,
+          status: 'enabled',
+        },
+        transaction,
+      })
+
+      if (!product) throw userError('生产批次关联的产品不存在或已停用')
+
+      if (!['product', 'batch', 'school'].includes(product.qrCodeType)) {
+        throw userError('产品未配置有效的溯源模式')
+      }
+
+      const existingCount = await this.app.model.QrCode.count({
+        where: {
+          productId: product.id,
+          productionBatch: productionBatch.batchNo,
+          status: { [Op.ne]: 'voided' },
+        },
+        transaction,
+      })
+
+      if (existingCount) {
+        throw userError('当前生产批次已经生成二维码，请勿重复生成')
+      }
+
+      const productionQuantity = Number(productionBatch.quantity || 0)
+      const quantity =
+        product.qrCodeType === 'product' ? productionQuantity : 1
+
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100000) {
+        throw userError('当前生产批次数量无效，无法生成二维码')
+      }
+
+      const { batch: generationBatch } =
+        await this.createGenerationBatch(
+          {
+            productId: Number(product.id),
+            quantity,
+            prefix: 'SU',
+            notes: `生产批次 ${productionBatch.batchNo} 自动生成`,
+          },
+          'single',
+          transaction,
+        )
+
+      const boundAt = new Date()
+
+      await this.app.model.QrCode.update(
+        {
+          status: 'bound',
+          productId: product.id,
+          productSku: product.code || '',
+          productionBatch: productionBatch.batchNo,
+          boundBy: this.ctx.state.user.id,
+          boundAt,
+        },
+        {
+          where: { generationBatchId: generationBatch.id },
+          transaction,
+        },
+      )
+
+      await this.log(
+        '按生产批次生成二维码',
+        'qr_generation_batch',
+        generationBatch.id,
+        {
+          generationBatchNo: generationBatch.batchNo,
+          productionBatch: productionBatch.batchNo,
+          productCode: product.code,
+          qrCodeType: product.qrCodeType,
+          quantity,
+          payloadType: 'internal-url',
+        },
+        transaction,
+      )
+
+      return {
+        generationBatchId: Number(generationBatch.id),
+        generationBatchNo: generationBatch.batchNo,
+        productionBatch: productionBatch.batchNo,
+        productName: product.name,
+        qrCodeType: product.qrCodeType,
+        quantity,
+      }
+    })
+  }
+
   async batchGenerate(items) {
     // 整个导入文件使用一个事务，避免只生成部分产品批次。
     return this.app.model.transaction(async (transaction) => {

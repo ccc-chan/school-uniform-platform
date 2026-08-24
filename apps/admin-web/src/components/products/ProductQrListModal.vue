@@ -25,6 +25,7 @@ const searchDraft = shallowRef('')
 const keyword = shallowRef('')
 const result = shallowRef<QrLabelBatchPage | null>(null)
 const qrImages = shallowRef<Record<number, string>>({})
+const hoveredTruncatedCodeId = shallowRef<number | null>(null)
 let loadSequence = 0
 
 const rangeStart = computed(() =>
@@ -37,6 +38,7 @@ const rangeEnd = computed(() =>
 async function load() {
   if (!open.value || !props.batchNo) return
   const sequence = ++loadSequence
+  hoveredTruncatedCodeId.value = null
   loading.value = true
   try {
     const nextResult = await getQrLabelBatch(
@@ -77,6 +79,20 @@ function search() {
 
 function handleSearchChange() {
   if (!searchDraft.value) search()
+}
+
+function showCodeTooltip(itemId: number, event: MouseEvent) {
+  const element = event.currentTarget
+  hoveredTruncatedCodeId.value =
+    element instanceof HTMLElement && element.scrollWidth > element.clientWidth
+      ? itemId
+      : null
+}
+
+function hideCodeTooltip(itemId: number) {
+  if (hoveredTruncatedCodeId.value === itemId) {
+    hoveredTruncatedCodeId.value = null
+  }
 }
 
 watch(
@@ -137,7 +153,18 @@ watch(page, () => {
               :alt="`二维码 ${item.code}`"
             />
             <div v-else class="qr-list-modal__placeholder" />
-            <span>{{ item.code }}</span>
+            <a-tooltip
+              :title="item.code"
+              :open="hoveredTruncatedCodeId === item.id"
+              placement="top"
+            >
+              <span
+                @mouseenter="showCodeTooltip(item.id, $event)"
+                @mouseleave="hideCodeTooltip(item.id)"
+              >
+                {{ item.code }}
+              </span>
+            </a-tooltip>
           </article>
         </div>
         <a-empty v-else class="qr-list-modal__empty" description="没有匹配的二维码" />
@@ -277,4 +304,3 @@ watch(page, () => {
   }
 }
 </style>
-

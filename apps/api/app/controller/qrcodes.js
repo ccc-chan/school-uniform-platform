@@ -94,6 +94,20 @@ class QrcodesController extends Controller {
     })
   }
 
+  async generateProductionBatch() {
+    const batchId = Number(this.ctx.params.id)
+    if (!Number.isInteger(batchId) || batchId < 1) {
+      return this.fail('生产批次无效')
+    }
+
+    return this.run(async () => {
+      this.ok(
+        await this.ctx.service.qrcodes.generateProductionBatch(batchId),
+        '当前生产批次二维码生成成功',
+      )
+    })
+  }
+
   async batchGenerate() {
     // 限制导入行数，防止单次请求创建过多数据库任务。
     const rawItems = this.ctx.request.body?.items

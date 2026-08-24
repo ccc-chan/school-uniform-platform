@@ -15,14 +15,6 @@ class AnalyticsController extends Controller {
     this.ctx.body = { code: status, message, data: null }
   }
 
-  async options() {
-    this.ok(await this.ctx.service.analytics.options())
-  }
-
-  async overview() {
-    this.ok(await this.ctx.service.analytics.overview(this.ctx.query))
-  }
-
   async recordScan() {
     // 公开接口先限制二维码编号长度，避免无效值进入查询和日志链路。
     const code = String(this.ctx.params.code || '').trim()

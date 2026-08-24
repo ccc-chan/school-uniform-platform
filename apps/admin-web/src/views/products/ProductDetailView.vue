@@ -6,6 +6,7 @@ import {
   getProductDetail,
   type ProductDetail,
 } from '@/api/products'
+import { generateProductionBatchQrCodes } from '@/api/qrcodes'
 import {
   createQuickQualityReport,
   deleteQualityReport,
@@ -34,6 +35,7 @@ const qrListOpen = shallowRef(false)
 const qualityUploadOpen = shallowRef(false)
 const stepSubmitting = shallowRef(false)
 const qualitySubmitting = shallowRef(false)
+const qrGenerating = shallowRef(false)
 const deletingStepId = shallowRef<number | null>(null)
 const deletingQualityReportId = shallowRef<number | null>(null)
 const id = computed(() => Number(route.params.id || 0))
@@ -123,16 +125,25 @@ async function deleteStep(stepId: number) {
   }
 }
 
-function openQrGeneration() {
-  if (!detail.value || !selectedBatch.value) return
-  router.push({
-    path: '/qrcodes/generate',
-    query: {
-      productId: detail.value.product.id,
-      quantity: selectedBatch.value.quantity,
-      productionBatch: selectedBatch.value.batchNo,
-    },
-  })
+async function generateCurrentBatchQrCodes() {
+  if (!selectedBatch.value) return
+
+  const batchId = selectedBatch.value.id
+  qrGenerating.value = true
+
+  try {
+    const result = await generateProductionBatchQrCodes(batchId)
+    message.success(
+      `已按${qrTypeLabels[result.qrCodeType]}生成 ${result.quantity.toLocaleString(
+        'zh-CN',
+      )} 个二维码`,
+    )
+    await load(batchId)
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '二维码生成失败')
+  } finally {
+    qrGenerating.value = false
+  }
 }
 
 function openLabels(action: 'preview' | 'print' = 'preview') {
@@ -230,9 +241,11 @@ watch(id, () => load(null), { immediate: true })
                   auth.hasPermission('qrcode.bind')
                 "
                 type="primary"
-                @click="openQrGeneration"
+                :loading="qrGenerating"
+                :disabled="selectedBatch.qrTotal > 0"
+                @click="generateCurrentBatchQrCodes"
               >
-                生成二维码
+                {{ selectedBatch.qrTotal > 0 ? '二维码已生成' : '生成二维码' }}
               </a-button>
               <a-button
                 v-if="auth.hasPermission('product.edit')"

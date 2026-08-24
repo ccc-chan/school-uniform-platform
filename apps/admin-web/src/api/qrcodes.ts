@@ -47,6 +47,15 @@ export interface QrGenerationResult {
   quantity: number
 }
 
+export interface ProductionBatchQrGenerationResult {
+  generationBatchId: number
+  generationBatchNo: string
+  productionBatch: string
+  productName: string
+  qrCodeType: 'product' | 'batch' | 'school'
+  quantity: number
+}
+
 export interface QrBatchGenerationInput {
   productCode: string
   quantity: number
@@ -180,6 +189,16 @@ export function generateQrCodes(data: QrGenerationInput) {
     method: 'POST',
     body: JSON.stringify(data),
   })
+}
+
+export function generateProductionBatchQrCodes(batchId: number) {
+  return request<ProductionBatchQrGenerationResult>(
+    `/api/v1/production/batches/${batchId}/qrcodes`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  )
 }
 
 export function batchGenerateQrCodes(items: QrBatchGenerationInput[]) {

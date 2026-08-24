@@ -101,6 +101,14 @@ module.exports = (app) => {
   router.put('/api/v1/products/:id', auth, productMenu, productPermission('product.edit'), controller.products.update)
   router.patch('/api/v1/products/:id/status', auth, productMenu, productPermission('product.status'), controller.products.updateStatus)
   router.delete('/api/v1/products/:id', auth, productMenu, productPermission('product.delete'), controller.products.destroy)
+  router.post(
+    '/api/v1/production/batches/:id/qrcodes',
+    auth,
+    productMenu,
+    qrcodePermission('qrcode.generate'),
+    qrcodePermission('qrcode.bind'),
+    controller.qrcodes.generateProductionBatch,
+  )
 
   // 二维码中心。
   router.get('/api/v1/qrcodes/overview', auth, qrcodeMenu, qrcodePermission('qrcode.view'), controller.qrcodes.overview)
@@ -149,21 +157,12 @@ module.exports = (app) => {
   router.patch('/api/v1/quality/reports/:id/status', auth, qualityMenu, qualityPermission('quality.report.review'), controller.quality.reviewReport)
   router.delete('/api/v1/quality/reports/:id', auth, qualityMenu, qualityPermission('quality.report.create'), controller.quality.deleteReport)
   router.get('/api/v1/quality/reports/:id/file', auth, qualityMenu, qualityPermission('quality.report.download'), controller.quality.reportFile)
-  router.get('/api/v1/quality/items', auth, qualityMenu, qualityPermission('quality.view'), controller.quality.items)
-  router.post('/api/v1/quality/items', auth, qualityMenu, qualityPermission('quality.item.manage'), controller.quality.createItem)
-  router.put('/api/v1/quality/items/:id', auth, qualityMenu, qualityPermission('quality.item.manage'), controller.quality.updateItem)
-  router.patch('/api/v1/quality/items/:id/status', auth, qualityMenu, qualityPermission('quality.item.manage'), controller.quality.updateItemStatus)
   router.get('/api/v1/quality/history', auth, qualityMenu, qualityPermission('quality.view'), controller.quality.history)
 
   // 品牌中心。
   router.get('/api/v1/brand/profile', auth, brandMenu, brandPermission('brand.view'), controller.brand.profile)
   router.put('/api/v1/brand/profile', auth, brandMenu, brandPermission('brand.profile.manage'), controller.brand.updateProfile)
   router.get('/api/v1/brand/media/:id', auth, brandMenu, brandPermission('brand.view'), controller.brand.media)
-  router.get('/api/v1/brand/assets/:type', auth, brandMenu, brandPermission('brand.view'), controller.brand.assets)
-  router.post('/api/v1/brand/assets/:type', auth, brandMenu, brandAssetPermission, controller.brand.createAsset)
-  router.put('/api/v1/brand/assets/:type/:id', auth, brandMenu, brandAssetPermission, controller.brand.updateAsset)
-  router.patch('/api/v1/brand/assets/:type/:id/status', auth, brandMenu, brandAssetPermission, controller.brand.updateAssetStatus)
-  router.delete('/api/v1/brand/assets/:type/:id', auth, brandMenu, brandAssetPermission, controller.brand.deleteAsset)
 
   // 系统管理；删除账号和角色还需要超级管理员权限。
   router.get('/api/v1/system/employees', auth, systemMenu, controller.system.employees)
