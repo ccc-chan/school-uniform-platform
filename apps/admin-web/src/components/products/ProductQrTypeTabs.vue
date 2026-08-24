@@ -44,21 +44,23 @@ const options: Array<{
 <style scoped>
 .product-qr-tabs {
   display: inline-flex;
-  padding: 3px;
-  border-radius: 10px;
-  background: #f1f5f9;
+  gap: 8px;
 }
 
 .product-qr-tabs__item {
-  min-width: 70px;
+  min-width: 64px;
   height: 34px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: 0;
   border-radius: 8px;
-  color: #475569;
-  background: transparent;
+  color: #5f7188;
+  background: #edf2f8;
   font-size: 13px;
   cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .product-qr-tabs__item--active {
@@ -66,6 +68,11 @@ const options: Array<{
   background: #2563eb;
   box-shadow: 0 4px 10px rgb(37 99 235 / 24%);
   font-weight: 600;
+}
+
+.product-qr-tabs__item:focus-visible {
+  outline: 2px solid #93b4f7;
+  outline-offset: 2px;
 }
 
 .product-qr-tabs__item:disabled {
@@ -78,11 +85,18 @@ const options: Array<{
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     width: 100%;
+    gap: 6px;
   }
 
   .product-qr-tabs__item {
     min-width: 0;
     padding: 0 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-qr-tabs__item {
+    transition: none;
   }
 }
 </style>

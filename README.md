@@ -31,7 +31,7 @@ npm run db:migrate:dev --workspace=@school-uniform/api
 npm run db:seed:dev --workspace=@school-uniform/api
 ```
 
-数据库首次初始化后，默认管理员账号为 `admin`，密码为 `admin123`。数据库只保存 bcrypt 密码摘要。
+数据库首次初始化后，默认管理员账号为 `admin`，密码为 `admin123`。手机号 `13800000000` 数据库只保存 bcrypt 密码摘要。
 
 常用数据库命令：
 

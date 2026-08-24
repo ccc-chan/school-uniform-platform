@@ -2,7 +2,7 @@
  * @Author: Chan
  * @Date: 2026-07-15 15:32:32
  * @LastEditors: chan
- * @LastEditTime: 2026-07-16 14:50:55
+ * @LastEditTime: 2026-08-24 09:33:18
  * @FilePath: /school-uniform-platform/apps/admin-web/vite.config.ts
  * @Description:
  *
@@ -52,8 +52,7 @@ export default defineConfig(({ mode }) => {
       port: 5174,
       proxy: {
         '/api': {
-          target:
-            env.API_PROXY_TARGET || 'http://111.228.47.54',
+          target: env.API_PROXY_TARGET,
           changeOrigin: true,
         },
       },

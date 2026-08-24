@@ -53,9 +53,6 @@ async function submit() {
   if (
     !form.name.trim() ||
     !form.code.trim() ||
-    !form.style.trim() ||
-    !form.color.trim() ||
-    !form.sizes.length ||
     (!form.image && !existingImageId.value)
   ) {
     message.warning('请完整填写必填信息并上传产品图片')

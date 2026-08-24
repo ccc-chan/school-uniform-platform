@@ -49,12 +49,7 @@ function invalid(value, hasImage) {
     !value.name ||
     !value.code ||
     !value.category ||
-    !value.qrCodeType ||
-    !value.applicableSchools.length ||
-    !value.season ||
-    !value.style ||
-    !value.color ||
-    !value.sizes.length
+    !value.qrCodeType
   ) {
     return '请完整填写产品必填信息'
   }
@@ -63,7 +58,7 @@ function invalid(value, hasImage) {
   }
   if (
     !categories.has(value.category) ||
-    !seasons.has(value.season) ||
+    (value.season && !seasons.has(value.season)) ||
     !qrCodeTypes.has(value.qrCodeType)
   ) {
     return '产品分类、二维码类型或季节无效'

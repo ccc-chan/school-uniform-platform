@@ -62,22 +62,25 @@ const destroy = (p: Product) =>
 onMounted(() => safe(load, '产品数据加载失败'))
 </script>
 <template>
-  <section class="mx-auto max-w-400 space-y-4">
-    <div class="page-card">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="page-title">产品列表</h2>
-          <p class="mb-0 mt-2 text-secondary">维护产品信息与启用状态</p>
-        </div>
-        <a-button
-          v-if="has('product.create')"
-          type="primary"
-          @click="router.push('/products/new')"
-          >新建产品</a-button
-        >
+  <section class="product-list-page">
+    <header class="product-list-page__header">
+      <div>
+        <h2 class="page-title">产品列表</h2>
+        <p class="product-list-page__subtitle">维护产品信息与启用状态</p>
       </div>
+      <a-button
+        v-if="has('product.create')"
+        class="product-list-page__create"
+        type="primary"
+        @click="router.push('/products/new')"
+      >
+        <span aria-hidden="true">＋</span>
+        新建产品
+      </a-button>
+    </header>
+
+    <div class="product-list-page__filters">
       <ProductFilters
-        class="mt-5"
         :filters="filters"
         :loading="loading"
         @update:filters="setFilters"
@@ -92,7 +95,7 @@ onMounted(() => safe(load, '产品数据加载失败'))
       @select="selectQrCodeType"
     />
 
-    <div>
+    <div class="product-list-page__results">
       <ProductTable
         :items="items"
         :loading="loading"
@@ -107,10 +110,10 @@ onMounted(() => safe(load, '产品数据加载失败'))
       />
       <div
         v-if="total"
-        class="mt-5 flex flex-col gap-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between"
+        class="product-list-page__pagination"
       >
-        <span>共 {{ total }} 个产品</span
-        ><a-pagination
+        <span>共 {{ total }} 个产品</span>
+        <a-pagination
           :current="page"
           :page-size="pageSize"
           :total="total"
@@ -120,3 +123,83 @@ onMounted(() => safe(load, '产品数据加载失败'))
     </div>
   </section>
 </template>
+
+<style scoped>
+.product-list-page {
+  display: flex;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding-bottom: 16px;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.product-list-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.product-list-page__subtitle {
+  margin: 6px 0 0;
+  color: #7c8da5;
+  font-size: 13px;
+}
+
+.product-list-page__create {
+  height: 40px;
+  padding-inline: 18px;
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgb(37 99 235 / 22%);
+  font-weight: 600;
+}
+
+.product-list-page__create span {
+  margin-right: 4px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.product-list-page__filters {
+  padding: 16px;
+  border: 1px solid #dce5f1;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.product-list-page__results {
+  min-width: 0;
+}
+
+.product-list-page__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-inline: 4px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+@media (max-width: 639px) {
+  .product-list-page__header {
+    align-items: flex-start;
+  }
+
+  .product-list-page__create {
+    padding-inline: 12px;
+  }
+
+  .product-list-page__filters {
+    padding: 12px;
+  }
+
+  .product-list-page__pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

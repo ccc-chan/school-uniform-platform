@@ -41,8 +41,10 @@ class ProductsService extends Service {
     }
 
     if (permissions) {
+      const canViewAllFields = permissions.includes('view')
+
       for (const [key, code] of Object.entries(fieldMap)) {
-        if (!permissions.includes(code)) delete data[key]
+        if (!canViewAllFields && !permissions.includes(code)) delete data[key]
       }
     }
 
