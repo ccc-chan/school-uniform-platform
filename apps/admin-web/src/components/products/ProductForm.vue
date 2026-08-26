@@ -56,8 +56,8 @@ const fields: ConfigFormField[] = [
     key: 'category',
     label: '产品分类',
     type: 'select',
-    required: true,
     options: productCategoryOptions,
+    componentProps: { allowClear: true },
   },
   {
     key: 'qrCodeType',

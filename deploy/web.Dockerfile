@@ -12,7 +12,9 @@ RUN npm ci --workspace=@school-uniform/admin-web --include-workspace-root \
 COPY apps/admin-web apps/admin-web
 
 ARG VITE_QR_PUBLIC_BASE_URL
+ARG VITE_QR_ALLOW_HTTP_IN_TEST=false
 ENV VITE_QR_PUBLIC_BASE_URL=${VITE_QR_PUBLIC_BASE_URL}
+ENV VITE_QR_ALLOW_HTTP_IN_TEST=${VITE_QR_ALLOW_HTTP_IN_TEST}
 
 RUN npm run build --workspace=@school-uniform/admin-web
 

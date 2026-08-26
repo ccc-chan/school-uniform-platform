@@ -145,6 +145,7 @@ services:
       dockerfile: deploy/web.Dockerfile
       args:
         VITE_QR_PUBLIC_BASE_URL: ${VITE_QR_PUBLIC_BASE_URL}
+        VITE_QR_ALLOW_HTTP_IN_TEST: ${VITE_QR_ALLOW_HTTP_IN_TEST:-false}
     restart: unless-stopped
     # 只有 Web 端口映射到宿主机。
     ports:

@@ -187,14 +187,9 @@ function requestClose() {
 async function submit() {
   if (
     !form.name.trim() ||
-    !form.category ||
-    !form.season ||
-    !form.color.trim() ||
-    !fabricComposition.value ||
-    !form.sizes.length ||
     (!form.image && !existingImageId.value)
   ) {
-    message.warning('请完整填写必填信息并上传产品图片')
+    message.warning('请填写产品名称并上传产品图片')
     return
   }
 
@@ -302,23 +297,27 @@ onBeforeUnmount(clearPreview)
           </label>
 
           <label class="product-create-drawer__field">
-            <span>产品分类 <em>*</em></span>
+            <span>产品分类</span>
             <a-select
               v-model:value="form.category"
               :options="productCategoryOptions"
+              allow-clear
+              placeholder="请选择"
             />
           </label>
 
           <label class="product-create-drawer__field">
-            <span>季节 <em>*</em></span>
+            <span>季节</span>
             <a-select
               v-model:value="form.season"
               :options="productSeasonOptions"
+              allow-clear
+              placeholder="请选择"
             />
           </label>
 
           <label class="product-create-drawer__field">
-            <span>颜色 <em>*</em></span>
+            <span>颜色</span>
             <a-input v-model:value="form.color" placeholder="如：蓝色" />
           </label>
 
@@ -334,10 +333,11 @@ onBeforeUnmount(clearPreview)
 
         <div class="product-create-drawer__form-grid">
           <label class="product-create-drawer__field">
-            <span>面料成分 <em>*</em></span>
+            <span>面料成分</span>
             <a-select
               v-model:value="fabricComposition"
               :options="fabricOptions"
+              allow-clear
               placeholder="请选择"
             />
           </label>
@@ -351,7 +351,7 @@ onBeforeUnmount(clearPreview)
 
       <section class="product-create-drawer__section">
         <h3 class="product-create-drawer__section-title">
-          支持尺码 <em>*</em>
+          支持尺码
         </h3>
 
         <div class="product-create-drawer__sizes">

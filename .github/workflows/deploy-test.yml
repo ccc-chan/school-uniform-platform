@@ -58,6 +58,7 @@ jobs:
             dockerfile: deploy/web.Dockerfile
             build_args: |
               VITE_QR_PUBLIC_BASE_URL=http://111.228.47.54:18080
+              VITE_QR_ALLOW_HTTP_IN_TEST=true
     steps:
       - name: Checkout
         uses: actions/checkout@v6

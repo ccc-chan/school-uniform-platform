@@ -129,6 +129,7 @@ WEB_PORT=18080
 API_IMAGE=ghcr.io/ccc-chan/school-uniform-platform-api:test-latest
 WEB_IMAGE=ghcr.io/ccc-chan/school-uniform-platform-web:test-latest
 VITE_QR_PUBLIC_BASE_URL=http://111.228.47.54:18080
+VITE_QR_ALLOW_HTTP_IN_TEST=true
 ```
 
 ### GitHub Environment
