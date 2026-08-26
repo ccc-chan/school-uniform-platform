@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, shallowRef } from 'vue'
 import type { QrLabelBatch, QrLabelItem } from '@/api/qrcodes'
 import QrLabelArtwork from './QrLabelArtwork.vue'
 import {
@@ -22,15 +22,33 @@ const props = defineProps<{
 }>()
 const labelLayout = defineModel<LabelLayout>('labelLayout', { required: true })
 
+interface PanState {
+  pointerId: number
+  startClientX: number
+  startClientY: number
+  startX: number
+  startY: number
+}
+
+const panOffset = shallowRef({ x: 0, y: 0 })
+const panState = shallowRef<PanState | null>(null)
+
 const millimeterToPixel = 3.7795275591
-const previewScale = computed(() => {
+const minimumZoom = 0.5
+const maximumZoom = 2
+const zoom = shallowRef(1)
+
+const fitScale = computed(() => {
   const rawWidth = props.dimensions.width * millimeterToPixel
   const rawHeight = props.dimensions.height * millimeterToPixel
   return Math.min(1.35, 560 / rawWidth, 470 / rawHeight)
 })
+const previewScale = computed(() => fitScale.value * zoom.value)
+const zoomPercent = computed(() => Math.round(zoom.value * 100))
 const frameStyle = computed(() => ({
   width: `${props.dimensions.width * millimeterToPixel * previewScale.value}px`,
   height: `${props.dimensions.height * millimeterToPixel * previewScale.value}px`,
+  transform: `translate3d(${panOffset.value.x}px, ${panOffset.value.y}px, 0)`,
 }))
 const artworkWrapStyle = computed(() => ({
   transform: `scale(${previewScale.value})`,
@@ -42,6 +60,68 @@ const sizeCaption = computed(() => {
   const area = Number((width * height).toFixed(1))
   return `${width} × ${height} cm · 面积 ${area} cm² · 显示 ${props.selectedFields.length}/6 项`
 })
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(maximum, Math.max(minimum, value))
+}
+
+function handleWheel(event: WheelEvent) {
+  const intensity =
+    event.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? 0.0015 : 0.05
+  const nextZoom = zoom.value * Math.exp(-event.deltaY * intensity)
+  zoom.value = Number(
+    clamp(nextZoom, minimumZoom, maximumZoom).toFixed(2),
+  )
+}
+
+function resetZoom() {
+  zoom.value = 1
+  panOffset.value = { x: 0, y: 0 }
+}
+
+function startPan(event: PointerEvent) {
+  if (event.button !== 0) return
+
+  const target = event.target
+  if (
+    target instanceof Element &&
+    target.closest('.qr-label-artwork__block')
+  ) {
+    return
+  }
+
+  const element = event.currentTarget as HTMLElement
+  event.preventDefault()
+  element.setPointerCapture(event.pointerId)
+  panState.value = {
+    pointerId: event.pointerId,
+    startClientX: event.clientX,
+    startClientY: event.clientY,
+    startX: panOffset.value.x,
+    startY: panOffset.value.y,
+  }
+}
+
+function movePan(event: PointerEvent) {
+  const state = panState.value
+  if (!state || state.pointerId !== event.pointerId) return
+
+  panOffset.value = {
+    x: state.startX + event.clientX - state.startClientX,
+    y: state.startY + event.clientY - state.startClientY,
+  }
+}
+
+function finishPan(event: PointerEvent) {
+  const state = panState.value
+  if (!state || state.pointerId !== event.pointerId) return
+
+  const element = event.currentTarget as HTMLElement
+  if (element.hasPointerCapture(event.pointerId)) {
+    element.releasePointerCapture(event.pointerId)
+  }
+  panState.value = null
+}
 
 function resetLayout() {
   labelLayout.value = createDefaultLabelLayout()
@@ -56,7 +136,14 @@ function resetLayout() {
         <h3>标签预览</h3>
       </div>
       <div class="label-preview-card__tools">
-        <span>拖动内容调整位置</span>
+        <span>滚轮缩放 · 拖动画布/内容</span>
+        <button
+          type="button"
+          title="恢复 100% 缩放并居中画布"
+          @click="resetZoom"
+        >
+          {{ zoomPercent }}%
+        </button>
         <button type="button" @click="resetLayout">复位布局</button>
       </div>
     </header>
@@ -68,7 +155,19 @@ function resetLayout() {
         description="暂无已绑定二维码的生产批次"
       />
       <div v-else class="label-preview-card__sample">
-        <div class="label-preview-card__frame" :style="frameStyle">
+        <div
+          class="label-preview-card__frame"
+          :class="{
+            'label-preview-card__frame--panning': panState,
+          }"
+          :style="frameStyle"
+          title="滚轮缩放，拖动空白区域平移画布"
+          @wheel.prevent.stop="handleWheel"
+          @pointerdown="startPan"
+          @pointermove="movePan"
+          @pointerup="finishPan"
+          @pointercancel="finishPan"
+        >
           <div :style="artworkWrapStyle">
             <QrLabelArtwork
               :batch="batch"
@@ -161,11 +260,14 @@ function resetLayout() {
 
 .label-preview-card__stage {
   display: flex;
-  min-height: 560px;
+  box-sizing: border-box;
+  height: 560px;
   align-items: center;
   justify-content: center;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 30px;
+  scrollbar-gutter: stable;
   background:
     linear-gradient(90deg, rgb(255 255 255 / 38%) 1px, transparent 1px),
     linear-gradient(rgb(255 255 255 / 38%) 1px, transparent 1px),
@@ -175,16 +277,27 @@ function resetLayout() {
 
 .label-preview-card__sample {
   display: flex;
+  flex: none;
   align-items: center;
   flex-direction: column;
   gap: 14px;
+  margin: auto;
 }
 
 .label-preview-card__frame {
+  flex: none;
   overflow: hidden;
   border: 1px dashed #c4ceda;
   background: #ffffff;
   box-shadow: 0 15px 30px rgb(51 65 85 / 15%);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  will-change: transform;
+}
+
+.label-preview-card__frame--panning {
+  cursor: grabbing;
 }
 
 .label-preview-card__sample p {
@@ -196,7 +309,7 @@ function resetLayout() {
 
 @media (max-width: 900px) {
   .label-preview-card__stage {
-    min-height: 480px;
+    height: 480px;
   }
 }
 
@@ -211,7 +324,7 @@ function resetLayout() {
   }
 
   .label-preview-card__stage {
-    min-height: 420px;
+    height: 420px;
     padding: 18px;
   }
 }
