@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import QRCode from 'qrcode'
 import { message } from 'ant-design-vue'
-import {
-  getQrLabelBatch,
-  type QrLabelBatchPage,
-} from '@/api/qrcodes'
+import { getQrLabelBatch, type QrLabelBatchPage } from '@/api/qrcodes'
 import { buildQrTraceUrl } from '@/utils/qr-payload'
 
 const props = defineProps<{
@@ -48,14 +45,17 @@ async function load() {
       keyword.value,
     )
     const images = await Promise.all(
-      nextResult.items.map(async (item) => [
-        item.id,
-        await QRCode.toDataURL(buildQrTraceUrl(item.code), {
-          width: 180,
-          margin: 2,
-          errorCorrectionLevel: 'M',
-        }),
-      ] as const),
+      nextResult.items.map(
+        async (item) =>
+          [
+            item.id,
+            await QRCode.toDataURL(buildQrTraceUrl(item.code), {
+              width: 180,
+              margin: 2,
+              errorCorrectionLevel: 'M',
+            }),
+          ] as const,
+      ),
     )
     if (sequence !== loadSequence) return
     result.value = nextResult
@@ -64,7 +64,9 @@ async function load() {
     if (sequence === loadSequence) {
       result.value = null
       qrImages.value = {}
-      message.error(error instanceof Error ? error.message : '二维码列表加载失败')
+      message.error(
+        error instanceof Error ? error.message : '二维码列表加载失败',
+      )
     }
   } finally {
     if (sequence === loadSequence) loading.value = false
@@ -95,16 +97,13 @@ function hideCodeTooltip(itemId: number) {
   }
 }
 
-watch(
-  [open, () => props.batchNo],
-  ([visible]) => {
-    if (!visible) return
-    page.value = 1
-    searchDraft.value = ''
-    keyword.value = ''
-    load()
-  },
-)
+watch([open, () => props.batchNo], ([visible]) => {
+  if (!visible) return
+  page.value = 1
+  searchDraft.value = ''
+  keyword.value = ''
+  load()
+})
 
 watch(page, () => {
   if (open.value) load()
@@ -167,7 +166,11 @@ watch(page, () => {
             </a-tooltip>
           </article>
         </div>
-        <a-empty v-else class="qr-list-modal__empty" description="没有匹配的二维码" />
+        <a-empty
+          v-else
+          class="qr-list-modal__empty"
+          description="没有匹配的二维码"
+        />
       </div>
     </a-spin>
 
@@ -272,7 +275,7 @@ watch(page, () => {
 }
 .qr-list-modal__footer {
   display: flex;
-  margin: 0 -24px -20px;
+  margin: 0 -24px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
