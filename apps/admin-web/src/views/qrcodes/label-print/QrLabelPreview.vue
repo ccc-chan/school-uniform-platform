@@ -4,9 +4,10 @@ import type { QrLabelBatch, QrLabelItem } from '@/api/qrcodes'
 import QrLabelArtwork from './QrLabelArtwork.vue'
 import {
   createDefaultLabelLayout,
-  type LabelLayout,
+  type CustomLabelLayer,
   type LabelDimensions,
   type LabelField,
+  type LabelLayout,
   type LabelStyleConfig,
 } from './useQrLabelPrint'
 
@@ -16,157 +17,88 @@ const props = defineProps<{
   companyName: string
   selectedFields: readonly LabelField[]
   dimensions: LabelDimensions
-  labelStyle: LabelStyleConfig
   qrDataUrl: string
+  labelImageUrl: string
   loading: boolean
 }>()
 const labelLayout = defineModel<LabelLayout>('labelLayout', { required: true })
-
-interface PanState {
-  pointerId: number
-  startClientX: number
-  startClientY: number
-  startX: number
-  startY: number
-}
-
-const panOffset = shallowRef({ x: 0, y: 0 })
-const panState = shallowRef<PanState | null>(null)
+const customLayers = defineModel<CustomLabelLayer[]>('customLayers', { required: true })
+const labelStyle = defineModel<LabelStyleConfig>('labelStyle', { required: true })
 
 const millimeterToPixel = 3.7795275591
-const minimumZoom = 0.5
-const maximumZoom = 2
 const zoom = shallowRef(1)
 
 const fitScale = computed(() => {
   const rawWidth = props.dimensions.width * millimeterToPixel
   const rawHeight = props.dimensions.height * millimeterToPixel
-  return Math.min(1.35, 560 / rawWidth, 470 / rawHeight)
+  return Math.min(1.45, 520 / rawWidth, 555 / rawHeight)
 })
 const previewScale = computed(() => fitScale.value * zoom.value)
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
 const frameStyle = computed(() => ({
   width: `${props.dimensions.width * millimeterToPixel * previewScale.value}px`,
   height: `${props.dimensions.height * millimeterToPixel * previewScale.value}px`,
-  transform: `translate3d(${panOffset.value.x}px, ${panOffset.value.y}px, 0)`,
 }))
 const artworkWrapStyle = computed(() => ({
   transform: `scale(${previewScale.value})`,
   transformOrigin: 'left top',
 }))
-const sizeCaption = computed(() => {
-  const width = Number((props.dimensions.width / 10).toFixed(1))
-  const height = Number((props.dimensions.height / 10).toFixed(1))
-  const area = Number((width * height).toFixed(1))
-  return `${width} × ${height} cm · 面积 ${area} cm² · 显示 ${props.selectedFields.length}/6 项`
-})
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value))
 }
 
+function changeZoom(change: number) {
+  zoom.value = Number(clamp(zoom.value + change, 0.5, 2).toFixed(2))
+}
+
 function handleWheel(event: WheelEvent) {
-  const intensity =
-    event.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? 0.0015 : 0.05
-  const nextZoom = zoom.value * Math.exp(-event.deltaY * intensity)
-  zoom.value = Number(
-    clamp(nextZoom, minimumZoom, maximumZoom).toFixed(2),
-  )
-}
+  if (!event.ctrlKey && !event.metaKey) return
 
-function resetZoom() {
-  zoom.value = 1
-  panOffset.value = { x: 0, y: 0 }
-}
-
-function startPan(event: PointerEvent) {
-  if (event.button !== 0) return
-
-  const target = event.target
-  if (
-    target instanceof Element &&
-    target.closest('.qr-label-artwork__block')
-  ) {
-    return
-  }
-
-  const element = event.currentTarget as HTMLElement
   event.preventDefault()
-  element.setPointerCapture(event.pointerId)
-  panState.value = {
-    pointerId: event.pointerId,
-    startClientX: event.clientX,
-    startClientY: event.clientY,
-    startX: panOffset.value.x,
-    startY: panOffset.value.y,
-  }
+  event.stopPropagation()
+  changeZoom(event.deltaY > 0 ? -0.08 : 0.08)
 }
 
-function movePan(event: PointerEvent) {
-  const state = panState.value
-  if (!state || state.pointerId !== event.pointerId) return
-
-  panOffset.value = {
-    x: state.startX + event.clientX - state.startClientX,
-    y: state.startY + event.clientY - state.startClientY,
-  }
-}
-
-function finishPan(event: PointerEvent) {
-  const state = panState.value
-  if (!state || state.pointerId !== event.pointerId) return
-
-  const element = event.currentTarget as HTMLElement
-  if (element.hasPointerCapture(event.pointerId)) {
-    element.releasePointerCapture(event.pointerId)
-  }
-  panState.value = null
+function fitCanvas() {
+  zoom.value = 1
 }
 
 function resetLayout() {
   labelLayout.value = createDefaultLabelLayout()
 }
+
 </script>
 
 <template>
-  <section class="label-preview-card">
-    <header class="label-preview-card__header">
-      <div>
-        <span class="label-preview-card__eyebrow">PRINT BED / 实时校样</span>
-        <h3>标签预览</h3>
-      </div>
-      <div class="label-preview-card__tools">
-        <span>滚轮缩放 · 拖动画布/内容</span>
-        <button
-          type="button"
-          title="恢复 100% 缩放并居中画布"
-          @click="resetZoom"
-        >
-          {{ zoomPercent }}%
-        </button>
+  <section class="label-preview">
+    <header class="label-preview__header">
+      <h2>实时预览</h2>
+      <div class="label-preview__tools">
+        <button type="button" @click="fitCanvas">适应画布</button>
+        <div class="label-preview__zoom" aria-label="预览缩放">
+          <button type="button" aria-label="缩小" @click="changeZoom(-0.1)">−</button>
+          <span>{{ zoomPercent }}%</span>
+          <button type="button" aria-label="放大" @click="changeZoom(0.1)">＋</button>
+        </div>
         <button type="button" @click="resetLayout">复位布局</button>
       </div>
     </header>
 
-    <div class="label-preview-card__stage">
+    <div class="label-preview__stage">
       <a-spin v-if="loading" tip="正在生成预览…" />
       <a-empty
         v-else-if="!batch || !item"
         description="暂无已绑定二维码的生产批次"
       />
-      <div v-else class="label-preview-card__sample">
+      <template v-else>
+        <span class="label-preview__guide label-preview__guide--x" aria-hidden="true" />
+        <span class="label-preview__guide label-preview__guide--y" aria-hidden="true" />
         <div
-          class="label-preview-card__frame"
-          :class="{
-            'label-preview-card__frame--panning': panState,
-          }"
+          class="label-preview__frame"
           :style="frameStyle"
-          title="滚轮缩放，拖动空白区域平移画布"
-          @wheel.prevent.stop="handleWheel"
-          @pointerdown="startPan"
-          @pointermove="movePan"
-          @pointerup="finishPan"
-          @pointercancel="finishPan"
+          title="滚轮滚动画布；Ctrl / ⌘ + 滚轮缩放；选中元素后可用方向键移动"
+          @wheel="handleWheel"
         >
           <div :style="artworkWrapStyle">
             <QrLabelArtwork
@@ -178,154 +110,190 @@ function resetLayout() {
               :label-style="labelStyle"
               :layout="labelLayout"
               :qr-data-url="qrDataUrl"
+              :label-image-url="labelImageUrl"
+              :custom-layers="customLayers"
               editable
               @update:layout="labelLayout = $event"
+              @update:custom-layers="customLayers = $event"
+              @update:label-style="labelStyle = $event"
             />
           </div>
         </div>
-        <p>{{ sizeCaption }}</p>
-      </div>
+      </template>
     </div>
+
+    <footer class="label-preview__footer">
+      <span>辅助线不会打印 · 拖动方块缩放，方向键微调位置</span>
+      <strong>{{ dimensions.width }} × {{ dimensions.height }} mm</strong>
+    </footer>
   </section>
 </template>
 
 <style scoped>
-.label-preview-card {
+.label-preview {
+  display: grid;
   min-width: 0;
+  height: 100%;
+  grid-template-rows: 49px minmax(0, 1fr) 32px;
   overflow: hidden;
-  border: 1px solid #e1e8f0;
-  border-radius: 16px;
+  border: 1px solid #e1e7ef;
+  border-radius: 3px;
   background: #ffffff;
-  box-shadow: 0 12px 32px rgb(30 64 175 / 5%);
 }
 
-.label-preview-card__header {
+.label-preview__header {
   display: flex;
-  min-height: 72px;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 16px 22px;
-  border-bottom: 1px solid #edf1f6;
+  gap: 14px;
+  padding: 0 13px 0 16px;
+  border-bottom: 1px solid #e5eaf1;
 }
 
-.label-preview-card__eyebrow {
-  color: #2f6fed;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
-.label-preview-card__header h3 {
-  margin: 5px 0 0;
+.label-preview__header h2 {
+  margin: 0;
   color: #172033;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 650;
 }
 
-.label-preview-card__tools {
+.label-preview__tools,
+.label-preview__zoom {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
-.label-preview-card__tools span,
-.label-preview-card__tools button {
-  padding: 6px 9px;
-  border-radius: 8px;
-  font-size: 11px;
+.label-preview__tools {
+  gap: 7px;
 }
 
-.label-preview-card__tools span {
-  color: #64748b;
-  background: #f1f5f9;
+.label-preview__tools button,
+.label-preview__zoom span {
+  height: 28px;
+  border: 1px solid #dfe5ed;
+  color: #394454;
+  background: #ffffff;
+  font-size: 10px;
 }
 
-.label-preview-card__tools button {
-  border: 1px solid #dbe7fb;
-  color: #2563eb;
-  background: #f7faff;
-  cursor: pointer;
+.label-preview__tools > button {
+  padding: 0 11px;
+  border-radius: 3px;
 }
 
-.label-preview-card__tools button:hover {
-  border-color: #2f6fed;
-  background: #eff5ff;
+.label-preview__zoom button {
+  width: 28px;
+  padding: 0;
 }
 
-.label-preview-card__tools button:focus-visible {
-  outline: 3px solid rgb(59 130 246 / 24%);
-  outline-offset: 2px;
+.label-preview__zoom button:first-child {
+  border-radius: 3px 0 0 3px;
 }
 
-.label-preview-card__stage {
+.label-preview__zoom button:last-child {
+  border-radius: 0 3px 3px 0;
+}
+
+.label-preview__zoom span {
   display: flex;
-  box-sizing: border-box;
-  height: 560px;
+  width: 58px;
   align-items: center;
   justify-content: center;
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: 30px;
-  scrollbar-gutter: stable;
-  background:
-    linear-gradient(90deg, rgb(255 255 255 / 38%) 1px, transparent 1px),
-    linear-gradient(rgb(255 255 255 / 38%) 1px, transparent 1px),
-    #edf2f8;
-  background-size: 20px 20px;
+  border-width: 1px 0;
+  color: #111827;
+  font-weight: 650;
 }
 
-.label-preview-card__sample {
+.label-preview__tools button:hover {
+  border-color: #85b8ff;
+  color: #1677ff;
+  background: #f5f9ff;
+}
+
+.label-preview__stage {
+  position: relative;
   display: flex;
+  min-height: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: auto;
+  padding: 24px;
+  background: #f4f6f9;
+  scrollbar-width: none;
+}
+
+.label-preview__stage::-webkit-scrollbar {
+  display: none;
+}
+
+.label-preview__guide {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.label-preview__guide--x {
+  top: 50%;
+  right: 0;
+  left: 0;
+  border-top: 1px dashed rgb(22 119 255 / 55%);
+}
+
+.label-preview__guide--y {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 1px dashed rgb(22 119 255 / 55%);
+}
+
+.label-preview__frame {
+  z-index: 1;
   flex: none;
-  align-items: center;
-  flex-direction: column;
-  gap: 14px;
   margin: auto;
-}
-
-.label-preview-card__frame {
-  flex: none;
   overflow: hidden;
-  border: 1px dashed #c4ceda;
+  border: 1px solid #d8dee8;
   background: #ffffff;
-  box-shadow: 0 15px 30px rgb(51 65 85 / 15%);
-  cursor: grab;
-  touch-action: none;
+  box-shadow: 0 8px 22px rgb(31 45 68 / 12%);
   user-select: none;
-  will-change: transform;
 }
 
-.label-preview-card__frame--panning {
-  cursor: grabbing;
+.label-preview__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  border-top: 1px solid #e5eaf1;
+  color: #8a96a8;
+  background: #fafbfc;
+  font-size: 9px;
 }
 
-.label-preview-card__sample p {
-  margin: 0;
-  color: #536785;
-  font-size: 12px;
-  letter-spacing: 0.02em;
+.label-preview__footer strong {
+  color: #5c6879;
+  font-weight: 600;
 }
 
-@media (max-width: 900px) {
-  .label-preview-card__stage {
-    height: 480px;
-  }
+.label-preview button:focus-visible {
+  outline: 2px solid rgb(22 119 255 / 35%);
+  outline-offset: 1px;
 }
 
-@media (max-width: 520px) {
-  .label-preview-card__header {
+@media (max-width: 720px) {
+  .label-preview__header {
+    min-height: 88px;
     align-items: flex-start;
     flex-direction: column;
+    justify-content: center;
   }
 
-  .label-preview-card__tools {
+  .label-preview__tools {
     flex-wrap: wrap;
   }
 
-  .label-preview-card__stage {
-    height: 420px;
-    padding: 18px;
+  .label-preview__stage {
+    min-height: 520px;
   }
 }
 </style>

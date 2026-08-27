@@ -31,6 +31,41 @@ export interface LabelSizePreset extends LabelDimensions {
 export type LabelAlignment = 'left' | 'center' | 'right'
 export type LabelBorderStyle = 'solid' | 'dashed' | 'none'
 export type LabelStylePresetKey = 'classic' | 'minimal' | 'brand'
+export type PrintRangeMode = 'all' | 'custom'
+export type CustomLabelLayerType = 'text' | 'image' | 'divider'
+export type LabelVerticalAlignment = 'top' | 'middle' | 'bottom'
+export type LabelImagePosition = 'before' | 'after'
+
+export interface CustomLabelLayer {
+  id: string
+  type: CustomLabelLayerType
+  name: string
+  content: string
+  imageDataUrl: string
+  alignment: LabelAlignment
+  verticalAlignment: LabelVerticalAlignment
+  fontFamily: string
+  fontSize: number
+  fontScale: number
+  letterSpacing: number
+  lineHeight: number
+  bold: boolean
+  italic: boolean
+  underline: boolean
+  strikethrough: boolean
+  textColor: string
+  backgroundColor: string
+  associatedImageDataUrl: string
+  associatedImageName: string
+  imagePosition: LabelImagePosition
+  imageSize: number
+  imageGap: number
+  imageVerticalAlignment: LabelVerticalAlignment
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
 export interface LabelStyleConfig {
   presetKey: LabelStylePresetKey
@@ -43,7 +78,7 @@ export interface LabelStyleConfig {
   borderStyle: LabelBorderStyle
 }
 
-export type LabelBlockKey = 'company' | 'identity' | 'qrcode'
+export type LabelBlockKey = 'company' | 'image' | 'identity' | 'qrcode'
 
 export interface LabelBlockPosition {
   x: number
@@ -55,6 +90,7 @@ export type LabelLayout = Record<LabelBlockKey, LabelBlockPosition>
 export function createDefaultLabelLayout(): LabelLayout {
   return {
     company: { x: 50, y: 35 },
+    image: { x: 50, y: 20 },
     identity: { x: 50, y: 43 },
     qrcode: { x: 50, y: 57 },
   }
@@ -159,12 +195,18 @@ export function useQrLabelPrint() {
   const selectedSizeKey = shallowRef('30x90')
   const customWidth = shallowRef(30)
   const customHeight = shallowRef(90)
-  const selectedFields = ref<LabelField[]>(LABEL_FIELDS.map((item) => item.value))
+  const selectedFields = ref<LabelField[]>(['qrcode'])
+  const labelImageUrl = shallowRef('')
+  const customLayers = ref<CustomLabelLayer[]>([])
   const labelStyle = ref<LabelStyleConfig>({ ...LABEL_STYLE_PRESETS[0].style })
   const labelLayout = ref<LabelLayout>(createDefaultLabelLayout())
   const loadingBatches = shallowRef(false)
   const loadingPreview = shallowRef(false)
   const printing = shallowRef(false)
+  const printRangeMode = shallowRef<PrintRangeMode>('all')
+  const printRangeStart = shallowRef(1)
+  const printRangeEnd = shallowRef(1)
+  const printCopies = shallowRef(1)
   const printItems = ref<PrintableQrLabel[]>([])
   let loadSequence = 0
   let pageStyle: HTMLStyleElement | null = null
@@ -185,6 +227,17 @@ export function useQrLabelPrint() {
     )
     return { width: preset?.width ?? 30, height: preset?.height ?? 90 }
   })
+  const selectedLabelCount = computed(() => {
+    const total = selectedBatch.value?.labelCount ?? 0
+    if (printRangeMode.value === 'all') return total
+
+    const start = Math.min(total, Math.max(1, printRangeStart.value))
+    const end = Math.min(total, Math.max(start, printRangeEnd.value))
+    return total ? end - start + 1 : 0
+  })
+  const printCount = computed(
+    () => selectedLabelCount.value * Math.max(1, printCopies.value),
+  )
 
   async function loadBatches(preferredBatchNo = '') {
     loadingBatches.value = true
@@ -225,6 +278,8 @@ export function useQrLabelPrint() {
       if (sequence !== loadSequence) return
       batchPage.value = page
       previewQrUrl.value = qrUrl
+      printRangeStart.value = 1
+      printRangeEnd.value = page.total
     } catch (error) {
       if (sequence === loadSequence) {
         batchPage.value = null
@@ -271,7 +326,20 @@ export function useQrLabelPrint() {
     document.head.append(pageStyle)
   }
 
-  async function print() {
+  function selectPrintItems(items: QrLabelItem[], testOnly: boolean) {
+    if (testOnly) return items.slice(0, 1)
+    if (printRangeMode.value === 'all') return items
+
+    const start = Math.max(1, printRangeStart.value)
+    const end = Math.min(items.length, Math.max(start, printRangeEnd.value))
+    return items.slice(start - 1, end)
+  }
+
+  function repeatPrintItems(items: QrLabelItem[], copies: number) {
+    return Array.from({ length: Math.max(1, copies) }, () => items).flat()
+  }
+
+  async function print(testOnly = false) {
     if (!selectedBatchNo.value || !selectedBatch.value) {
       throw new Error('请选择需要打印的生产批次')
     }
@@ -288,7 +356,15 @@ export function useQrLabelPrint() {
     printing.value = true
     try {
       const labels = await loadAllLabels(selectedBatchNo.value)
-      printItems.value = await createPrintableLabels(labels)
+      const rangedLabels = selectPrintItems(labels, testOnly)
+      if (!rangedLabels.length) {
+        throw new Error('当前打印范围内没有可用标签')
+      }
+      const printableLabels = repeatPrintItems(
+        rangedLabels,
+        testOnly ? 1 : printCopies.value,
+      )
+      printItems.value = await createPrintableLabels(printableLabels)
       installPageStyle()
       await nextTick()
       await new Promise<void>((resolve) => {
@@ -316,12 +392,19 @@ export function useQrLabelPrint() {
     customWidth,
     customHeight,
     selectedFields,
+    labelImageUrl,
+    customLayers,
     labelStyle,
     labelLayout,
     dimensions,
     loadingBatches,
     loadingPreview,
     printing,
+    printRangeMode,
+    printRangeStart,
+    printRangeEnd,
+    printCopies,
+    printCount,
     printItems,
     loadBatches,
     selectBatch,
