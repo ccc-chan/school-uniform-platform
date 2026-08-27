@@ -1,13 +1,24 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
 import type { MenuProps } from 'ant-design-vue'
 import type { AuthMenu } from '@/api/auth'
+
+const ChangePasswordModal = defineAsyncComponent(
+  () => import('@/components/layout/ChangePasswordModal.vue'),
+)
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const mobileMenuOpen = shallowRef(false)
 const passwordModalOpen = shallowRef(false)
+const passwordModalMounted = shallowRef(false)
 const openKeys = shallowRef<string[]>([])
+
+function openPasswordModal() {
+  passwordModalMounted.value = true
+  passwordModalOpen.value = true
+}
 
 interface BreadcrumbItem {
   title: string
@@ -380,7 +391,7 @@ async function handleLogout() {
           type="button"
           class="admin-account-profile"
           title="修改密码"
-          @click="passwordModalOpen = true"
+          @click="openPasswordModal"
         >
           <a-avatar :size="34" class="admin-account-avatar">
             {{ avatarText }}
@@ -465,7 +476,10 @@ async function handleLogout() {
       </a-layout-content>
     </a-layout>
 
-    <ChangePasswordModal v-model:open="passwordModalOpen" />
+    <ChangePasswordModal
+      v-if="passwordModalMounted"
+      v-model:open="passwordModalOpen"
+    />
   </a-layout>
 </template>
 

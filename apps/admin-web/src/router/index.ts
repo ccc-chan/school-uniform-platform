@@ -1,8 +1,8 @@
-import AdminLayout from '@/layouts/AdminLayout.vue'
 import { hasAuthSession } from '@/stores/auth'
 import { getDefaultRoute, syncDynamicRoutes } from './dynamic-routes'
 
-// 登录页和无权限页按需加载，减少首屏资源体积。
+// 公共页面和管理端外壳按需加载，避免公开页面加载后台资源。
+const AdminLayout = () => import('@/layouts/AdminLayout.vue')
 const LoginView = () => import('@/views/LoginView.vue')
 const ForbiddenView = () => import('@/views/ForbiddenView.vue')
 const QrTraceView = () => import('@/views/public/QrTraceView.vue')

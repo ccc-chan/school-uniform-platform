@@ -7,8 +7,8 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/admin-web/package.json apps/admin-web/package.json
 
-# 保留 Sequelize CLI，以便容器内执行生产迁移。
-RUN npm ci --workspace=@school-uniform/api --include-workspace-root \
+# 只安装 API 生产依赖；Sequelize CLI 作为生产依赖保留给迁移命令。
+RUN npm ci --workspace=@school-uniform/api --include-workspace-root --omit=dev \
   && npm cache clean --force
 
 COPY --chown=node:node apps/api apps/api
