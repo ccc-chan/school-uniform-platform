@@ -40,8 +40,9 @@ const {
 } = useQrLabelPrint()
 
 const route = useRoute()
-const templateDialogs = useTemplateRef<InstanceType<typeof QrLabelTemplateDialogs>>('templateDialogs')
-const currentLabelName = shallowRef('夏季校服标准')
+const templateDialogs =
+  useTemplateRef<InstanceType<typeof QrLabelTemplateDialogs>>('templateDialogs')
+const currentLabelName = shallowRef('')
 
 const batchOptions = computed(() =>
   batches.value.map((batch) => ({
@@ -55,9 +56,13 @@ const templateSnapshot = computed(() => ({
   height: dimensions.value.height,
   selectedFields: [...selectedFields.value],
   imageDataUrl: labelImageUrl.value,
-  customLayers: JSON.parse(JSON.stringify(customLayers.value)) as typeof customLayers.value,
+  customLayers: JSON.parse(
+    JSON.stringify(customLayers.value),
+  ) as typeof customLayers.value,
   style: { ...labelStyle.value },
-  layout: JSON.parse(JSON.stringify(labelLayout.value)) as typeof labelLayout.value,
+  layout: JSON.parse(
+    JSON.stringify(labelLayout.value),
+  ) as typeof labelLayout.value,
 }))
 
 async function run(action: () => Promise<void>, fallback: string) {
@@ -73,7 +78,10 @@ async function handleSelectBatch(batchNo: string) {
 }
 
 async function handlePrint(testOnly = false) {
-  await run(() => print(testOnly), testOnly ? '测试页准备失败' : '标签打印准备失败')
+  await run(
+    () => print(testOnly),
+    testOnly ? '测试页准备失败' : '标签打印准备失败',
+  )
 }
 
 function applyTemplate(template: LabelTemplateSnapshot) {
@@ -87,9 +95,13 @@ function applyTemplate(template: LabelTemplateSnapshot) {
     ? [...template.selectedFields]
     : [...template.selectedFields, 'qrcode']
   labelImageUrl.value = template.imageDataUrl
-  customLayers.value = JSON.parse(JSON.stringify(template.customLayers)) as typeof customLayers.value
+  customLayers.value = JSON.parse(
+    JSON.stringify(template.customLayers),
+  ) as typeof customLayers.value
   labelStyle.value = { ...template.style }
-  labelLayout.value = JSON.parse(JSON.stringify(template.layout)) as typeof labelLayout.value
+  labelLayout.value = JSON.parse(
+    JSON.stringify(template.layout),
+  ) as typeof labelLayout.value
 }
 
 onMounted(async () => {
@@ -97,6 +109,12 @@ onMounted(async () => {
     () => loadBatches(String(route.query.batchNo || '')),
     '生产批次加载失败',
   )
+
+  if (route.query.source === 'product-detail') {
+    templateDialogs.value?.openCreate()
+    return
+  }
+
   if (route.query.action === 'print' && selectedBatch.value) {
     await handlePrint()
   }
@@ -129,8 +147,6 @@ onMounted(async () => {
         <p>
           <span>当前标签：</span>
           <strong>{{ currentLabelName }}</strong>
-          <i>·</i>
-          {{ dimensions.width }} × {{ dimensions.height }} mm
         </p>
         <div class="label-print-view__template-actions">
           <a-button @click="templateDialogs?.openSave()">
@@ -195,7 +211,10 @@ onMounted(async () => {
         v-for="(item, index) in printItems"
         :key="`${item.id}-${index}`"
         class="qr-label-print-page"
-        :style="{ width: `${dimensions.width}mm`, height: `${dimensions.height}mm` }"
+        :style="{
+          width: `${dimensions.width}mm`,
+          height: `${dimensions.height}mm`,
+        }"
       >
         <QrLabelArtwork
           :batch="selectedBatch"
@@ -334,7 +353,10 @@ onMounted(async () => {
   display: grid;
   height: clamp(620px, calc(100vh - 214px), 760px);
   min-height: 620px;
-  grid-template-columns: minmax(290px, 0.86fr) minmax(450px, 1.62fr) minmax(305px, 1fr);
+  grid-template-columns: minmax(290px, 0.86fr) minmax(450px, 1.62fr) minmax(
+      305px,
+      1fr
+    );
   align-items: stretch;
   gap: 12px;
   margin-top: 12px;

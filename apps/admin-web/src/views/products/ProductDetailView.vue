@@ -153,6 +153,7 @@ function openLabels(action: 'preview' | 'print' = 'preview') {
     query: {
       batchNo: selectedBatch.value.batchNo,
       action,
+      source: 'product-detail',
     },
   })
 }

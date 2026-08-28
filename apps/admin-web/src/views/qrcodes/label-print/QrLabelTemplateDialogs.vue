@@ -339,7 +339,7 @@ defineExpose({ openSave, openCreate })
     <div class="template-create">
       <div class="template-create__main">
         <label class="template-create__label">标签名称</label>
-        <a-input :value="`${currentLabelName}-副本`" readonly />
+        <a-input :value="`${currentLabelName}`" readonly />
 
         <label class="template-create__label">创建方式</label>
         <div class="template-create__modes">
