@@ -175,6 +175,10 @@ const blockStyles = computed<Record<LabelBlockKey, CSSProperties>>(() => ({
     left: `${props.layout.qrcode.x}%`,
     top: `${props.layout.qrcode.y}%`,
   },
+  code: {
+    left: `${props.layout.code.x}%`,
+    top: `${props.layout.code.y}%`,
+  },
 }))
 
 function clamp(value: number, minimum: number, maximum: number) {
@@ -309,7 +313,7 @@ function moveWithKeyboard(event: KeyboardEvent, block: LabelBlockKey) {
 
 function customLayerStyle(layer: CustomLabelLayer): CSSProperties {
   const verticalAlignment = layer.verticalAlignment ?? 'middle'
-  const layerHeight = layer.height ?? (layer.type === 'text' ? 6 : 8)
+  const layerHeight = layer.height ?? (layer.type === 'text' ? 4 : 8)
 
   return {
     left: `${layer.x}%`,
@@ -419,7 +423,7 @@ function startCustomResize(
       x: layer.x,
       y: layer.y,
       width: layer.width,
-      height: layer.height ?? (layer.type === 'text' ? 6 : 8),
+      height: layer.height ?? (layer.type === 'text' ? 4 : 8),
       fontScale: layer.fontScale ?? 100,
     },
   }
@@ -844,13 +848,31 @@ function shown(field: LabelField) {
           @pointercancel.stop="finishQrResize"
         />
       </div>
+
+      <div
+        class="qr-label-artwork__code qr-label-artwork__block"
+        :class="{
+          'qr-label-artwork__block--selected': selectedBlock === 'code',
+        }"
+        :style="blockStyles.code"
+        :tabindex="editable ? 0 : undefined"
+        :role="editable ? 'button' : undefined"
+        :aria-label="`二维码编号 ${item.code}，可拖动或使用方向键调整位置`"
+        @pointerdown="startDrag($event, 'code')"
+        @pointermove="moveDrag"
+        @pointerup="finishDrag"
+        @pointercancel="finishDrag"
+        @keydown="moveWithKeyboard($event, 'code')"
+      >
+        {{ item.code }}
+      </div>
     </div>
   </article>
 </template>
 
 <style scoped>
 .qr-label-artwork {
-  --label-editor-color: #4b5563;
+  --label-editor-color: #94a3b8;
 
   position: relative;
   overflow: hidden;
@@ -895,14 +917,14 @@ function shown(field: LabelField) {
 .qr-label-artwork--editable .qr-label-artwork__custom-layer:hover,
 .qr-label-artwork--editable .qr-label-artwork__custom-layer:focus-visible {
   border-radius: 0.8mm;
-  outline: 0.18mm dashed var(--label-editor-color);
-  outline-offset: 0.25mm;
+  outline: 0.1mm dashed var(--label-editor-color);
+  outline-offset: 0.1mm;
 }
 
 .qr-label-artwork--editable
   .qr-label-artwork__custom-layer--selected {
   border-radius: 0.35mm;
-  outline: 0.18mm solid var(--label-editor-color);
+  outline: 0.1mm solid var(--label-editor-color);
   outline-offset: 0;
 }
 
@@ -967,13 +989,13 @@ function shown(field: LabelField) {
 .qr-label-artwork--editable .qr-label-artwork__block:hover,
 .qr-label-artwork--editable .qr-label-artwork__block:focus-visible {
   border-radius: 0.8mm;
-  outline: 0.18mm dashed var(--label-editor-color);
-  outline-offset: 0.25mm;
+  outline: 0.1mm dashed var(--label-editor-color);
+  outline-offset: 0.1mm;
 }
 
 .qr-label-artwork--editable .qr-label-artwork__block--selected {
   border-radius: 0.35mm;
-  outline: 0.18mm solid var(--label-editor-color);
+  outline: 0.1mm solid var(--label-editor-color);
   outline-offset: 0;
 }
 
@@ -990,7 +1012,7 @@ function shown(field: LabelField) {
   .qr-label-artwork__qr-block.qr-label-artwork__block--selected::after {
   position: absolute;
   inset: 7%;
-  border: 0.18mm solid var(--label-editor-color);
+  border: 0.1mm solid var(--label-editor-color);
   border-radius: 0.35mm;
   content: '';
   pointer-events: none;
@@ -1003,7 +1025,7 @@ function shown(field: LabelField) {
   width: 1.8mm;
   height: 1.8mm;
   box-sizing: border-box;
-  border: 0.35mm solid var(--label-editor-color);
+  border: 0.18mm solid var(--label-editor-color);
   background: #ffffff;
   touch-action: none;
 }
@@ -1167,6 +1189,26 @@ function shown(field: LabelField) {
 .qr-label-artwork__size {
   color: var(--label-accent);
   font-weight: 700;
+}
+
+.qr-label-artwork__code {
+  display: flex;
+  min-height: 1.6mm;
+  max-width: calc(100% - 3mm);
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 0.2mm;
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: calc(0.85mm * var(--label-scale));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .qr-label-artwork__qr-block {

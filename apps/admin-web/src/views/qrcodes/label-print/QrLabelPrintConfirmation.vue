@@ -97,7 +97,8 @@ function changeCopies(change: number) {
 
       <p class="print-confirmation__notice">
         <span aria-hidden="true">ⓘ</span>
-        请确保打印机缩放比例为 100%，以保证标签尺寸准确。
+        打印窗口请选择 {{ dimensions.width }} × {{ dimensions.height }} mm
+        纸张、边距“无”、缩放 100%。若没有该纸张，请先在打印机驱动中添加自定义纸张。
       </p>
 
       <div class="print-confirmation__actions">

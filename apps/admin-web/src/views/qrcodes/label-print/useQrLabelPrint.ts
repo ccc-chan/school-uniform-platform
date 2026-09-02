@@ -78,7 +78,12 @@ export interface LabelStyleConfig {
   borderStyle: LabelBorderStyle
 }
 
-export type LabelBlockKey = 'company' | 'image' | 'identity' | 'qrcode'
+export type LabelBlockKey =
+  | 'company'
+  | 'image'
+  | 'identity'
+  | 'qrcode'
+  | 'code'
 
 export interface LabelBlockPosition {
   x: number
@@ -93,6 +98,7 @@ export function createDefaultLabelLayout(): LabelLayout {
     image: { x: 50, y: 20 },
     identity: { x: 50, y: 43 },
     qrcode: { x: 50, y: 57 },
+    code: { x: 50, y: 78 },
   }
 }
 
@@ -319,10 +325,29 @@ export function useQrLabelPrint() {
   }
 
   function installPageStyle() {
+    const width = dimensions.value.width
+    const height = dimensions.value.height
+
     pageStyle?.remove()
     pageStyle = document.createElement('style')
     pageStyle.dataset.qrLabelPage = 'true'
-    pageStyle.textContent = `@page { size: ${dimensions.value.width}mm ${dimensions.value.height}mm; margin: 0; }`
+    pageStyle.textContent = `
+      @page {
+        size: ${width}mm ${height}mm;
+        margin: 0;
+      }
+
+      @media print {
+        #qr-label-print-sheet {
+          width: ${width}mm !important;
+        }
+
+        .qr-label-print-page {
+          width: ${width}mm !important;
+          height: ${height}mm !important;
+        }
+      }
+    `
     document.head.append(pageStyle)
   }
 

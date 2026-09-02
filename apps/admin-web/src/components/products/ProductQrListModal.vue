@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import QRCode from 'qrcode'
-import { message } from 'ant-design-vue'
+import { Image as AntImage, message } from 'ant-design-vue'
 import { getQrLabelBatch, type QrLabelBatchPage } from '@/api/qrcodes'
 import { buildQrTraceUrl } from '@/utils/qr-payload'
 
@@ -146,10 +146,14 @@ watch(page, () => {
       <div class="qr-list-modal__scroll">
         <div v-if="result?.items.length" class="qr-list-modal__grid">
           <article v-for="item in result.items" :key="item.id">
-            <img
+            <AntImage
               v-if="qrImages[item.id]"
+              wrapper-class-name="qr-list-modal__image"
+              :width="80"
+              :height="80"
               :src="qrImages[item.id]"
               :alt="`二维码 ${item.code}`"
+              :preview="{ src: qrImages[item.id] }"
             />
             <div v-else class="qr-list-modal__placeholder" />
             <a-tooltip
@@ -251,13 +255,21 @@ watch(page, () => {
   background: #fff;
   padding: 12px 8px 9px;
 }
-.qr-list-modal__grid img,
+.qr-list-modal__image,
 .qr-list-modal__placeholder {
   width: 80px;
   height: 80px;
+  overflow: hidden;
   border: 1px solid #dbe5f0;
   border-radius: 9px;
   background: #f8fafc;
+}
+.qr-list-modal__image {
+  cursor: zoom-in;
+}
+.qr-list-modal__image :deep(.ant-image-img) {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 .qr-list-modal__grid span {

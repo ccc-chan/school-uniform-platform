@@ -46,6 +46,7 @@ const createOpen = shallowRef(false)
 const creationMode = shallowRef<'blank' | 'template'>('blank')
 const selectedTemplateId = shallowRef('')
 const templateQuery = shallowRef('')
+const createLabelName = shallowRef('')
 const createSizeKey = shallowRef('30x90')
 const createWidth = shallowRef(30)
 const createHeight = shallowRef(90)
@@ -152,6 +153,8 @@ function openSave() {
 }
 
 function openCreate() {
+  createLabelName.value =
+    props.currentLabelName.trim() || '未命名标签'
   templateQuery.value = ''
   creationMode.value = 'blank'
   selectedTemplateId.value = customTemplates.value[0]?.id ?? ''
@@ -251,6 +254,7 @@ function saveTemplate() {
 }
 
 function createLabel() {
+  const name = createLabelName.value.trim() || '未命名标签'
   const selectedSize = {
     sizeKey: createSizeKey.value,
     width: createWidth.value,
@@ -262,7 +266,7 @@ function createLabel() {
       ...cloneSnapshot(props.snapshot),
       ...selectedSize,
       id: `blank-${Date.now()}`,
-      name: '未命名标签',
+      name,
       category: '空白标签',
       selectedFields: [],
       imageDataUrl: '',
@@ -275,6 +279,7 @@ function createLabel() {
     emit('applyTemplate', {
       ...cloneSnapshot(selectedTemplate.value),
       ...selectedSize,
+      name,
     })
   } else {
     message.warning('暂无可用模板，请选择空白标签')
@@ -338,8 +343,14 @@ defineExpose({ openSave, openCreate })
 
     <div class="template-create">
       <div class="template-create__main">
-        <label class="template-create__label">标签名称</label>
-        <a-input :value="`${currentLabelName}`" readonly />
+        <label class="template-create__label" for="create-label-name">
+          标签名称
+        </label>
+        <a-input
+          id="create-label-name"
+          v-model:value="createLabelName"
+          :maxlength="40"
+        />
 
         <label class="template-create__label">创建方式</label>
         <div class="template-create__modes">

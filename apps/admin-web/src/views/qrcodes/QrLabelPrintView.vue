@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, shallowRef, useTemplateRef } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  shallowRef,
+  useTemplateRef,
+} from 'vue'
 import { message } from 'ant-design-vue'
 import QrLabelArtwork from './label-print/QrLabelArtwork.vue'
 import QrLabelControls from './label-print/QrLabelControls.vue'
@@ -43,6 +49,10 @@ const route = useRoute()
 const templateDialogs =
   useTemplateRef<InstanceType<typeof QrLabelTemplateDialogs>>('templateDialogs')
 const currentLabelName = shallowRef('')
+const editingLabelName = shallowRef(false)
+const labelNameDraft = shallowRef('')
+const labelNameInput =
+  useTemplateRef<HTMLInputElement>('labelNameInput')
 
 const batchOptions = computed(() =>
   batches.value.map((batch) => ({
@@ -84,6 +94,25 @@ async function handlePrint(testOnly = false) {
   )
 }
 
+async function startLabelNameEdit() {
+  labelNameDraft.value = currentLabelName.value || '未命名标签'
+  editingLabelName.value = true
+  await nextTick()
+  labelNameInput.value?.focus()
+  labelNameInput.value?.select()
+}
+
+function commitLabelNameEdit() {
+  currentLabelName.value =
+    labelNameDraft.value.trim() || '未命名标签'
+  editingLabelName.value = false
+}
+
+function cancelLabelNameEdit() {
+  labelNameDraft.value = currentLabelName.value
+  editingLabelName.value = false
+}
+
 function applyTemplate(template: LabelTemplateSnapshot) {
   currentLabelName.value = template.name
   selectedSizeKey.value = template.sizeKey
@@ -105,19 +134,12 @@ function applyTemplate(template: LabelTemplateSnapshot) {
 }
 
 onMounted(async () => {
+  templateDialogs.value?.openCreate()
+
   await run(
     () => loadBatches(String(route.query.batchNo || '')),
     '生产批次加载失败',
   )
-
-  if (route.query.source === 'product-detail') {
-    templateDialogs.value?.openCreate()
-    return
-  }
-
-  if (route.query.action === 'print' && selectedBatch.value) {
-    await handlePrint()
-  }
 })
 </script>
 
@@ -146,7 +168,27 @@ onMounted(async () => {
       <section class="label-print-view__current-label">
         <p>
           <span>当前标签：</span>
-          <strong>{{ currentLabelName }}</strong>
+          <input
+            v-if="editingLabelName"
+            ref="labelNameInput"
+            v-model="labelNameDraft"
+            class="label-print-view__name-input"
+            maxlength="40"
+            aria-label="当前标签名称"
+            @blur="commitLabelNameEdit"
+            @keydown.enter.prevent="commitLabelNameEdit"
+            @keydown.esc.prevent="cancelLabelNameEdit"
+          />
+          <strong
+            v-else
+            role="button"
+            tabindex="0"
+            title="双击修改标签名称"
+            @dblclick.prevent="startLabelNameEdit"
+            @keydown.enter.prevent="startLabelNameEdit"
+          >
+            {{ currentLabelName || '未命名标签' }}
+          </strong>
         </p>
         <div class="label-print-view__template-actions">
           <a-button @click="templateDialogs?.openSave()">
@@ -201,35 +243,37 @@ onMounted(async () => {
       @apply-template="applyTemplate"
     />
 
-    <div
-      v-if="selectedBatch && printItems.length"
-      id="qr-label-print-sheet"
-      class="qr-label-print-sheet"
-      aria-hidden="true"
-    >
+    <Teleport to="body">
       <div
-        v-for="(item, index) in printItems"
-        :key="`${item.id}-${index}`"
-        class="qr-label-print-page"
-        :style="{
-          width: `${dimensions.width}mm`,
-          height: `${dimensions.height}mm`,
-        }"
+        v-if="selectedBatch && printItems.length"
+        id="qr-label-print-sheet"
+        class="qr-label-print-sheet"
+        aria-hidden="true"
       >
-        <QrLabelArtwork
-          :batch="selectedBatch"
-          :item="item"
-          :company-name="companyName"
-          :selected-fields="selectedFields"
-          :dimensions="dimensions"
-          :label-style="labelStyle"
-          :layout="labelLayout"
-          :qr-data-url="item.qrDataUrl"
-          :label-image-url="labelImageUrl"
-          :custom-layers="customLayers"
-        />
+        <div
+          v-for="(item, index) in printItems"
+          :key="`${item.id}-${index}`"
+          class="qr-label-print-page"
+          :style="{
+            width: `${dimensions.width}mm`,
+            height: `${dimensions.height}mm`,
+          }"
+        >
+          <QrLabelArtwork
+            :batch="selectedBatch"
+            :item="item"
+            :company-name="companyName"
+            :selected-fields="selectedFields"
+            :dimensions="dimensions"
+            :label-style="labelStyle"
+            :layout="labelLayout"
+            :qr-data-url="item.qrDataUrl"
+            :label-image-url="labelImageUrl"
+            :custom-layers="customLayers"
+          />
+        </div>
       </div>
-    </div>
+    </Teleport>
   </section>
 </template>
 
@@ -325,7 +369,22 @@ onMounted(async () => {
 .label-print-view__current-label p strong {
   margin-right: 7px;
   color: #111827;
+  cursor: text;
   font-weight: 700;
+}
+
+.label-print-view__name-input {
+  width: min(240px, 32vw);
+  height: 26px;
+  box-sizing: border-box;
+  border: 1px solid #91caff;
+  border-radius: 3px;
+  padding: 2px 7px;
+  color: #111827;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  outline: none;
 }
 
 .label-print-view__current-label p i {
@@ -410,12 +469,17 @@ onMounted(async () => {
   position: fixed;
   top: 0;
   left: -100000px;
+  margin: 0;
+  padding: 0;
 }
 
 .qr-label-print-page {
+  box-sizing: border-box;
   overflow: hidden;
   break-after: page;
+  break-inside: avoid;
   page-break-after: always;
+  page-break-inside: avoid;
 }
 
 .qr-label-print-page:last-child {
@@ -424,20 +488,23 @@ onMounted(async () => {
 }
 
 @media print {
-  body * {
-    visibility: hidden !important;
+  :global(html),
+  :global(body) {
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  #qr-label-print-sheet,
-  #qr-label-print-sheet * {
-    visibility: visible !important;
+  :global(body > :not(#qr-label-print-sheet)) {
+    display: none !important;
   }
 
   #qr-label-print-sheet {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
     display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .qr-label-print-page {

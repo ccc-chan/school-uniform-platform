@@ -72,8 +72,8 @@ function createLayer(type: CustomLabelLayerType, name: string): CustomLabelLayer
     imageVerticalAlignment: 'middle',
     x: 50,
     y: Math.min(84, 18 + index * 11),
-    width: type === 'image' ? 60 : 80,
-    height: type === 'text' ? 6 : 8,
+    width: type === 'image' ? 60 : type === 'text' ? 40 : 80,
+    height: type === 'text' ? 4 : 8,
   }
 }
 
