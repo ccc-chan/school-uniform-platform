@@ -14,7 +14,7 @@ const route = useRoute()
 const router = useRouter()
 const loading = shallowRef(false)
 const options = shallowRef<ProductionOptions>({
-  products: [], employees: [], factories: [], orders: [], batches: [], processes: [],
+  products: [], employees: [], orders: [], batches: [], processes: [],
 })
 const form = shallowRef<ProductionInput>({
   customerName: '',

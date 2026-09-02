@@ -1,30 +1,22 @@
 {
-  "name": "@school-uniform/admin-web",
+  "name": "@school-uniform/school_uniform_info",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --mode dev",
-    "dev:test": "vite --mode test",
     "build": "vue-tsc --noEmit && vite build --mode prod",
-    "build:test": "vue-tsc --noEmit && vite build --mode test",
     "typecheck": "vue-tsc --noEmit",
-    "preview": "vite preview --mode prod"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "ant-design-vue": "4.2.6",
-    "pinia": "3.0.4",
-    "qrcode": "1.5.4",
     "vue": "3.5.39",
     "vue-router": "5.1.0"
   },
   "devDependencies": {
-    "@types/qrcode": "1.5.6",
     "@vitejs/plugin-vue": "6.0.7",
     "typescript": "6.0.3",
     "unocss": "66.7.5",
-    "unplugin-auto-import": "21.0.0",
-    "unplugin-vue-components": "32.1.0",
     "vite": "7.3.6",
     "vue-tsc": "3.3.7"
   }

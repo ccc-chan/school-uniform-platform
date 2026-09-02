@@ -1,12 +1,11 @@
 import { request } from '@/api/http'
 
-// 六类生产资源共享同一套列表、详情、创建、更新和状态接口。
+// 五类生产资源共享同一套列表、详情、创建、更新和状态接口。
 export type ProductionResource =
   | 'orders'
   | 'batches'
   | 'processes'
   | 'records'
-  | 'factories'
   | 'outbounds'
 
 export interface ProductionItem {
@@ -24,7 +23,6 @@ export interface ProductionItem {
   batchNo?: string
   orderId?: number
   productionDate?: string
-  factoryId?: number
   factoryName?: string
   responsibleEmployeeId?: number
   responsibleEmployeeName?: string
@@ -39,12 +37,6 @@ export interface ProductionItem {
   processName?: string
   startedAt?: string
   completedAt?: string
-  code?: string
-  name?: string
-  contactName?: string
-  contactPhone?: string
-  address?: string
-  dailyCapacity?: number
   outboundNo?: string
   outboundDate?: string
   recipient?: string
@@ -59,7 +51,6 @@ export type ProductionInput = Record<string, unknown>
 export interface ProductionOptions {
   products: Array<{ id: number; code: string; name: string }>
   employees: Array<{ id: number; name: string }>
-  factories: Array<{ id: number; code: string; name: string }>
   orders: Array<{
     id: number
     orderNo: string

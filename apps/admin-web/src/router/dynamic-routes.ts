@@ -1,6 +1,6 @@
 import type { RouteRecordRaw, Router } from 'vue-router'
 
-// 当前导航只注册五个快捷入口及其必要的内部页面。
+// 当前导航只注册四个快捷入口及其必要的内部页面。
 const DashboardView = () => import('@/views/DashboardView.vue')
 const ProductListView = () => import('@/views/products/ProductListView.vue')
 const ProductDetailView = () => import('@/views/products/ProductDetailView.vue')
@@ -9,7 +9,6 @@ const QrBindView = () => import('@/views/qrcodes/QrBindView.vue')
 const QrLabelPrintView = () => import('@/views/qrcodes/QrLabelPrintView.vue')
 const QualityReportUploadView = () =>
   import('@/views/quality/QualityReportUploadView.vue')
-const BrandProfileView = () => import('@/views/brand/BrandProfileView.vue')
 const EmployeeAccountsView = () =>
   import('@/views/system/EmployeeAccountsView.vue')
 const RolePermissionsView = () =>
@@ -110,19 +109,6 @@ const definitions: Record<string, RouteRecordRaw[]> = {
       },
     },
   ],
-  shortcut_company_settings: [
-    {
-      path: 'brand/profile',
-      name: 'brand-profile',
-      component: BrandProfileView,
-      meta: {
-        title: '公司设置',
-        requiresAuth: true,
-        menuCode: 'shortcut_company_settings',
-        requiredPermission: 'brand.view',
-      },
-    },
-  ],
   shortcut_system: [
     {
       path: 'system/employees',
@@ -186,9 +172,6 @@ export function getDefaultRoute(menuCodes: string[]) {
   if (menuCodes.includes('shortcut_products')) return '/products'
   if (menuCodes.includes('shortcut_label_print')) {
     return '/qrcodes/label-print'
-  }
-  if (menuCodes.includes('shortcut_company_settings')) {
-    return '/brand/profile'
   }
   if (menuCodes.includes('shortcut_system')) {
     return '/system/employees'

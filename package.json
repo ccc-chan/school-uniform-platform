@@ -11,12 +11,15 @@
   },
   "scripts": {
     "dev:web": "npm run dev --workspace=@school-uniform/admin-web",
+    "dev:info": "npm run dev --workspace=@school-uniform/school_uniform_info",
     "dev:api": "npm run dev --workspace=@school-uniform/api",
     "dev:test:web": "npm run dev:test --workspace=@school-uniform/admin-web",
     "dev:test:api": "npm run dev:test --workspace=@school-uniform/api",
     "build": "npm run build --workspace=@school-uniform/admin-web",
+    "build:info": "npm run build --workspace=@school-uniform/school_uniform_info",
     "build:test": "npm run build:test --workspace=@school-uniform/admin-web",
     "typecheck": "npm run typecheck --workspace=@school-uniform/admin-web",
+    "typecheck:info": "npm run typecheck --workspace=@school-uniform/school_uniform_info",
     "check:api": "npm run check --workspace=@school-uniform/api"
   }
 }

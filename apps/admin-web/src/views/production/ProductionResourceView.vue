@@ -23,7 +23,7 @@ const resource = computed(
 )
 const state = useProductionResource(resource)
 const options = shallowRef<ProductionOptions>({
-  products: [], employees: [], factories: [], orders: [], batches: [], processes: [],
+  products: [], employees: [], orders: [], batches: [], processes: [],
 })
 const editorOpen = shallowRef(false)
 const current = shallowRef<ProductionItem | null>(null)
@@ -33,7 +33,6 @@ const labels: Record<ManagedResource, { title: string; description: string; sing
   batches: { title: '生产批次管理', description: '编排订单批次、生产工厂及负责人', singular: '生产批次' },
   processes: { title: '生产流程管理', description: '配置生产流程节点和消费者展示范围', singular: '流程节点' },
   records: { title: '生产记录', description: '记录员工、工序和生产完成情况', singular: '生产记录' },
-  factories: { title: '工厂管理', description: '维护工厂资料、产能与启用状态', singular: '工厂' },
   outbounds: { title: '出厂管理', description: '记录批次出厂、收货单位和物流状态', singular: '出厂记录' },
 }
 
@@ -47,7 +46,6 @@ const statusOptionsMap: Record<ManagedResource, ConfigOption[]> = {
     { label: '待开始', value: 'pending' }, { label: '进行中', value: 'in_progress' },
     { label: '已完成', value: 'completed' }, { label: '异常', value: 'exception' },
   ],
-  factories: [{ label: '启用', value: 'enabled' }, { label: '停用', value: 'disabled' }],
   outbounds: [
     { label: '待出厂', value: 'pending' }, { label: '已发运', value: 'shipped' },
     { label: '已签收', value: 'received' }, { label: '已取消', value: 'cancelled' },
@@ -58,14 +56,13 @@ const permissionMap: Record<ManagedResource, string> = {
   batches: 'production.batch.manage',
   processes: 'production.process.manage',
   records: 'production.record.manage',
-  factories: 'production.factory.manage',
   outbounds: 'production.outbound.manage',
 }
 
 const statusOptions = computed(() => statusOptionsMap[resource.value])
 const canManage = computed(() => auth.hasPermission(permissionMap[resource.value]))
 const canChangeStatus = computed(
-  () => canManage.value && ['batches', 'processes', 'factories'].includes(resource.value),
+  () => canManage.value && ['batches', 'processes'].includes(resource.value),
 )
 
 const columns = computed<ConfigTableColumn[]>(() => {
@@ -97,15 +94,6 @@ const columns = computed<ConfigTableColumn[]>(() => {
       { title: '数量', dataIndex: 'quantity', key: 'quantity', width: 100 },
       { title: '开始时间', dataIndex: 'startedAt', key: 'startedAt', width: 180 },
       { title: '完成时间', dataIndex: 'completedAt', key: 'completedAt', width: 180 },
-      shared, actions,
-    ],
-    factories: [
-      { title: '工厂编号', dataIndex: 'code', key: 'code', width: 150 },
-      { title: '工厂名称', dataIndex: 'name', key: 'name', width: 180 },
-      { title: '联系人', dataIndex: 'contactName', key: 'contactName', width: 120 },
-      { title: '联系电话', dataIndex: 'contactPhone', key: 'contactPhone', width: 150 },
-      { title: '工厂地址', dataIndex: 'address', key: 'address', width: 280 },
-      { title: '日产能', dataIndex: 'dailyCapacity', key: 'dailyCapacity', width: 110 },
       shared, actions,
     ],
     outbounds: [
@@ -153,15 +141,6 @@ const fields = computed<ConfigFormField[]>(() => {
       { key: 'status', label: '生产状态', type: 'select', required: true, options: statuses },
       { key: 'notes', label: '生产说明', type: 'textarea', span: 2, componentProps: { rows: 3, maxlength: 500 } },
     ],
-    factories: [
-      { key: 'code', label: '工厂编号', type: 'input', required: true },
-      { key: 'name', label: '工厂名称', type: 'input', required: true },
-      { key: 'contactName', label: '联系人', type: 'input', required: true },
-      { key: 'contactPhone', label: '联系电话', type: 'input', required: true },
-      { key: 'dailyCapacity', label: '日产能', type: 'number', required: true, componentProps: { min: 1, precision: 0 } },
-      { key: 'status', label: '工厂状态', type: 'select', required: true, options: statuses },
-      { key: 'address', label: '工厂地址', type: 'textarea', required: true, span: 2, componentProps: { rows: 3, maxlength: 255 } },
-    ],
     outbounds: [
       { key: 'batchId', label: '生产批次', type: 'select', required: true, options: options.value.batches.map((item) => ({ label: `${item.batchNo}（${item.quantity}件）`, value: item.id })) },
       { key: 'quantity', label: '出厂数量', type: 'number', required: true, componentProps: { min: 1, precision: 0 } },
@@ -189,7 +168,6 @@ const defaults = computed<ProductionInput>(() => ({
   startedAt: localIso().slice(0, 16),
   consumerVisible: true,
   nodeOrder: 1,
-  dailyCapacity: 1,
   notes: '',
   description: '',
 }))

@@ -1,30 +1,20 @@
 <script setup lang="ts">
-import { message } from 'ant-design-vue'
 import QrBindingWizard from '@/components/qrcodes/QrBindingWizard.vue'
-import { useQrOptions } from '@/composables/useQrOptions'
+import { useQrBindViewModel } from '@/features/qrcodes/binding/useQrBindViewModel'
 
-const router = useRouter()
-const route = useRoute()
-const { batches, loadingBatches, loadBatches } = useQrOptions()
-const initialProductId = computed(() => Number(route.query.productId || 0))
-const initialProductionBatch = computed(() => String(route.query.productionBatch || ''))
-const initialGenerationBatchId = computed(() =>
-  Number(route.query.generationBatchId || 0),
-)
-const initialQuantity = computed(() => Number(route.query.quantity || 1))
-const returnPath = computed(() =>
-  initialProductId.value
-    ? `/products/${initialProductId.value}`
-    : '/qrcodes/label-print',
-)
+const {
+  batches,
+  loadingBatches,
+  initialProductId,
+  initialProductionBatch,
+  initialGenerationBatchId,
+  initialQuantity,
+  initialize,
+  cancel,
+  complete,
+} = useQrBindViewModel()
 
-onMounted(async () => {
-  try {
-    await loadBatches()
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '二维码批次加载失败')
-  }
-})
+onMounted(initialize)
 </script>
 
 <template>
@@ -40,8 +30,8 @@ onMounted(async () => {
       :initial-production-batch="initialProductionBatch"
       :initial-generation-batch-id="initialGenerationBatchId"
       :initial-quantity="initialQuantity"
-      @cancel="router.push(returnPath)"
-      @success="router.push(returnPath)"
+      @cancel="cancel"
+      @success="complete"
     />
   </section>
 </template>

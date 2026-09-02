@@ -18,23 +18,8 @@ function userError(message) {
   return error
 }
 
-function sqlFilters(query, replacements) {
-  const clauses = []
-  const keyword = String(query.keyword || '').trim()
-  const status = String(query.status || '')
-  if (keyword) {
-    clauses.push('(p.code LIKE :keyword OR p.name LIKE :keyword)')
-    replacements.keyword = `%${keyword}%`
-  }
-  if (['unbound', 'bound', 'activated', 'voided'].includes(status)) {
-    clauses.push('q.status = :status')
-    replacements.status = status
-  }
-  return clauses.length ? `WHERE ${clauses.join(' AND ')}` : ''
-}
-
 /**
- * 管理二维码生成批次、批量写入、统计和生产批次绑定。
+ * 管理二维码生成批次、标签打印和生产批次绑定。
  */
 class QrcodesService extends Service {
   async log(action, targetType, targetId, context, transaction) {
@@ -61,100 +46,6 @@ class QrcodesService extends Service {
     this.ctx.state.operationLogIds.push(Number(row.id))
   }
 
-  async overview(query, permissions) {
-    // 产品和状态相关统计由服务端依据字段权限决定是否返回。
-    const { page, pageSize, offset } =
-      this.ctx.helper.pagination(query)
-    const replacements = {
-      limit: pageSize,
-      offset,
-    }
-    const where = sqlFilters(query, replacements)
-    const [metricRows, rows, countRows] = await Promise.all([
-      this.app.model.query(
-        `SELECT
-          COUNT(*) AS total,
-          SUM(status = 'bound') AS bound,
-          SUM(status = 'unbound') AS unbound,
-          SUM(status = 'activated') AS activated,
-          SUM(status = 'voided') AS voided
-        FROM qr_codes`,
-        { type: QueryTypes.SELECT },
-      ),
-      this.app.model.query(
-        `SELECT
-          p.id AS productId,
-          p.code AS productCode,
-          p.name AS productName,
-          p.style,
-          p.color,
-          COUNT(q.id) AS total,
-          SUM(q.status = 'bound') AS bound,
-          SUM(q.status = 'unbound') AS unbound,
-          SUM(q.status = 'activated') AS activated,
-          SUM(q.status = 'voided') AS voided
-        FROM qr_codes q
-        JOIN qr_generation_batches b
-          ON b.id = q.generation_batch_id
-        JOIN prd_products p ON p.id = b.product_id
-        ${where}
-        GROUP BY p.id, p.code, p.name, p.style, p.color
-        ORDER BY p.id DESC
-        LIMIT :limit OFFSET :offset`,
-        { replacements, type: QueryTypes.SELECT },
-      ),
-      this.app.model.query(
-        `SELECT COUNT(*) AS total FROM (
-          SELECT p.id
-          FROM qr_codes q
-          JOIN qr_generation_batches b
-            ON b.id = q.generation_batch_id
-          JOIN prd_products p ON p.id = b.product_id
-          ${where}
-          GROUP BY p.id
-        ) grouped_products`,
-        { replacements, type: QueryTypes.SELECT },
-      ),
-    ])
-    const metrics = metricRows[0]
-    const countRow = countRows[0]
-    const canSeeProduct = permissions.includes('qrcode.field.product')
-    const canSeeStatus = permissions.includes('qrcode.field.status')
-    const items = rows.map((item) => ({
-      productId: Number(item.productId),
-      ...(canSeeProduct
-        ? {
-            productCode: item.productCode,
-            productName: item.productName,
-            style: item.style,
-            color: item.color,
-          }
-        : {}),
-      total: Number(item.total || 0),
-      ...(canSeeStatus
-        ? {
-            bound: Number(item.bound || 0),
-            unbound: Number(item.unbound || 0),
-            activated: Number(item.activated || 0),
-            voided: Number(item.voided || 0),
-          }
-        : {}),
-    }))
-    return {
-      metrics: {
-        total: Number(metrics?.total || 0),
-        bound: Number(metrics?.bound || 0),
-        unbound: Number(metrics?.unbound || 0),
-        activated: Number(metrics?.activated || 0),
-        voided: Number(metrics?.voided || 0),
-      },
-      items,
-      total: Number(countRow?.total || 0),
-      page,
-      pageSize,
-    }
-  }
-
   async products() {
     const rows = await this.app.model.Product.findAll({
       where: { status: 'enabled' },
@@ -171,12 +62,12 @@ class QrcodesService extends Service {
     }))
   }
 
-  batchNumber(mode) {
+  batchNumber() {
     const stamp = chinaIsoString().replace(/\D/g, '').slice(0, 14)
-    return `${mode === 'batch' ? 'QB' : 'QG'}${stamp}${randomBytes(3).toString('hex').toUpperCase()}`
+    return `QG${stamp}${randomBytes(3).toString('hex').toUpperCase()}`
   }
 
-  async createGenerationBatch(value, mode, transaction) {
+  async createGenerationBatch(value, transaction) {
     // 生成批次和二维码明细共用外部事务，任一分块失败会整体回滚。
     const product = await this.app.model.Product.findOne({
       where: { id: value.productId, status: 'enabled' },
@@ -185,8 +76,8 @@ class QrcodesService extends Service {
     if (!product) throw userError('所选产品不存在或已停用')
     const batch = await this.app.model.QrGenerationBatch.create(
       {
-        batchNo: this.batchNumber(mode),
-        mode,
+        batchNo: this.batchNumber(),
+        mode: 'single',
         productId: product.id,
         quantity: value.quantity,
         prefix: value.prefix,
@@ -216,11 +107,7 @@ class QrcodesService extends Service {
 
   async generate(value) {
     return this.app.model.transaction(async (transaction) => {
-      const { batch, product } = await this.createGenerationBatch(
-        value,
-        'single',
-        transaction,
-      )
+      const { batch, product } = await this.createGenerationBatch(value, transaction)
       await this.log(
         '生成二维码',
         'qr_generation_batch',
@@ -295,7 +182,6 @@ class QrcodesService extends Service {
             prefix: 'SU',
             notes: `生产批次 ${productionBatch.batchNo} 自动生成`,
           },
-          'single',
           transaction,
         )
 
@@ -339,49 +225,6 @@ class QrcodesService extends Service {
         qrCodeType: product.qrCodeType,
         quantity,
       }
-    })
-  }
-
-  async batchGenerate(items) {
-    // 整个导入文件使用一个事务，避免只生成部分产品批次。
-    return this.app.model.transaction(async (transaction) => {
-      const productCodes = [...new Set(items.map((item) => item.productCode))]
-      const products = await this.app.model.Product.findAll({
-        where: { code: productCodes, status: 'enabled' },
-        transaction,
-      })
-      const productMap = new Map(products.map((item) => [item.code, item]))
-      const missing = productCodes.filter((code) => !productMap.has(code))
-      if (missing.length) throw userError(`产品编号不存在或已停用：${missing.join('、')}`)
-
-      const results = []
-      for (const item of items) {
-        const product = productMap.get(item.productCode)
-        const { batch } = await this.createGenerationBatch(
-          { ...item, productId: Number(product.id) },
-          'batch',
-          transaction,
-        )
-        results.push({
-          id: Number(batch.id),
-          batchNo: batch.batchNo,
-          productCode: product.code,
-          productName: product.name,
-          quantity: item.quantity,
-        })
-      }
-      await this.log(
-        '批量生成二维码',
-        'qr_generation_batch',
-        results[0].id,
-        {
-          batchCount: results.length,
-          totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
-          batchNos: results.map((item) => item.batchNo),
-        },
-        transaction,
-      )
-      return results
     })
   }
 

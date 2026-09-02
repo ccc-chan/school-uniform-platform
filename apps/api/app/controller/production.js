@@ -3,10 +3,10 @@
 const { Controller } = require('egg')
 
 // 生产中心复用一组 CRUD 方法，仅允许路由声明过的资源类型进入服务层。
-const resources = new Set(['orders', 'batches', 'processes', 'records', 'factories', 'outbounds'])
+const resources = new Set(['orders', 'batches', 'processes', 'records', 'outbounds'])
 
 /**
- * 生产订单、批次、工序、记录、工厂和出库记录的统一控制器。
+ * 生产订单、批次、工序、记录和出库记录的统一控制器。
  */
 class ProductionController extends Controller {
   ok(data, message = 'success') {

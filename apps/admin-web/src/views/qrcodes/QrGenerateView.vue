@@ -1,42 +1,18 @@
 <script setup lang="ts">
-import { message } from 'ant-design-vue'
-import type { QrGenerationResult } from '@/api/qrcodes'
 import QrGenerationWizard from '@/components/qrcodes/QrGenerationWizard.vue'
-import { useQrOptions } from '@/composables/useQrOptions'
+import { useQrGenerateViewModel } from '@/features/qrcodes/generate/useQrGenerateViewModel'
 
-const router = useRouter()
-const route = useRoute()
-const { products, loadingProducts, loadProducts } = useQrOptions()
-const initialProductId = computed(() => Number(route.query.productId || 0))
-const initialQuantity = computed(() => Number(route.query.quantity || 1000))
-const initialProductionBatch = computed(() =>
-  String(route.query.productionBatch || ''),
-)
-const returnPath = computed(() =>
-  initialProductId.value
-    ? `/products/${initialProductId.value}`
-    : '/qrcodes/label-print',
-)
+const {
+  products,
+  loadingProducts,
+  initialProductId,
+  initialQuantity,
+  initialize,
+  cancel,
+  complete,
+} = useQrGenerateViewModel()
 
-function handleSuccess(result: QrGenerationResult) {
-  router.push({
-    path: '/qrcodes/bind',
-    query: {
-      generationBatchId: result.id,
-      productId: initialProductId.value || undefined,
-      quantity: initialQuantity.value,
-      productionBatch: initialProductionBatch.value || undefined,
-    },
-  })
-}
-
-onMounted(async () => {
-  try {
-    await loadProducts()
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '产品选项加载失败')
-  }
-})
+onMounted(initialize)
 </script>
 
 <template>
@@ -50,8 +26,8 @@ onMounted(async () => {
       :loading-products="loadingProducts"
       :initial-product-id="initialProductId"
       :initial-quantity="initialQuantity"
-      @cancel="router.push(returnPath)"
-      @success="handleSuccess"
+      @cancel="cancel"
+      @success="complete"
     />
   </section>
 </template>

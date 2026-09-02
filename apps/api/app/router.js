@@ -59,26 +59,6 @@ module.exports = (app) => {
   })
   const qualityPermission = (code) =>
     app.middleware.operationPermission({ code })
-  const brandMenu = app.middleware.menuPermission({
-    code: 'shortcut_company_settings',
-  })
-  const brandPermission = (code) => app.middleware.operationPermission({ code })
-
-  // 品牌内容类型与权限码一一对应，防止客户端通过未知类型绕过权限检查。
-  const brandAssetPermissions = {
-    story: 'brand.story.manage',
-    factory: 'brand.factory.manage',
-    video: 'brand.video.manage',
-  }
-  const brandAssetPermission = async (ctx, next) => {
-    const code = brandAssetPermissions[ctx.params.type]
-    if (!code) {
-      ctx.status = 404
-      ctx.body = { code: 404, message: '品牌内容类型无效', data: null }
-      return
-    }
-    await brandPermission(code)(ctx, next)
-  }
   const systemMenu = app.middleware.menuPermission({ code: 'shortcut_system' })
 
   // 公开基础接口。
@@ -185,13 +165,6 @@ module.exports = (app) => {
 
   // 二维码中心。
   router.get(
-    '/api/v1/qrcodes/overview',
-    auth,
-    qrcodeMenu,
-    qrcodePermission('qrcode.view'),
-    controller.qrcodes.overview,
-  )
-  router.get(
     '/api/v1/qrcodes/products',
     auth,
     qrcodeMenu,
@@ -224,13 +197,6 @@ module.exports = (app) => {
     qrcodeMenu,
     qrcodePermission('qrcode.generate'),
     controller.qrcodes.generate,
-  )
-  router.post(
-    '/api/v1/qrcodes/batch-generate',
-    auth,
-    qrcodeMenu,
-    qrcodePermission('qrcode.batch_generate'),
-    controller.qrcodes.batchGenerate,
   )
   router.post(
     '/api/v1/qrcodes/bind',
@@ -375,34 +341,6 @@ module.exports = (app) => {
     controller.production.update,
   )
   router.get(
-    '/api/v1/production/factories',
-    auth,
-    productionMenu,
-    productionPermission('production.view'),
-    controller.production.index,
-  )
-  router.post(
-    '/api/v1/production/factories',
-    auth,
-    productionMenu,
-    productionPermission('production.factory.manage'),
-    controller.production.create,
-  )
-  router.put(
-    '/api/v1/production/factories/:id',
-    auth,
-    productionMenu,
-    productionPermission('production.factory.manage'),
-    controller.production.update,
-  )
-  router.patch(
-    '/api/v1/production/factories/:id/status',
-    auth,
-    productionMenu,
-    productionPermission('production.factory.manage'),
-    controller.production.updateStatus,
-  )
-  router.get(
     '/api/v1/production/outbounds',
     auth,
     productionMenu,
@@ -487,29 +425,6 @@ module.exports = (app) => {
     qualityMenu,
     qualityPermission('quality.view'),
     controller.quality.history,
-  )
-
-  // 品牌中心。
-  router.get(
-    '/api/v1/brand/profile',
-    auth,
-    brandMenu,
-    brandPermission('brand.view'),
-    controller.brand.profile,
-  )
-  router.put(
-    '/api/v1/brand/profile',
-    auth,
-    brandMenu,
-    brandPermission('brand.profile.manage'),
-    controller.brand.updateProfile,
-  )
-  router.get(
-    '/api/v1/brand/media/:id',
-    auth,
-    brandMenu,
-    brandPermission('brand.view'),
-    controller.brand.media,
   )
 
   // 系统管理；删除账号和角色还需要超级管理员权限。

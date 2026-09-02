@@ -12,7 +12,6 @@ const menuOptions = [
   { label: '仪表盘', value: 'shortcut_dashboard' },
   { label: '产品管理', value: 'shortcut_products' },
   { label: '标签打印', value: 'shortcut_label_print' },
-  { label: '公司设置', value: 'shortcut_company_settings' },
   { label: '系统管理', value: 'shortcut_system' },
 ]
 const operationOptions = [

@@ -14,7 +14,6 @@ const editableMenuCodes = new Set([
   'shortcut_dashboard',
   'shortcut_products',
   'shortcut_label_print',
-  'shortcut_company_settings',
   'shortcut_system',
 ])
 const editableOperationCodes = new Set([

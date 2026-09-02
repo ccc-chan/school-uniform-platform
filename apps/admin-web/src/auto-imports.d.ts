@@ -189,7 +189,6 @@ declare module 'vue' {
     readonly useProductionResource: UnwrapRef<typeof import('./composables/useProductionResource')['useProductionResource']>
     readonly useProducts: UnwrapRef<typeof import('./composables/useProducts')['useProducts']>
     readonly useQrOptions: UnwrapRef<typeof import('./composables/useQrOptions')['useQrOptions']>
-    readonly useQrOverview: UnwrapRef<typeof import('./composables/useQrOverview')['useQrOverview']>
     readonly useQualityReports: UnwrapRef<typeof import('./composables/useQualityReports')['useQualityReports']>
     readonly useRoute: UnwrapRef<typeof import('vue-router')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router')['useRouter']>

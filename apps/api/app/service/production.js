@@ -8,7 +8,6 @@ const statuses = {
   batches: new Set(['planned', 'in_progress', 'paused', 'completed']),
   processes: new Set(['enabled', 'disabled']),
   records: new Set(['pending', 'in_progress', 'completed', 'exception']),
-  factories: new Set(['enabled', 'disabled']),
   outbounds: new Set(['pending', 'shipped', 'received', 'cancelled']),
 }
 
@@ -23,7 +22,6 @@ const fieldPermissions = {
   outboundDate: 'production.field.date',
   startedAt: 'production.field.date',
   completedAt: 'production.field.date',
-  factoryId: 'production.field.factory',
   factoryName: 'production.field.factory',
   responsibleEmployeeId: 'production.field.employee',
   responsibleEmployeeName: 'production.field.employee',
@@ -60,7 +58,7 @@ function validDate(value, label) {
 }
 
 /**
- * 统一管理六类生产资源及其关联校验、字段权限和审计日志。
+ * 统一管理五类生产资源及其关联校验、字段权限和审计日志。
  */
 class ProductionService extends Service {
   // 将路由资源名映射到对应 Sequelize 模型。
@@ -70,7 +68,6 @@ class ProductionService extends Service {
       batches: this.app.model.ProductionBatch,
       processes: this.app.model.ProductionProcess,
       records: this.app.model.ProductionRecord,
-      factories: this.app.model.ProductionFactory,
       outbounds: this.app.model.ProductionOutbound,
     }
     const model = models[resource]
@@ -84,7 +81,6 @@ class ProductionService extends Service {
     if (resource === 'batches') return [
       { model: model.ProductionOrder, as: 'order', attributes: ['id', 'orderNo'] },
       { model: model.Product, as: 'product', attributes: ['id', 'code', 'name'] },
-      { model: model.ProductionFactory, as: 'factory', attributes: ['id', 'name'] },
       { model: model.Employee, as: 'responsibleEmployee', attributes: ['id', 'name'] },
     ]
     if (resource === 'records') return [
@@ -127,8 +123,7 @@ class ProductionService extends Service {
         productName: item.product?.name || '',
         quantity: Number(item.quantity),
         productionDate: item.productionDate,
-        factoryId: item.factoryId ? Number(item.factoryId) : undefined,
-        factoryName: item.factoryName || item.factory?.name || '',
+        factoryName: item.factoryName || '',
         responsibleEmployeeId: item.responsibleEmployeeId
           ? Number(item.responsibleEmployeeId)
           : undefined,
@@ -157,14 +152,6 @@ class ProductionService extends Service {
         startedAt: this.ctx.helper.formatDateTime(item.startedAt),
         completedAt: this.ctx.helper.formatDateTime(item.completedAt),
         notes: item.notes || '',
-      },
-      factories: {
-        code: item.code,
-        name: item.name,
-        contactName: item.contactName,
-        contactPhone: item.contactPhone,
-        address: item.address,
-        dailyCapacity: Number(item.dailyCapacity),
       },
       outbounds: {
         outboundNo: item.outboundNo,
@@ -235,7 +222,6 @@ class ProductionService extends Service {
       ],
       processes: ['flowName', 'nodeName', 'description'],
       records: ['content', '$batch.batch_no$', '$employee.name$', '$process.node_name$'],
-      factories: ['code', 'name', 'contactName', 'contactPhone'],
       outbounds: ['outboundNo', 'recipient', 'destination', '$batch.batch_no$'],
     }[resource]
     where[Op.or] = keys.map((key) => ({ [key]: like }))
@@ -263,10 +249,9 @@ class ProductionService extends Service {
 
   async options() {
     const model = this.app.model
-    const [products, employees, factories, orders, batches, processes] = await Promise.all([
+    const [products, employees, orders, batches, processes] = await Promise.all([
       model.Product.findAll({ where: { status: 'enabled' }, attributes: ['id', 'code', 'name'], order: [['name', 'ASC']] }),
       model.Employee.findAll({ where: { status: 'enabled' }, attributes: ['id', 'name'], order: [['name', 'ASC']] }),
-      model.ProductionFactory.findAll({ where: { status: 'enabled' }, attributes: ['id', 'code', 'name'], order: [['name', 'ASC']] }),
       model.ProductionOrder.findAll({ where: { status: { [Op.ne]: 'cancelled' } }, include: this.include('orders'), order: [['id', 'DESC']] }),
       model.ProductionBatch.findAll({ attributes: ['id', 'batchNo', 'quantity'], order: [['id', 'DESC']] }),
       model.ProductionProcess.findAll({ where: { status: 'enabled' }, attributes: ['id', 'flowName', 'nodeName'], order: [['flowName', 'ASC'], ['nodeOrder', 'ASC']] }),
@@ -274,7 +259,6 @@ class ProductionService extends Service {
     return {
       products: products.map((item) => ({ id: Number(item.id), code: item.code, name: item.name })),
       employees: employees.map((item) => ({ id: Number(item.id), name: item.name })),
-      factories: factories.map((item) => ({ id: Number(item.id), code: item.code, name: item.name })),
       orders: orders.map((item) => ({ id: Number(item.id), orderNo: item.orderNo, productId: Number(item.productId), productName: item.product?.name || '', quantity: Number(item.quantity) })),
       batches: batches.map((item) => ({ id: Number(item.id), batchNo: item.batchNo, quantity: Number(item.quantity) })),
       processes: processes.map((item) => ({ id: Number(item.id), name: `${item.flowName} / ${item.nodeName}` })),
@@ -293,15 +277,6 @@ class ProductionService extends Service {
       status,
       notes: String(value.notes || '').trim().slice(0, 500),
     }
-    if (resource === 'factories') return {
-      code: required(value.code, '工厂编号', 40).toUpperCase(),
-      name: required(value.name, '工厂名称', 120),
-      contactName: required(value.contactName, '联系人', 50),
-      contactPhone: required(value.contactPhone, '联系电话', 30),
-      address: required(value.address, '工厂地址', 255),
-      dailyCapacity: positiveInteger(value.dailyCapacity, '日产能'),
-      status,
-    }
     if (resource === 'processes') return {
       flowName: required(value.flowName, '流程名称', 100),
       nodeName: required(value.nodeName, '节点名称', 100),
@@ -316,7 +291,6 @@ class ProductionService extends Service {
       productId: positiveInteger(value.productId, '生产产品'),
       quantity: positiveInteger(value.quantity, '生产数量'),
       productionDate: validDate(value.productionDate, '生产日期'),
-      factoryId: null,
       factoryName: required(value.factoryName, '生产工厂', 120),
       responsibleEmployeeId: null,
       responsibleEmployeeName: required(value.responsibleEmployeeName, '负责人', 80),

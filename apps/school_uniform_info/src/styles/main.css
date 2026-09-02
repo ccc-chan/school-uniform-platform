@@ -1,0 +1,83 @@
+:root {
+  color: #102a43;
+  background: #f4f7f5;
+  font-family:
+    "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #102a43;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(rgba(16, 42, 67, 0.035) 1px, transparent 1px),
+    #f4f7f5;
+  background-size: 100% 24px;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.identity-ticket {
+  position: relative;
+  overflow: hidden;
+}
+
+.identity-ticket::after {
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.34);
+  border-radius: 18px;
+  content: "";
+  pointer-events: none;
+}
+
+.nav-active {
+  color: #102a43;
+}
+
+.nav-active::before {
+  width: 5px;
+  height: 5px;
+  margin-bottom: 5px;
+  border-radius: 50%;
+  background: #c74235;
+  content: "";
+}
+
+.safe-bottom {
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter-active {
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease;
+  }
+
+  .page-enter-from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

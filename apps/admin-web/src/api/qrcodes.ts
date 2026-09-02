@@ -1,28 +1,7 @@
 import { request } from '@/api/http'
 
-// 二维码概览、生成批次、批量生成和生产批次绑定接口。
+// 二维码生成、绑定、标签打印和公开追溯接口。
 export type QrStatus = 'unbound' | 'bound' | 'activated' | 'voided'
-
-export interface QrMetrics {
-  total: number
-  bound: number
-  unbound: number
-  activated: number
-  voided: number
-}
-
-export interface QrOverviewItem {
-  productId: number
-  productCode?: string
-  productName?: string
-  style?: string
-  color?: string
-  total: number
-  bound?: number
-  unbound?: number
-  activated?: number
-  voided?: number
-}
 
 export interface QrProductOption {
   id: number
@@ -54,13 +33,6 @@ export interface ProductionBatchQrGenerationResult {
   productName: string
   qrCodeType: 'product' | 'batch' | 'school'
   quantity: number
-}
-
-export interface QrBatchGenerationInput {
-  productCode: string
-  quantity: number
-  prefix: string
-  notes: string
 }
 
 export interface QrBatchOption {
@@ -133,29 +105,6 @@ export interface QrPublicTrace {
   scannedAt: string
 }
 
-export interface QrOverviewFilters {
-  keyword: string
-  status: QrStatus | ''
-}
-
-function queryString(params: Record<string, string | number>) {
-  return new URLSearchParams(
-    Object.entries(params)
-      .filter(([, value]) => value !== '')
-      .map(([key, value]) => [key, String(value)]),
-  ).toString()
-}
-
-export function getQrOverview(params: Record<string, string | number>) {
-  return request<{
-    metrics: QrMetrics
-    items: QrOverviewItem[]
-    total: number
-    page: number
-    pageSize: number
-  }>(`/api/v1/qrcodes/overview?${queryString(params)}`)
-}
-
 export function getQrProducts() {
   return request<QrProductOption[]>('/api/v1/qrcodes/products')
 }
@@ -199,13 +148,6 @@ export function generateProductionBatchQrCodes(batchId: number) {
       body: JSON.stringify({}),
     },
   )
-}
-
-export function batchGenerateQrCodes(items: QrBatchGenerationInput[]) {
-  return request<QrGenerationResult[]>('/api/v1/qrcodes/batch-generate', {
-    method: 'POST',
-    body: JSON.stringify({ items }),
-  })
 }
 
 export function bindQrCodes(data: QrBindingInput) {

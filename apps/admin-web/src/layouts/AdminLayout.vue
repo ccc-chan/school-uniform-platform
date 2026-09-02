@@ -63,13 +63,11 @@ watch(
           ? 'production'
           : path.startsWith('/quality')
             ? 'quality'
-            : path.startsWith('/brand')
-              ? 'brand'
-              : path.startsWith('/analytics')
-                ? 'analytics'
-                : path.startsWith('/system')
-                  ? 'shortcut_system'
-                  : ''
+            : path.startsWith('/analytics')
+              ? 'analytics'
+              : path.startsWith('/system')
+                ? 'shortcut_system'
+                : ''
     openKeys.value = parent ? [parent] : []
   },
   { immediate: true },
@@ -80,7 +78,6 @@ const rootSubmenuKeys = [
   'qrcodes',
   'production',
   'quality',
-  'brand',
   'analytics',
   'system',
   'shortcut_system',
@@ -107,14 +104,12 @@ const menuPresentation: Record<string, { icon: string; implemented: boolean }> =
     qrcodes: { icon: '⌗', implemented: true },
     production: { icon: '◇', implemented: true },
     quality: { icon: '◉', implemented: true },
-    brand: { icon: '♢', implemented: true },
     analytics: { icon: '▥', implemented: true },
     system: { icon: '⚙', implemented: true },
     shortcut_dashboard: { icon: '⌂', implemented: true },
     shortcut_products: { icon: '▣', implemented: true },
     shortcut_label_print: { icon: '⌗', implemented: true },
     shortcut_employees: { icon: '⚙', implemented: true },
-    shortcut_company_settings: { icon: '♢', implemented: true },
     shortcut_system: { icon: '⚙', implemented: true },
   }
 
@@ -136,9 +131,7 @@ function buildLegacyMenuItem(menu: AuthMenu) {
       label: menu.name,
       icon: h('span', presentation?.icon ?? '•'),
       children: [
-        { key: '/qrcodes', label: '二维码首页' },
         { key: '/qrcodes/generate', label: '生成二维码' },
-        { key: '/qrcodes/batch-generate', label: '批量生成二维码' },
         { key: '/qrcodes/bind', label: '二维码绑定' },
         { key: '/qrcodes/label-print', label: '标签打印' },
       ],
@@ -155,7 +148,6 @@ function buildLegacyMenuItem(menu: AuthMenu) {
         { key: '/production/batches', label: '生产批次' },
         { key: '/production/processes', label: '生产流程' },
         { key: '/production/records', label: '生产记录' },
-        { key: '/production/factories', label: '工厂管理' },
         { key: '/production/outbounds', label: '出厂管理' },
       ],
     }
@@ -171,20 +163,6 @@ function buildLegacyMenuItem(menu: AuthMenu) {
         { key: '/quality/reports/upload', label: '上传检测报告' },
         { key: '/quality/items', label: '检测项目管理' },
         { key: '/quality/history', label: '检测历史记录' },
-      ],
-    }
-  }
-
-  if (menu.code === 'brand') {
-    return {
-      key: 'brand',
-      label: menu.name,
-      icon: h('span', presentation?.icon ?? '•'),
-      children: [
-        { key: '/brand/profile', label: '品牌资料管理' },
-        { key: '/brand/stories', label: '品牌故事管理' },
-        { key: '/brand/factories', label: '工厂展示管理' },
-        { key: '/brand/videos', label: '视频资料管理' },
       ],
     }
   }

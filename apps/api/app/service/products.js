@@ -167,7 +167,6 @@ class ProductsService extends Service {
         ? this.app.model.ProductionBatch.findAll({
             where: { productId: id },
             include: [
-              { model: this.app.model.ProductionFactory, as: 'factory', attributes: ['id', 'name'] },
               { model: this.app.model.Employee, as: 'responsibleEmployee', attributes: ['id', 'name'] },
             ],
             order: [['productionDate', 'DESC'], ['id', 'DESC']],
@@ -290,7 +289,7 @@ class ProductsService extends Service {
             ? { status: item.status }
             : {}),
           ...(hasPermission('production.field.factory')
-            ? { factoryName: item.factoryName || item.factory?.name || '' }
+            ? { factoryName: item.factoryName || '' }
             : {}),
           ...(hasPermission('production.field.employee')
             ? {

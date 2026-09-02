@@ -5,7 +5,7 @@ const { Controller } = require('egg')
 // 二维码前缀须便于印刷识别，并限制长度以给后续序号预留空间。
 const prefixPattern = /^[A-Z][A-Z0-9_-]{1,11}$/
 
-// 将单次和批量生成请求归一化为相同的数据结构。
+// 规范化二维码生成请求。
 function generationPayload(value = {}) {
   return {
     productId: Number(value.productId),
@@ -28,7 +28,7 @@ function generationError(value) {
 }
 
 /**
- * 二维码概览、生成批次和生产批次绑定接口控制器。
+ * 二维码生成、标签打印和生产批次绑定接口控制器。
  */
 class QrcodesController extends Controller {
   ok(data, message = 'success') {
@@ -48,14 +48,6 @@ class QrcodesController extends Controller {
       if (error.status === 400) return this.fail(error.message)
       throw error
     }
-  }
-
-  async overview() {
-    // 服务层根据字段权限隐藏产品信息或二维码状态统计。
-    const permissions = await this.ctx.service.auth.getPermissions(
-      this.ctx.state.user.id,
-    )
-    this.ok(await this.ctx.service.qrcodes.overview(this.ctx.query, permissions))
   }
 
   async products() {
@@ -104,33 +96,6 @@ class QrcodesController extends Controller {
       this.ok(
         await this.ctx.service.qrcodes.generateProductionBatch(batchId),
         '当前生产批次二维码生成成功',
-      )
-    })
-  }
-
-  async batchGenerate() {
-    // 限制导入行数，防止单次请求创建过多数据库任务。
-    const rawItems = this.ctx.request.body?.items
-    if (!Array.isArray(rawItems) || !rawItems.length || rawItems.length > 100) {
-      return this.fail('批量文件须包含 1 至 100 行有效数据')
-    }
-    const items = rawItems.map((item) => ({
-      ...generationPayload(item),
-      productCode: String(item.productCode || '').trim().toUpperCase(),
-    }))
-    for (let index = 0; index < items.length; index += 1) {
-      if (!items[index].productCode) return this.fail(`第 ${index + 1} 行缺少产品编号`)
-      const error = generationError({ ...items[index], productId: 1 })
-      if (error) return this.fail(`第 ${index + 1} 行：${error}`)
-    }
-
-    // 行数之外再限制二维码总量，避免少数大数量行绕过批量上限。
-    const total = items.reduce((sum, item) => sum + item.quantity, 0)
-    if (total > 200000) return this.fail('单次批量生成总量不能超过 200000')
-    return this.run(async () => {
-      this.ok(
-        await this.ctx.service.qrcodes.batchGenerate(items),
-        `已创建 ${items.length} 个二维码批次`,
       )
     })
   }
