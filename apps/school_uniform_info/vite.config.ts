@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, envDir, '')
 
   return {
+    base: mode === 'prod' ? '/school_uniform_info/' : '/',
     envDir,
     plugins: [vue(), UnoCSS()],
     resolve: {

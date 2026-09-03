@@ -29,6 +29,11 @@ const router = createRouter({
           name: 'school-uniform-info-quality',
           component: () => import('@/views/QualityInfoView.vue'),
         },
+        {
+          path: 'verify',
+          name: 'school-uniform-info-verify',
+          component: () => import('@/views/AntiCounterfeitView.vue'),
+        },
       ],
     },
     {

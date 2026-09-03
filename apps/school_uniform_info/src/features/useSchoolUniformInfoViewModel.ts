@@ -11,6 +11,7 @@ import {
 } from 'vue'
 import {
   recordSchoolUniformInfoScan,
+  type QrCodeType,
   type SchoolUniformInfo,
 } from '@/api/school_uniform_info'
 
@@ -22,6 +23,16 @@ export function createSchoolUniformInfoViewModel(
   const errorMessage = shallowRef('')
   const code = computed(() => toValue(codeSource).trim())
   let requestId = 0
+
+  const qrCodeType = computed<QrCodeType>(
+    () => info.value?.qrCodeType || 'product',
+  )
+
+  const traceTypeLabel = computed(() => {
+    if (qrCodeType.value === 'batch') return '一批一码'
+    if (qrCodeType.value === 'school') return '一校一码'
+    return '一品一码'
+  })
 
   const statusLabel = computed(() => {
     if (!info.value) return ''
@@ -66,6 +77,8 @@ export function createSchoolUniformInfoViewModel(
     info: readonly(info),
     loading: readonly(loading),
     errorMessage: readonly(errorMessage),
+    qrCodeType,
+    traceTypeLabel,
     statusLabel,
     displayValue,
     retry: load,

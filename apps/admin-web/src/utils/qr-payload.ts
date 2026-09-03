@@ -15,7 +15,7 @@ export function buildQrTraceUrl(code: string) {
 
   const baseUrl = configuredBaseUrl || window.location.origin
   const url = new URL(
-    `/trace/${encodeURIComponent(normalizedCode)}`,
+    `/school_uniform_info/${encodeURIComponent(normalizedCode)}`,
     baseUrl,
   )
 

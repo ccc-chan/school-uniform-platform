@@ -295,9 +295,12 @@ class AnalyticsService extends Service {
         q.production_batch AS productionBatch,
         COALESCE(q.product_id, b.product_id) AS productId,
         p.code AS productCode, p.name AS productName,
-        p.category, p.season, p.style, p.color,
+        p.category, p.qr_code_type AS qrCodeType,
+        p.season, p.style, p.color, p.sizes,
+        p.applicable_schools AS applicableSchools,
         p.fabric_info AS fabricInfo,
-        p.execution_standard AS executionStandard
+        p.execution_standard AS executionStandard,
+        p.washing_instructions AS washingInstructions
       FROM qr_codes q
       JOIN qr_generation_batches b ON b.id = q.generation_batch_id
       LEFT JOIN prd_products p
@@ -321,19 +324,50 @@ class AnalyticsService extends Service {
       { status: 'activated' },
       { where: { id: item.qrCodeId, status: 'bound' } },
     )
+    const [scanSummary] = await this.app.model.query(
+      `SELECT COUNT(*) AS scanCount, MIN(scanned_at) AS firstScannedAt
+      FROM qr_scan_records
+      WHERE qr_code_id = :qrCodeId`,
+      {
+        replacements: { qrCodeId: item.qrCodeId },
+        type: QueryTypes.SELECT,
+      },
+    )
+    const scanCount = Number(scanSummary.scanCount || 0)
+    const normalizeStringArray = (source) => {
+      if (Array.isArray(source)) return source.map(String).filter(Boolean)
+      if (typeof source !== 'string' || !source) return []
+      try {
+        const parsed = JSON.parse(source)
+        return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : []
+      } catch {
+        return []
+      }
+    }
     return {
       code: item.code,
       status: item.status === 'bound' ? 'activated' : item.status,
+      qrCodeType: ['product', 'batch', 'school'].includes(item.qrCodeType)
+        ? item.qrCodeType
+        : 'product',
       productCode: item.productCode || '',
       productName: item.productName || '',
       category: item.category || '',
       season: item.season || '',
       style: item.style || '',
       color: item.color || '',
+      sizes: normalizeStringArray(item.sizes),
+      applicableSchools: normalizeStringArray(item.applicableSchools),
       fabricInfo: item.fabricInfo || '',
       executionStandard: item.executionStandard || '',
+      washingInstructions: item.washingInstructions || '',
       productionBatch: item.productionBatch || '',
       productSku: item.productSku || '',
+      scanCount,
+      firstScan: scanCount === 1,
+      firstScannedAt: this.ctx.helper.formatDateTime(
+        scanSummary.firstScannedAt,
+      ),
       recorded: true,
       scannedAt: this.ctx.helper.formatDateTime(record.scannedAt),
     }

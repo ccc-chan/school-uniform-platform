@@ -40,6 +40,9 @@ jobs:
       - name: Check Web types
         run: npm run typecheck
 
+      - name: Check H5 types
+        run: npm run typecheck:info
+
   build:
     name: Build ${{ matrix.component }}
     needs: verify
@@ -137,4 +140,5 @@ jobs:
              docker compose --env-file .env.test -f docker-compose.prod.yml up -d --no-build --wait --wait-timeout 180
              curl --fail --silent --show-error http://127.0.0.1:18080/healthz
              curl --fail --silent --show-error http://127.0.0.1:18080/api/v1/health
+             curl --fail --silent --show-error http://127.0.0.1:18080/school_uniform_info/
              docker image prune -f'

@@ -45,6 +45,8 @@ async function selectQrCodeType(value: ProductQrCodeType | '') {
   setFilters({ qrCodeType: value })
   await safe(search, '二维码类型筛选失败')
 }
+const changePage = (value: number) =>
+  safe(() => setPage(value), '加载失败')
 const view = (p: Product) => router.push(`/products/${p.id}`)
 
 function openCreateDrawer() {
@@ -165,7 +167,7 @@ onMounted(() => safe(load, '产品数据加载失败'))
           :current="page"
           :page-size="pageSize"
           :total="total"
-          @change="(value) => safe(() => setPage(value), '加载失败')"
+          @change="changePage"
         />
       </div>
     </div>

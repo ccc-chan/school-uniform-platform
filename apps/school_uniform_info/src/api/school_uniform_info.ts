@@ -4,19 +4,28 @@ interface ApiEnvelope<T> {
   data: T
 }
 
+export type QrCodeType = 'product' | 'batch' | 'school'
+
 export interface SchoolUniformInfo {
   code: string
   status: string
+  qrCodeType: QrCodeType
   productCode: string | null
   productName: string | null
   category: string | null
   season: string | null
   style: string | null
   color: string | null
+  sizes: string[]
+  applicableSchools: string[]
   fabricInfo: string | null
   executionStandard: string | null
+  washingInstructions: string | null
   productionBatch: string | null
   productSku: string | null
+  scanCount: number
+  firstScan: boolean
+  firstScannedAt: string
   recorded: boolean
   scannedAt: string
 }
