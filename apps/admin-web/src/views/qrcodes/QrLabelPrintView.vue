@@ -12,6 +12,7 @@ import QrLabelControls from './label-print/QrLabelControls.vue'
 import QrLabelPreview from './label-print/QrLabelPreview.vue'
 import QrLabelPrintConfirmation from './label-print/QrLabelPrintConfirmation.vue'
 import QrLabelTemplateDialogs from './label-print/QrLabelTemplateDialogs.vue'
+import { exportQrLabelsToWord } from './label-print/exportQrLabelsToWord'
 import type { LabelTemplateSnapshot } from './label-print/QrLabelTemplateDialogs.vue'
 import {
   useQrLabelPrint,
@@ -45,6 +46,7 @@ const {
   printItems,
   loadBatches,
   selectBatch,
+  preparePrintItems,
   print,
 } = useQrLabelPrint()
 
@@ -56,6 +58,8 @@ const editingLabelName = shallowRef(false)
 const labelNameDraft = shallowRef('')
 const labelNameInput =
   useTemplateRef<HTMLInputElement>('labelNameInput')
+const printSheet = useTemplateRef<HTMLElement>('printSheet')
+const exportingWord = shallowRef(false)
 
 const batchOptions = computed(() =>
   batches.value.map((batch) => ({
@@ -95,6 +99,30 @@ async function handlePrint(testOnly = false) {
     () => print(testOnly),
     testOnly ? '测试页准备失败' : '标签打印准备失败',
   )
+}
+
+async function handleExportWord() {
+  await run(async () => {
+    exportingWord.value = true
+    try {
+      await preparePrintItems(false)
+
+      const sheet = printSheet.value
+      if (!sheet) throw new Error('标签文档准备失败')
+
+      const artworks = Array.from(
+        sheet.querySelectorAll<HTMLElement>('.qr-label-artwork'),
+      )
+      await exportQrLabelsToWord({
+        artworks,
+        dimensions: dimensions.value,
+        filename: `${selectedBatchNo.value}-标签-${dimensions.value.width}x${dimensions.value.height}mm.docx`,
+      })
+      message.success('Word 标签文档已生成')
+    } finally {
+      exportingWord.value = false
+    }
+  }, 'Word 标签文档生成失败')
 }
 
 function resizeLabel(value: LabelDimensions) {
@@ -240,9 +268,11 @@ onMounted(async () => {
         :dimensions="dimensions"
         :print-count="printCount"
         :printing="printing"
+        :exporting-word="exportingWord"
         @resize="resizeLabel"
         @print-test="handlePrint(true)"
         @print="handlePrint(false)"
+        @export-word="handleExportWord"
       />
     </div>
 
@@ -256,8 +286,12 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="selectedBatch && printItems.length"
+        ref="printSheet"
         id="qr-label-print-sheet"
-        class="qr-label-print-sheet"
+        :class="[
+          'qr-label-print-sheet',
+          { 'qr-label-print-sheet--exporting': exportingWord },
+        ]"
         aria-hidden="true"
       >
         <div
@@ -476,11 +510,16 @@ onMounted(async () => {
 }
 
 .qr-label-print-sheet {
+  display: none;
+  margin: 0;
+  padding: 0;
+}
+
+.qr-label-print-sheet--exporting {
   position: fixed;
   top: 0;
   left: -100000px;
-  margin: 0;
-  padding: 0;
+  display: block;
 }
 
 .qr-label-print-page {

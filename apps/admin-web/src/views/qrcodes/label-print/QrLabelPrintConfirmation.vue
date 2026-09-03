@@ -8,11 +8,13 @@ const props = defineProps<{
   dimensions: LabelDimensions
   printCount: number
   printing: boolean
+  exportingWord: boolean
 }>()
 const emit = defineEmits<{
   resize: [dimensions: LabelDimensions]
   print: []
   printTest: []
+  exportWord: []
 }>()
 
 const rangeMode = defineModel<PrintRangeMode>('rangeMode', { required: true })
@@ -140,29 +142,39 @@ function updateDimension(
 
       <p class="print-confirmation__notice">
         <span aria-hidden="true">ⓘ</span>
-        打印窗口请选择 {{ dimensions.width }} × {{ dimensions.height }} mm
-        纸张、边距“无”、缩放 100%。若没有该纸张，请先在打印机驱动中添加自定义纸张。
+        建议生成 Word 文档后打印，每枚标签独占一页，页面尺寸为
+        {{ dimensions.width }} × {{ dimensions.height }} mm，且首页不留空白。
       </p>
 
       <div class="print-confirmation__actions">
         <a-button
           size="large"
           block
-          :disabled="!printable || printing"
+          :disabled="!printable || printing || exportingWord"
           @click="emit('printTest')"
         >
-          打印测试页
+          浏览器打印测试页
+        </a-button>
+        <a-button
+          size="large"
+          block
+          :loading="printing"
+          :disabled="!printable || exportingWord"
+          @click="emit('print')"
+        >
+          <span aria-hidden="true">▣</span>
+          浏览器打印 {{ printCount.toLocaleString('zh-CN') }} 枚
         </a-button>
         <a-button
           type="primary"
           size="large"
           block
-          :loading="printing"
-          :disabled="!printable"
-          @click="emit('print')"
+          :loading="exportingWord"
+          :disabled="!printable || printing"
+          @click="emit('exportWord')"
         >
           <span aria-hidden="true">▣</span>
-          打印 {{ printCount.toLocaleString('zh-CN') }} 枚标签
+          生成 Word 文档（{{ printCount.toLocaleString('zh-CN') }} 枚）
         </a-button>
       </div>
     </div>

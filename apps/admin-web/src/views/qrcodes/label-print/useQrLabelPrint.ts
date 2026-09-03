@@ -67,23 +67,56 @@ export interface CustomLabelLayer {
   height: number
 }
 
+export interface LabelCodeStyle {
+  fontFamily: string
+  fontSize: number
+  alignment: LabelAlignment
+  verticalAlignment: LabelVerticalAlignment
+  letterSpacing: number
+  lineHeight: number
+  fontScale: number
+  bold: boolean
+  italic: boolean
+  underline: boolean
+  strikethrough: boolean
+  textColor: string
+  backgroundColor: string
+}
+
+export const DEFAULT_LABEL_CODE_SCALE = 50
+
+export function createDefaultLabelCodeStyle(): LabelCodeStyle {
+  return {
+    fontFamily: '"Source Han Sans SC", "PingFang SC", sans-serif',
+    fontSize: 14,
+    alignment: 'center',
+    verticalAlignment: 'middle',
+    letterSpacing: 0,
+    lineHeight: 1.2,
+    fontScale: DEFAULT_LABEL_CODE_SCALE,
+    bold: true,
+    italic: false,
+    underline: false,
+    strikethrough: false,
+    textColor: '',
+    backgroundColor: 'transparent',
+  }
+}
+
 export interface LabelStyleConfig {
   presetKey: LabelStylePresetKey
   alignment: LabelAlignment
   fontScale: number
   qrScale: number
+  codeScale?: number
+  codeStyle?: LabelCodeStyle
   textColor: string
   accentColor: string
   backgroundColor: string
   borderStyle: LabelBorderStyle
 }
 
-export type LabelBlockKey =
-  | 'company'
-  | 'image'
-  | 'identity'
-  | 'qrcode'
-  | 'code'
+export type LabelBlockKey = 'company' | 'image' | 'identity' | 'qrcode' | 'code'
 
 export interface LabelBlockPosition {
   x: number
@@ -97,7 +130,7 @@ export function createDefaultLabelLayout(): LabelLayout {
     company: { x: 50, y: 35 },
     image: { x: 50, y: 20 },
     identity: { x: 50, y: 43 },
-    qrcode: { x: 50, y: 57 },
+    qrcode: { x: 50, y: 55 },
     code: { x: 50, y: 78 },
   }
 }
@@ -140,6 +173,8 @@ export const LABEL_STYLE_PRESETS: readonly {
       alignment: 'center',
       fontScale: 100,
       qrScale: 100,
+      codeScale: DEFAULT_LABEL_CODE_SCALE,
+      codeStyle: createDefaultLabelCodeStyle(),
       textColor: '#172033',
       accentColor: '#15803d',
       backgroundColor: '#ffffff',
@@ -155,6 +190,8 @@ export const LABEL_STYLE_PRESETS: readonly {
       alignment: 'left',
       fontScale: 105,
       qrScale: 92,
+      codeScale: DEFAULT_LABEL_CODE_SCALE,
+      codeStyle: createDefaultLabelCodeStyle(),
       textColor: '#111827',
       accentColor: '#2563eb',
       backgroundColor: '#ffffff',
@@ -170,6 +207,8 @@ export const LABEL_STYLE_PRESETS: readonly {
       alignment: 'center',
       fontScale: 100,
       qrScale: 105,
+      codeScale: DEFAULT_LABEL_CODE_SCALE,
+      codeStyle: createDefaultLabelCodeStyle(),
       textColor: '#172033',
       accentColor: '#2563eb',
       backgroundColor: '#f8fbff',
@@ -217,8 +256,10 @@ export function useQrLabelPrint() {
   let loadSequence = 0
   let pageStyle: HTMLStyleElement | null = null
 
-  const selectedBatch = computed(() =>
-    batches.value.find((item) => item.batchNo === selectedBatchNo.value) ?? null,
+  const selectedBatch = computed(
+    () =>
+      batches.value.find((item) => item.batchNo === selectedBatchNo.value) ??
+      null,
   )
   const previewItem = computed(() => batchPage.value?.items[0] ?? null)
   const dimensions = computed<LabelDimensions>(() => {
@@ -364,37 +405,42 @@ export function useQrLabelPrint() {
     return Array.from({ length: Math.max(1, copies) }, () => items).flat()
   }
 
-  async function print(testOnly = false) {
+  function validatePrintConfiguration() {
     if (!selectedBatchNo.value || !selectedBatch.value) {
       throw new Error('请选择需要打印的生产批次')
     }
     if (!selectedFields.value.includes('qrcode')) {
       throw new Error('追溯标签必须包含二维码')
     }
-    if (
-      selectedFields.value.includes('company') &&
-      !companyName.value.trim()
-    ) {
+    if (selectedFields.value.includes('company') && !companyName.value.trim()) {
       throw new Error('请输入公司名称')
     }
+  }
 
+  async function preparePrintItems(testOnly = false) {
+    validatePrintConfiguration()
+
+    const labels = await loadAllLabels(selectedBatchNo.value)
+    const rangedLabels = selectPrintItems(labels, testOnly)
+    if (!rangedLabels.length) {
+      throw new Error('当前打印范围内没有可用标签')
+    }
+    const printableLabels = repeatPrintItems(
+      rangedLabels,
+      testOnly ? 1 : printCopies.value,
+    )
+    printItems.value = await createPrintableLabels(printableLabels)
+    await nextTick()
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    })
+  }
+
+  async function print(testOnly = false) {
     printing.value = true
     try {
-      const labels = await loadAllLabels(selectedBatchNo.value)
-      const rangedLabels = selectPrintItems(labels, testOnly)
-      if (!rangedLabels.length) {
-        throw new Error('当前打印范围内没有可用标签')
-      }
-      const printableLabels = repeatPrintItems(
-        rangedLabels,
-        testOnly ? 1 : printCopies.value,
-      )
-      printItems.value = await createPrintableLabels(printableLabels)
+      await preparePrintItems(testOnly)
       installPageStyle()
-      await nextTick()
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      })
       window.print()
     } finally {
       printing.value = false
@@ -433,6 +479,7 @@ export function useQrLabelPrint() {
     printItems,
     loadBatches,
     selectBatch,
+    preparePrintItems,
     print,
   }
 }

@@ -8,10 +8,16 @@ import type {
   LabelVerticalAlignment,
 } from './useQrLabelPrint'
 
-const props = defineProps<{
-  layer: CustomLabelLayer
-  defaultTextColor: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    layer: CustomLabelLayer
+    defaultTextColor: string
+    showAssociatedImage?: boolean
+  }>(),
+  {
+    showAssociatedImage: true,
+  },
+)
 
 const emit = defineEmits<{
   'update:layer': [layer: CustomLabelLayer]
@@ -106,7 +112,7 @@ function updateColor(key: 'textColor' | 'backgroundColor', event: Event) {
 
 <template>
   <div class="text-settings">
-    <section class="text-settings__group">
+    <section v-if="showAssociatedImage" class="text-settings__group">
       <div class="text-settings__title">
         <strong>关联图片</strong>
         <span>可选</span>

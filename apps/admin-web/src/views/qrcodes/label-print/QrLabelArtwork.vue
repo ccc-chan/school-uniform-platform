@@ -2,13 +2,15 @@
 import { computed, shallowRef, useTemplateRef } from 'vue'
 import type { CSSProperties } from 'vue'
 import type { QrLabelBatch, QrLabelItem } from '@/api/qrcodes'
-import type {
-  CustomLabelLayer,
-  LabelBlockKey,
-  LabelDimensions,
-  LabelField,
-  LabelLayout,
-  LabelStyleConfig,
+import {
+  DEFAULT_LABEL_CODE_SCALE,
+  createDefaultLabelCodeStyle,
+  type CustomLabelLayer,
+  type LabelBlockKey,
+  type LabelDimensions,
+  type LabelField,
+  type LabelLayout,
+  type LabelStyleConfig,
 } from './useQrLabelPrint'
 
 const props = defineProps<{
@@ -79,6 +81,17 @@ interface QrResizeState {
   startPosition: { x: number; y: number }
 }
 
+interface CodeResizeState {
+  handle: ResizeHandle
+  pointerId: number
+  startClientX: number
+  startClientY: number
+  startWidth: number
+  startHeight: number
+  startScale: number
+  startPosition: { x: number; y: number }
+}
+
 const boxResizeHandles: readonly ResizeHandle[] = [
   'nw',
   'n',
@@ -108,6 +121,7 @@ const customDragState = shallowRef<CustomDragState | null>(null)
 const selectedCustomLayerId = shallowRef<string | null>(null)
 const customResizeState = shallowRef<CustomResizeState | null>(null)
 const qrResizeState = shallowRef<QrResizeState | null>(null)
+const codeResizeState = shallowRef<CodeResizeState | null>(null)
 
 const artworkStyle = computed(() => {
   const scale = Math.max(
@@ -180,6 +194,54 @@ const blockStyles = computed<Record<LabelBlockKey, CSSProperties>>(() => ({
     top: `${props.layout.code.y}%`,
   },
 }))
+
+const codeTextStyle = computed(() => ({
+  ...createDefaultLabelCodeStyle(),
+  ...props.labelStyle.codeStyle,
+  fontScale:
+    props.labelStyle.codeStyle?.fontScale ??
+    props.labelStyle.codeScale ??
+    DEFAULT_LABEL_CODE_SCALE,
+}))
+
+const codeBlockStyle = computed<CSSProperties>(() => {
+  const style = codeTextStyle.value
+  const textDecoration =
+    [
+      style.underline ? 'underline' : '',
+      style.strikethrough ? 'line-through' : '',
+    ]
+      .filter(Boolean)
+      .join(' ') || 'none'
+
+  return {
+    ...blockStyles.value.code,
+    alignItems:
+      style.verticalAlignment === 'top'
+        ? 'flex-start'
+        : style.verticalAlignment === 'bottom'
+          ? 'flex-end'
+          : 'center',
+    justifyContent:
+      style.alignment === 'left'
+        ? 'flex-start'
+        : style.alignment === 'right'
+          ? 'flex-end'
+          : 'center',
+    color: style.textColor || props.labelStyle.textColor,
+    backgroundColor: style.backgroundColor || 'transparent',
+    fontFamily: style.fontFamily,
+    fontSize: `calc(${((style.fontSize * style.fontScale) / 100).toFixed(
+      2,
+    )}px * var(--label-scale))`,
+    fontWeight: style.bold ? 700 : 400,
+    fontStyle: style.italic ? 'italic' : 'normal',
+    letterSpacing: `${style.letterSpacing}px`,
+    lineHeight: String(style.lineHeight),
+    textDecoration,
+    textAlign: style.alignment,
+  }
+})
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value))
@@ -335,10 +397,13 @@ function customLayerStyle(layer: CustomLabelLayer): CSSProperties {
 function customTextStyle(layer: CustomLabelLayer): CSSProperties {
   const fontScale = layer.fontScale ?? 100
   const italic = layer.italic === true
-  const textDecoration = [
-    layer.underline ? 'underline' : '',
-    layer.strikethrough ? 'line-through' : '',
-  ].filter(Boolean).join(' ') || 'none'
+  const textDecoration =
+    [
+      layer.underline ? 'underline' : '',
+      layer.strikethrough ? 'line-through' : '',
+    ]
+      .filter(Boolean)
+      .join(' ') || 'none'
   const transformOrigin =
     layer.alignment === 'left'
       ? 'left center'
@@ -384,10 +449,7 @@ function associatedImageStyle(layer: CustomLabelLayer): CSSProperties {
   }
 }
 
-function updateCustomLayer(
-  layerId: string,
-  patch: Partial<CustomLabelLayer>,
-) {
+function updateCustomLayer(layerId: string, patch: Partial<CustomLabelLayer>) {
   emit(
     'update:customLayers',
     props.customLayers.map((layer) =>
@@ -438,11 +500,14 @@ function moveCustomResize(event: PointerEvent) {
     state.pointerId !== event.pointerId ||
     !artworkRect?.width ||
     !artworkRect.height
-  ) return
+  )
+    return
 
   const directions = resizeDirections[state.handle]
-  const deltaX = ((event.clientX - state.startClientX) / artworkRect.width) * 100
-  const deltaY = ((event.clientY - state.startClientY) / artworkRect.height) * 100
+  const deltaX =
+    ((event.clientX - state.startClientX) / artworkRect.width) * 100
+  const deltaY =
+    ((event.clientY - state.startClientY) / artworkRect.height) * 100
   const horizontal = resizeAxis(
     state.startGeometry.x,
     state.startGeometry.width,
@@ -521,30 +586,25 @@ function moveQrResize(event: PointerEvent) {
     state.pointerId !== event.pointerId ||
     !artworkRect?.width ||
     !artworkRect.height
-  ) return
+  )
+    return
 
   const directions = resizeDirections[state.handle]
   const signedDeltas: number[] = []
   if (directions.x !== 0) {
-    signedDeltas.push(
-      directions.x * (event.clientX - state.startClientX),
-    )
+    signedDeltas.push(directions.x * (event.clientX - state.startClientX))
   }
   if (directions.y !== 0) {
-    signedDeltas.push(
-      directions.y * (event.clientY - state.startClientY),
-    )
+    signedDeltas.push(directions.y * (event.clientY - state.startClientY))
   }
   const sizeDelta =
-    signedDeltas.reduce((sum, value) => sum + value, 0) /
-    signedDeltas.length
+    signedDeltas.reduce((sum, value) => sum + value, 0) / signedDeltas.length
   const maximumSize = Math.min(artworkRect.width, artworkRect.height) * 0.92
   const requestedSize = clamp(state.startSize + sizeDelta, 24, maximumSize)
   const nextScale = Math.round(
     clamp(state.startScale * (requestedSize / state.startSize), 50, 180),
   )
-  const actualSizeDelta =
-    state.startSize * (nextScale / state.startScale - 1)
+  const actualSizeDelta = state.startSize * (nextScale / state.startScale - 1)
   const nextPosition = {
     x: Number(
       clamp(
@@ -584,6 +644,110 @@ function finishQrResize(event: PointerEvent) {
   qrResizeState.value = null
 }
 
+function startCodeResize(event: PointerEvent, handle: ResizeHandle) {
+  if (!props.editable || event.button !== 0) return
+  const element = event.currentTarget as HTMLElement
+  const block = element.parentElement
+  if (!block) return
+
+  event.preventDefault()
+  block.focus({ preventScroll: true })
+  element.setPointerCapture(event.pointerId)
+  selectedBlock.value = 'code'
+  selectedCustomLayerId.value = null
+  dragState.value = null
+  const blockRect = block.getBoundingClientRect()
+  codeResizeState.value = {
+    handle,
+    pointerId: event.pointerId,
+    startClientX: event.clientX,
+    startClientY: event.clientY,
+    startWidth: blockRect.width,
+    startHeight: blockRect.height,
+    startScale: codeTextStyle.value.fontScale,
+    startPosition: { ...props.layout.code },
+  }
+}
+
+function moveCodeResize(event: PointerEvent) {
+  const state = codeResizeState.value
+  const artworkRect = artworkRef.value?.getBoundingClientRect()
+  if (
+    !props.editable ||
+    !state ||
+    state.pointerId !== event.pointerId ||
+    !artworkRect?.width ||
+    !artworkRect.height
+  )
+    return
+
+  const directions = resizeDirections[state.handle]
+  const deltaX = event.clientX - state.startClientX
+  const deltaY = event.clientY - state.startClientY
+  const scaleRatios: number[] = []
+
+  if (directions.x !== 0) {
+    scaleRatios.push(
+      1 + (directions.x * deltaX) / Math.max(state.startWidth, 1),
+    )
+  }
+  if (directions.y !== 0) {
+    scaleRatios.push(
+      1 + (directions.y * deltaY) / Math.max(state.startHeight, 1),
+    )
+  }
+
+  const requestedRatio =
+    scaleRatios.reduce((sum, value) => sum + value, 0) / scaleRatios.length
+  const nextScale = Math.round(
+    clamp(state.startScale * requestedRatio, 50, 300),
+  )
+  const actualRatio = nextScale / state.startScale
+  const widthDelta = state.startWidth * (actualRatio - 1)
+  const heightDelta = state.startHeight * (actualRatio - 1)
+  const nextPosition = {
+    x: Number(
+      clamp(
+        state.startPosition.x +
+          (directions.x * widthDelta * 50) / artworkRect.width,
+        2,
+        98,
+      ).toFixed(2),
+    ),
+    y: Number(
+      clamp(
+        state.startPosition.y +
+          (directions.y * heightDelta * 50) / artworkRect.height,
+        2,
+        98,
+      ).toFixed(2),
+    ),
+  }
+
+  emit('update:labelStyle', {
+    ...props.labelStyle,
+    codeScale: nextScale,
+    codeStyle: {
+      ...codeTextStyle.value,
+      fontScale: nextScale,
+    },
+  })
+  emit('update:layout', {
+    ...props.layout,
+    code: nextPosition,
+  })
+}
+
+function finishCodeResize(event: PointerEvent) {
+  const state = codeResizeState.value
+  if (!state || state.pointerId !== event.pointerId) return
+  const element = event.currentTarget as HTMLElement
+  if (element.hasPointerCapture(event.pointerId)) {
+    element.releasePointerCapture(event.pointerId)
+  }
+  codeResizeState.value = null
+}
+
 function startCustomDrag(event: PointerEvent, layer: CustomLabelLayer) {
   if (!props.editable || event.button !== 0) return
   const element = event.currentTarget as HTMLElement
@@ -609,11 +773,14 @@ function moveCustomDrag(event: PointerEvent) {
     state.pointerId !== event.pointerId ||
     !artworkRect?.width ||
     !artworkRect.height
-  ) return
+  )
+    return
 
-  const x = state.startPosition.x +
+  const x =
+    state.startPosition.x +
     ((event.clientX - state.startClientX) / artworkRect.width) * 100
-  const y = state.startPosition.y +
+  const y =
+    state.startPosition.y +
     ((event.clientY - state.startClientY) / artworkRect.height) * 100
   updateCustomLayer(state.layerId, {
     x: Number(clamp(x, 5, 95).toFixed(2)),
@@ -631,10 +798,7 @@ function finishCustomDrag(event: PointerEvent) {
   customDragState.value = null
 }
 
-function moveCustomWithKeyboard(
-  event: KeyboardEvent,
-  layer: CustomLabelLayer,
-) {
+function moveCustomWithKeyboard(event: KeyboardEvent, layer: CustomLabelLayer) {
   if (!props.editable) return
   const movement = event.shiftKey ? 5 : 1
   const delta = {
@@ -714,8 +878,7 @@ function shown(field: LabelField) {
           </span>
           <img
             v-if="
-              layer.associatedImageDataUrl &&
-              layer.imagePosition === 'after'
+              layer.associatedImageDataUrl && layer.imagePosition === 'after'
             "
             class="qr-label-artwork__associated-image"
             :src="layer.associatedImageDataUrl"
@@ -780,7 +943,11 @@ function shown(field: LabelField) {
         @pointercancel="finishDrag"
         @keydown="moveWithKeyboard($event, 'image')"
       >
-        <img class="qr-label-artwork__image" :src="labelImageUrl" alt="标签图片" />
+        <img
+          class="qr-label-artwork__image"
+          :src="labelImageUrl"
+          alt="标签图片"
+        />
       </div>
 
       <div
@@ -854,7 +1021,7 @@ function shown(field: LabelField) {
         :class="{
           'qr-label-artwork__block--selected': selectedBlock === 'code',
         }"
-        :style="blockStyles.code"
+        :style="codeBlockStyle"
         :tabindex="editable ? 0 : undefined"
         :role="editable ? 'button' : undefined"
         :aria-label="`二维码编号 ${item.code}，可拖动或使用方向键调整位置`"
@@ -865,6 +1032,17 @@ function shown(field: LabelField) {
         @keydown="moveWithKeyboard($event, 'code')"
       >
         {{ item.code }}
+        <span
+          v-for="handle in boxResizeHandles"
+          :key="handle"
+          class="qr-label-artwork__resize-handle"
+          :class="`qr-label-artwork__resize-handle--${handle}`"
+          aria-hidden="true"
+          @pointerdown.stop="startCodeResize($event, handle)"
+          @pointermove.stop="moveCodeResize"
+          @pointerup.stop="finishCodeResize"
+          @pointercancel.stop="finishCodeResize"
+        />
       </div>
     </div>
   </article>
@@ -921,11 +1099,10 @@ function shown(field: LabelField) {
   outline-offset: 0.1mm;
 }
 
-.qr-label-artwork--editable
-  .qr-label-artwork__custom-layer--selected {
+.qr-label-artwork--editable .qr-label-artwork__custom-layer--selected {
   border-radius: 0.35mm;
   outline: 0.1mm solid var(--label-editor-color);
-  outline-offset: 0;
+  outline-offset: 0.2mm;
 }
 
 .qr-label-artwork__custom-text-row {
@@ -996,7 +1173,7 @@ function shown(field: LabelField) {
 .qr-label-artwork--editable .qr-label-artwork__block--selected {
   border-radius: 0.35mm;
   outline: 0.1mm solid var(--label-editor-color);
-  outline-offset: 0;
+  outline-offset: 0.2mm;
 }
 
 .qr-label-artwork--editable .qr-label-artwork__qr-block:hover,
@@ -1011,7 +1188,7 @@ function shown(field: LabelField) {
 .qr-label-artwork--editable
   .qr-label-artwork__qr-block.qr-label-artwork__block--selected::after {
   position: absolute;
-  inset: 7%;
+  inset: calc(7% - 0.2mm);
   border: 0.1mm solid var(--label-editor-color);
   border-radius: 0.35mm;
   content: '';
@@ -1022,18 +1199,16 @@ function shown(field: LabelField) {
   position: absolute;
   z-index: 5;
   display: none;
-  width: 1.8mm;
-  height: 1.8mm;
+  width: 1.4mm;
+  height: 1.4mm;
   box-sizing: border-box;
-  border: 0.18mm solid var(--label-editor-color);
+  border: 0.14mm solid var(--label-editor-color);
   background: #ffffff;
   touch-action: none;
 }
 
-.qr-label-artwork__custom-layer--selected
-  > .qr-label-artwork__resize-handle,
-.qr-label-artwork__block--selected
-  > .qr-label-artwork__resize-handle {
+.qr-label-artwork__custom-layer--selected > .qr-label-artwork__resize-handle,
+.qr-label-artwork__block--selected > .qr-label-artwork__resize-handle {
   display: block;
 }
 
@@ -1200,13 +1375,6 @@ function shown(field: LabelField) {
   justify-content: center;
   overflow: hidden;
   padding: 0 0.2mm;
-  color: inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: calc(0.85mm * var(--label-scale));
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1241,5 +1409,4 @@ function shown(field: LabelField) {
   background: #f8fafc;
   font-size: calc(1.4mm * var(--label-scale));
 }
-
 </style>

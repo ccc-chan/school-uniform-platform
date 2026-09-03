@@ -5,16 +5,21 @@ import QrLabelIconPicker from './QrLabelIconPicker.vue'
 import QrLabelTextSettings from './QrLabelTextSettings.vue'
 import type { LabelIcon } from './labelIconCatalog'
 import {
+  DEFAULT_LABEL_CODE_SCALE,
+  createDefaultLabelCodeStyle,
   type CustomLabelLayer,
   type CustomLabelLayerType,
+  type LabelCodeStyle,
   type LabelStyleConfig,
 } from './useQrLabelPrint'
 
 const customLayers = defineModel<CustomLabelLayer[]>('customLayers', { required: true })
 const labelStyle = defineModel<LabelStyleConfig>('labelStyle', { required: true })
 
+const BUILTIN_CODE_LAYER_ID = 'builtin-code'
+
 const imageInput = useTemplateRef<HTMLInputElement>('imageInput')
-const activeLayerId = shallowRef<string | null>(null)
+const activeLayerId = shallowRef<string | null>(BUILTIN_CODE_LAYER_ID)
 const editingLayerId = shallowRef<string | null>(null)
 const editingName = shallowRef('')
 const iconPickerOpen = shallowRef(false)
@@ -22,8 +27,43 @@ const iconPickerOpen = shallowRef(false)
 const activeLayer = computed(
   () => customLayers.value.find((layer) => layer.id === activeLayerId.value) ?? null,
 )
+const codeLayerActive = computed(
+  () => activeLayerId.value === BUILTIN_CODE_LAYER_ID,
+)
+const codeLayer = computed<CustomLabelLayer>(() => {
+  const codeStyle = {
+    ...createDefaultLabelCodeStyle(),
+    ...labelStyle.value.codeStyle,
+  }
+
+  return {
+    id: BUILTIN_CODE_LAYER_ID,
+    type: 'text',
+    name: '编号',
+    content: '',
+    imageDataUrl: '',
+    associatedImageDataUrl: '',
+    associatedImageName: '',
+    imagePosition: 'before',
+    imageSize: 20,
+    imageGap: 8,
+    imageVerticalAlignment: 'middle',
+    x: 50,
+    y: 78,
+    width: 90,
+    height: 4,
+    ...codeStyle,
+    fontScale:
+      labelStyle.value.codeStyle?.fontScale ??
+      labelStyle.value.codeScale ??
+      DEFAULT_LABEL_CODE_SCALE,
+  }
+})
 const contentValue = computed({
-  get: () => activeLayer.value?.type === 'text' ? activeLayer.value.content : '',
+  get: () => {
+    if (codeLayerActive.value) return '二维码编号（自动生成）'
+    return activeLayer.value?.type === 'text' ? activeLayer.value.content : ''
+  },
   set: (content: string) => {
     if (activeLayer.value?.type === 'text') {
       updateLayer(activeLayer.value.id, { content })
@@ -31,14 +71,19 @@ const contentValue = computed({
   },
 })
 const contentPlaceholder = computed(() => {
+  if (codeLayerActive.value) return '编号内容由二维码自动生成'
   if (!activeLayer.value) return '请先新增或选择文字内容'
   if (activeLayer.value.type === 'text') return '请输入文字内容'
   if (activeLayer.value.type === 'image') return '图片没有文字内容'
   return '分割线没有文字内容'
 })
 watch(customLayers, (layers) => {
-  if (activeLayerId.value && !layers.some((layer) => layer.id === activeLayerId.value)) {
-    activeLayerId.value = layers[0]?.id ?? null
+  if (
+    activeLayerId.value &&
+    activeLayerId.value !== BUILTIN_CODE_LAYER_ID &&
+    !layers.some((layer) => layer.id === activeLayerId.value)
+  ) {
+    activeLayerId.value = layers[0]?.id ?? BUILTIN_CODE_LAYER_ID
   }
 })
 
@@ -174,6 +219,30 @@ function cancelLayerName() {
 function replaceLayer(layer: CustomLabelLayer) {
   updateLayer(layer.id, layer)
 }
+
+function replaceCodeLayer(layer: CustomLabelLayer) {
+  const codeStyle: LabelCodeStyle = {
+    fontFamily: layer.fontFamily,
+    fontSize: layer.fontSize,
+    alignment: layer.alignment,
+    verticalAlignment: layer.verticalAlignment,
+    letterSpacing: layer.letterSpacing,
+    lineHeight: layer.lineHeight,
+    fontScale: layer.fontScale,
+    bold: layer.bold,
+    italic: layer.italic,
+    underline: layer.underline,
+    strikethrough: layer.strikethrough,
+    textColor: layer.textColor,
+    backgroundColor: layer.backgroundColor,
+  }
+
+  labelStyle.value = {
+    ...labelStyle.value,
+    codeScale: layer.fontScale,
+    codeStyle,
+  }
+}
 </script>
 
 <template>
@@ -190,7 +259,7 @@ function replaceLayer(layer: CustomLabelLayer) {
           id="label-content"
           v-model:value="contentValue"
           :maxlength="80"
-          :disabled="activeLayer?.type !== 'text'"
+          :disabled="codeLayerActive || activeLayer?.type !== 'text'"
           allow-clear
           :placeholder="contentPlaceholder"
         />
@@ -199,10 +268,24 @@ function replaceLayer(layer: CustomLabelLayer) {
       <section class="label-controls__section">
         <div class="label-controls__section-heading">
           <h3>自定义内容</h3>
-          <span>{{ customLayers.length }}</span>
+          <span>{{ customLayers.length + 1 }}</span>
         </div>
 
-        <div v-if="customLayers.length" class="label-controls__layers">
+        <div class="label-controls__layers">
+          <button
+            type="button"
+            class="label-controls__layer"
+            :class="{
+              'label-controls__layer--active': codeLayerActive,
+            }"
+            @click="activeLayerId = BUILTIN_CODE_LAYER_ID"
+          >
+            <span class="label-controls__handle" aria-hidden="true">⠿</span>
+            <span class="label-controls__kind" aria-hidden="true">T</span>
+            <strong>编号</strong>
+            <span aria-hidden="true" />
+          </button>
+
           <button
             v-for="layer in customLayers"
             :key="layer.id"
@@ -247,9 +330,6 @@ function replaceLayer(layer: CustomLabelLayer) {
             </span>
           </button>
         </div>
-        <div v-else class="label-controls__empty">
-          暂无自定义内容，请从下方添加
-        </div>
 
         <div class="label-controls__insert-actions">
           <button type="button" @click="addTextLayer">＋ 文字</button>
@@ -266,20 +346,34 @@ function replaceLayer(layer: CustomLabelLayer) {
         </div>
       </section>
 
-      <section v-if="activeLayer" class="label-controls__section label-controls__editor">
+      <section
+        v-if="codeLayerActive || activeLayer"
+        class="label-controls__section label-controls__editor"
+      >
         <div class="label-controls__section-heading">
-          <h3>{{ activeLayer.name }}</h3>
+          <h3>{{ codeLayerActive ? '编号' : activeLayer?.name }}</h3>
           <span>当前选中</span>
         </div>
 
         <QrLabelTextSettings
-          v-if="activeLayer.type === 'text'"
+          v-if="codeLayerActive"
+          :layer="codeLayer"
+          :default-text-color="labelStyle.textColor"
+          :show-associated-image="false"
+          @update:layer="replaceCodeLayer"
+        />
+
+        <QrLabelTextSettings
+          v-else-if="activeLayer?.type === 'text'"
           :layer="activeLayer"
           :default-text-color="labelStyle.textColor"
           @update:layer="replaceLayer"
         />
 
-        <p v-else-if="activeLayer.type === 'image'" class="label-controls__note">
+        <p
+          v-else-if="activeLayer?.type === 'image'"
+          class="label-controls__note"
+        >
           图片或图标可在预览画布中拖动、缩放和调整位置。
         </p>
         <p v-else class="label-controls__note">
