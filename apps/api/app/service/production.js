@@ -1,7 +1,17 @@
 'use strict'
 
+const crypto = require('node:crypto')
+const fsp = require('node:fs/promises')
+const path = require('node:path')
 const { Op } = require('sequelize')
 const { Service } = require('egg')
+
+const batchStepStatuses = new Set(['pending', 'in_progress', 'completed'])
+const batchStepPhotoExtensions = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+}
 
 const statuses = {
   orders: new Set(['pending', 'scheduled', 'producing', 'completed', 'cancelled']),
@@ -144,7 +154,7 @@ class ProductionService extends Service {
         batchId: Number(item.batchId),
         batchNo: item.batch?.batchNo || '',
         employeeId: Number(item.employeeId),
-        employeeName: item.employee?.name || '',
+        employeeName: item.operatorName || item.employee?.name || '',
         processId: Number(item.processId),
         processName: item.process ? `${item.process.flowName} / ${item.process.nodeName}` : '',
         content: item.content || item.process?.nodeName || '',
@@ -399,63 +409,145 @@ class ProductionService extends Service {
     return updated ? this.get(resource, id) : null
   }
 
-  async createBatchStep(batchId, value) {
-    const content = required(value.content, '环节内容', 200)
-    const id = await this.app.model.transaction(async (transaction) => {
-      const batch = await this.app.model.ProductionBatch.findByPk(batchId, {
-        transaction,
+  async createBatchStep(batchId, value, file = null) {
+    const processId = positiveInteger(value.processId, '环节名称')
+    const operatorName = required(value.operatorName, '操作人', 80)
+    const startedAt = validDate(value.startedAt, '开始日期')
+    const completedAt = value.completedAt
+      ? validDate(value.completedAt, '完成日期')
+      : null
+    const status = String(value.status || '')
+
+    if (!batchStepStatuses.has(status)) invalid('环节状态无效')
+    if (completedAt && new Date(completedAt) < new Date(startedAt)) {
+      invalid('完成日期不能早于开始日期')
+    }
+
+    const notes = String(value.notes || '').trim().slice(0, 500)
+    const [batch, process] = await Promise.all([
+      this.app.model.ProductionBatch.findByPk(batchId),
+      this.app.model.ProductionProcess.findOne({
+        where: { id: processId, status: 'enabled' },
+      }),
+    ])
+
+    if (!batch) invalid('生产批次不存在', 404)
+    if (!process) invalid('所选生产环节不存在或已停用')
+
+    let targetPath = ''
+    let fileStat = null
+    let extension = ''
+
+    if (file) {
+      extension = batchStepPhotoExtensions[file.mime]
+      if (!extension) invalid('现场照片仅支持 JPG、PNG、WEBP')
+
+      fileStat = await fsp.stat(file.filepath)
+      if (fileStat.size > 10 * 1024 * 1024) {
+        invalid('现场照片不能超过 10MB')
+      }
+
+      const storedName = `${crypto.randomUUID()}${extension}`
+      const uploadDir = path.join(this.app.baseDir, 'storage', 'uploads')
+      targetPath = path.join(uploadDir, storedName)
+      await fsp.mkdir(uploadDir, { recursive: true })
+      await fsp.copyFile(file.filepath, targetPath)
+    }
+
+    try {
+      const id = await this.app.model.transaction(async (transaction) => {
+        let photoFileId = null
+
+        if (file && fileStat) {
+          const photo = await this.app.model.File.create(
+            {
+              originalName: file.filename,
+              storedName: path.basename(targetPath),
+              mimeType: file.mime,
+              category: 'production_photo',
+              size: fileStat.size,
+              uploadedBy: this.ctx.state.user.id,
+            },
+            { transaction },
+          )
+          photoFileId = Number(photo.id)
+        }
+
+        const item = await this.app.model.ProductionRecord.create(
+          {
+            batchId: Number(batch.id),
+            employeeId: this.ctx.state.user.id,
+            processId: Number(process.id),
+            content: process.nodeName,
+            operatorName,
+            photoFileId,
+            quantity: Number(batch.quantity),
+            startedAt,
+            completedAt,
+            status,
+            notes,
+            createdBy: this.ctx.state.user.id,
+          },
+          { transaction },
+        )
+
+        await this.log(
+          '新增生产环节',
+          'records',
+          item,
+          {
+            batchId: Number(batch.id),
+            processId: Number(process.id),
+            operatorName,
+            startedAt,
+            completedAt,
+            status,
+            photoFileId,
+          },
+          transaction,
+        )
+
+        return Number(item.id)
       })
-      if (!batch) invalid('生产批次不存在', 404)
 
-      const now = new Date()
-      const item = await this.app.model.ProductionRecord.create(
-        {
-          batchId: Number(batch.id),
-          employeeId: this.ctx.state.user.id,
-          processId: null,
-          content,
-          quantity: Number(batch.quantity),
-          startedAt: now,
-          completedAt: now,
-          status: 'completed',
-          notes: '',
-          createdBy: this.ctx.state.user.id,
-        },
-        { transaction },
-      )
-      await this.log(
-        '新增生产环节',
-        'records',
-        item,
-        { batchId: Number(batch.id), content },
-        transaction,
-      )
-      return Number(item.id)
-    })
-
-    const item = await this.app.model.ProductionRecord.findByPk(id, {
-      include: [
-        { model: this.app.model.Employee, as: 'employee', attributes: ['id', 'name'] },
-      ],
-    })
-    return {
-      id: Number(item.id),
-      nodeName: item.content,
-      nodeOrder: 100000 + Number(item.id),
-      status: item.status,
-      employeeName: item.employee?.name || '',
-      startedAt: this.ctx.helper.formatDateTime(item.startedAt),
-      completedAt: this.ctx.helper.formatDateTime(item.completedAt),
+      const item = await this.app.model.ProductionRecord.findByPk(id)
+      return {
+        id: Number(item.id),
+        nodeName: process.nodeName,
+        nodeOrder: Number(process.nodeOrder),
+        custom: false,
+        status: item.status,
+        employeeName: item.operatorName,
+        startedAt: this.ctx.helper.formatDateTime(item.startedAt),
+        completedAt: this.ctx.helper.formatDateTime(item.completedAt),
+        notes: item.notes || '',
+        photoFileId: item.photoFileId ? Number(item.photoFileId) : null,
+      }
+    } catch (error) {
+      if (targetPath) await fsp.unlink(targetPath).catch(() => undefined)
+      throw error
     }
   }
 
   async deleteBatchStep(batchId, stepId) {
-    return this.app.model.transaction(async (transaction) => {
+    let storedName = ''
+
+    const deleted = await this.app.model.transaction(async (transaction) => {
       const item = await this.app.model.ProductionRecord.findOne({
         where: { id: stepId, batchId },
         transaction,
       })
       if (!item) return false
+
+      const photo = item.photoFileId
+        ? await this.app.model.File.findOne({
+            where: {
+              id: item.photoFileId,
+              category: 'production_photo',
+            },
+            transaction,
+          })
+        : null
 
       await this.log(
         '删除生产环节',
@@ -469,8 +561,22 @@ class ProductionService extends Service {
         transaction,
       )
       await item.destroy({ transaction })
+
+      if (photo) {
+        storedName = photo.storedName
+        await photo.destroy({ transaction })
+      }
+
       return true
     })
+
+    if (storedName) {
+      await fsp
+        .unlink(path.join(this.app.baseDir, 'storage', 'uploads', storedName))
+        .catch(() => undefined)
+    }
+
+    return deleted
   }
 
   async updateStatus(resource, id, status) {

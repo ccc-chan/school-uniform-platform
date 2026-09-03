@@ -3,7 +3,9 @@ import { request, requestBlob } from '@/api/http'
 export type ProductStatus='enabled'|'disabled';export type ProductCategory='sports_set'|'formal_set'|'outerwear'|'single_item'|'accessory';export type ProductQrCodeType='product'|'batch'|'school';export type ProductSeason='spring'|'summer'|'autumn'|'winter'|'all_season';export type ProductSize='xs'|'s'|'m'|'l'|'xl'|'xxl'|'120'|'130'|'140'|'150'|'160'|'170'
 export interface Product {id:number;imageId?:number|null;code?:string;name?:string;category?:ProductCategory;qrCodeType?:ProductQrCodeType;season?:ProductSeason;status?:ProductStatus;createdAt?:string;applicableSchools?:readonly string[];style?:string;color?:string;sizes?:readonly ProductSize[];fabricInfo?:string;executionStandard?:string;washingInstructions?:string;batchCount?:number;totalQuantity?:number}
 export interface ProductQrBatch {id:number;batchNo:string;total:number;bound:number;activated:number;voided:number;scans:number}
-export interface ProductProductionStep {id:number;nodeName:string;nodeOrder:number;custom:boolean;status?:string;employeeName?:string;startedAt?:string;completedAt?:string}
+export type ProductProductionStepStatus='pending'|'in_progress'|'completed'
+export interface ProductProductionStep {id:number;nodeName:string;nodeOrder:number;custom:boolean;status?:ProductProductionStepStatus;employeeName?:string;startedAt?:string;completedAt?:string;notes?:string;photoFileId?:number|null}
+export interface ProductProductionStepInput {processId:number;operatorName:string;startedAt:string;completedAt:string;status:ProductProductionStepStatus;notes:string;photo:File|null}
 export interface ProductQualityReport {id:number;name:string;fileName:string;conclusion?:'qualified'|'unqualified';status?:'pending'|'approved'|'rejected'|'expired';inspectionDate?:string}
 export interface ProductProductionBatch {id:number;batchNo:string;quantity?:number;productionDate?:string;status?:string;factoryName?:string;responsibleEmployeeName?:string;qrTotal:number;qrBatches:ProductQrBatch[];productionSteps:ProductProductionStep[]}
 export interface ProductDetail {product:Product;batches:ProductProductionBatch[];qualityReports:ProductQualityReport[];access:{production:boolean;qrcode:boolean;quality:boolean}}
@@ -17,7 +19,7 @@ const qs=(params:Record<string,string|number>)=>new URLSearchParams(Object.entri
 export const getProducts=(params:Record<string,string|number>)=>request<{items:Product[];total:number;page:number;pageSize:number}>(`/api/v1/products?${qs(params)}`)
 export const getProduct=(id:number)=>request<Product>(`/api/v1/products/${id}`)
 export const getProductDetail=(id:number)=>request<ProductDetail>(`/api/v1/products/${id}/detail`)
-export const createProductBatchStep=(batchId:number,content:string)=>request<ProductProductionStep>(`/api/v1/production/batches/${batchId}/steps`,{method:'POST',body:JSON.stringify({content})})
+export const createProductBatchStep=(batchId:number,data:ProductProductionStepInput)=>{const {photo,...payload}=data;const body=new FormData();body.append('payload',JSON.stringify(payload));if(photo)body.append('photo',photo);return request<ProductProductionStep>(`/api/v1/production/batches/${batchId}/steps`,{method:'POST',body})}
 export const deleteProductBatchStep=(batchId:number,stepId:number)=>request<null>(`/api/v1/production/batches/${batchId}/steps/${stepId}`,{method:'DELETE'})
 // 产品结构化字段序列化到 payload，图片作为 multipart 文件提交。
 function body(data:ProductInput){const form=new FormData();const {image,...payload}=data;form.append('payload',JSON.stringify(payload));if(image)form.append('image',image);return form}

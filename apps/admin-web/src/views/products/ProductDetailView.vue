@@ -5,6 +5,7 @@ import {
   deleteProductBatchStep,
   getProductDetail,
   type ProductDetail,
+  type ProductProductionStepInput,
 } from '@/api/products'
 import { generateProductionBatchQrCodes } from '@/api/qrcodes'
 import {
@@ -94,12 +95,12 @@ async function handleBatchCreated(batchId: number) {
   await load(batchId)
 }
 
-async function createStep(content: string) {
+async function createStep(value: ProductProductionStepInput) {
   if (!selectedBatch.value) return
   const batchId = selectedBatch.value.id
   stepSubmitting.value = true
   try {
-    await createProductBatchStep(batchId, content)
+    await createProductBatchStep(batchId, value)
     message.success('生产环节添加成功')
     stepModalOpen.value = false
     await load(batchId)
@@ -312,6 +313,7 @@ watch(id, () => load(null), { immediate: true })
         v-if="selectedBatch"
         v-model:open="stepModalOpen"
         :batch-no="selectedBatch.batchNo"
+        :product-name="detail.product.name || '-'"
         :submitting="stepSubmitting"
         @submit="createStep"
       />

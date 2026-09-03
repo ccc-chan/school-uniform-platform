@@ -13,7 +13,10 @@ import QrLabelPreview from './label-print/QrLabelPreview.vue'
 import QrLabelPrintConfirmation from './label-print/QrLabelPrintConfirmation.vue'
 import QrLabelTemplateDialogs from './label-print/QrLabelTemplateDialogs.vue'
 import type { LabelTemplateSnapshot } from './label-print/QrLabelTemplateDialogs.vue'
-import { useQrLabelPrint } from './label-print/useQrLabelPrint'
+import {
+  useQrLabelPrint,
+  type LabelDimensions,
+} from './label-print/useQrLabelPrint'
 
 const {
   batches,
@@ -92,6 +95,12 @@ async function handlePrint(testOnly = false) {
     () => print(testOnly),
     testOnly ? '测试页准备失败' : '标签打印准备失败',
   )
+}
+
+function resizeLabel(value: LabelDimensions) {
+  selectedSizeKey.value = 'custom'
+  customWidth.value = value.width
+  customHeight.value = value.height
 }
 
 async function startLabelNameEdit() {
@@ -231,6 +240,7 @@ onMounted(async () => {
         :dimensions="dimensions"
         :print-count="printCount"
         :printing="printing"
+        @resize="resizeLabel"
         @print-test="handlePrint(true)"
         @print="handlePrint(false)"
       />

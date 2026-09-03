@@ -14,6 +14,16 @@ module.exports = (app) => {
       allowNull: true,
     },
     content: { type: app.Sequelize.STRING(200), allowNull: true },
+    operatorName: {
+      type: app.Sequelize.STRING(80),
+      field: 'operator_name',
+      allowNull: true,
+    },
+    photoFileId: {
+      type: app.Sequelize.BIGINT.UNSIGNED,
+      field: 'photo_file_id',
+      allowNull: true,
+    },
     quantity: app.Sequelize.INTEGER.UNSIGNED,
     startedAt: { type: app.Sequelize.DATE, field: 'started_at' },
     completedAt: { type: app.Sequelize.DATE, field: 'completed_at' },
@@ -26,6 +36,7 @@ module.exports = (app) => {
     ProductionRecord.belongsTo(app.model.ProductionBatch, { as: 'batch', foreignKey: 'batchId' })
     ProductionRecord.belongsTo(app.model.Employee, { as: 'employee', foreignKey: 'employeeId' })
     ProductionRecord.belongsTo(app.model.ProductionProcess, { as: 'process', foreignKey: 'processId' })
+    ProductionRecord.belongsTo(app.model.File, { as: 'photo', foreignKey: 'photoFileId' })
   }
   return ProductionRecord
 }

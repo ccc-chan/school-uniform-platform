@@ -10,6 +10,7 @@ const props = defineProps<{
   printing: boolean
 }>()
 const emit = defineEmits<{
+  resize: [dimensions: LabelDimensions]
   print: []
   printTest: []
 }>()
@@ -29,6 +30,19 @@ function setRangeMode(value: unknown) {
 function changeCopies(change: number) {
   copies.value = Math.min(99, Math.max(1, copies.value + change))
 }
+
+function updateDimension(
+  key: keyof LabelDimensions,
+  value: unknown,
+) {
+  const dimension = Number(value)
+  if (!Number.isFinite(dimension) || dimension <= 0) return
+
+  emit('resize', {
+    ...props.dimensions,
+    [key]: Number(dimension.toFixed(1)),
+  })
+}
 </script>
 
 <template>
@@ -43,9 +57,38 @@ function changeCopies(change: number) {
           <dt>标签数量</dt>
           <dd class="print-confirmation__count">{{ total.toLocaleString('zh-CN') }} 枚</dd>
         </div>
-        <div>
-          <dt>标签尺寸</dt>
-          <dd>{{ dimensions.width }} × {{ dimensions.height }} mm</dd>
+        <div class="print-confirmation__size-row">
+          <dt class="print-confirmation__size-heading">
+            <span>标签尺寸</span>
+            <small>实时同步画布</small>
+          </dt>
+          <dd class="print-confirmation__size-editor">
+            <label>
+              <span>宽</span>
+              <a-input-number
+                :value="dimensions.width"
+                :min="1"
+                :step="1"
+                :precision="1"
+                addon-after="mm"
+                aria-label="标签宽度"
+                @update:value="updateDimension('width', $event)"
+              />
+            </label>
+            <b aria-hidden="true">×</b>
+            <label>
+              <span>高</span>
+              <a-input-number
+                :value="dimensions.height"
+                :min="1"
+                :step="1"
+                :precision="1"
+                addon-after="mm"
+                aria-label="标签高度"
+                @update:value="updateDimension('height', $event)"
+              />
+            </label>
+          </dd>
         </div>
         <div>
           <dt>打印范围</dt>
@@ -193,6 +236,79 @@ function changeCopies(change: number) {
   color: #1677ff;
   font-size: 14px;
   font-weight: 700;
+}
+
+.print-confirmation__summary > .print-confirmation__size-row {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 9px;
+  margin: 2px 0 6px;
+  padding: 11px;
+  border: 1px solid #e5eaf1;
+  border-radius: 4px;
+  background: #f8fafc;
+}
+
+.print-confirmation__size-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.print-confirmation__size-heading small {
+  color: #8a96a8;
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.print-confirmation__size-editor {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+}
+
+.print-confirmation__size-editor label {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  color: #7a8698;
+  font-size: 9px;
+  text-align: left;
+}
+
+.print-confirmation__size-editor b {
+  padding-bottom: 8px;
+  color: #7a8698;
+  font-weight: 500;
+}
+
+.print-confirmation__size-editor :deep(.ant-input-number-group-wrapper),
+.print-confirmation__size-editor :deep(.ant-input-number) {
+  width: 100%;
+  min-width: 0;
+}
+
+.print-confirmation__size-editor :deep(.ant-input-number) {
+  background: #ffffff;
+}
+
+.print-confirmation__size-editor :deep(.ant-input-number),
+.print-confirmation__size-editor :deep(.ant-input-number-group-addon) {
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.print-confirmation__size-editor :deep(.ant-input-number-group-addon) {
+  padding-inline: 8px;
+  color: #64748b;
+  background: #f1f5f9;
 }
 
 .print-confirmation__section {

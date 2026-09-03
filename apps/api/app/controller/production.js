@@ -85,13 +85,29 @@ class ProductionController extends Controller {
   }
 
   async createBatchStep() {
-    await this.run(async () => {
-      const item = await this.ctx.service.production.createBatchStep(
-        Number(this.ctx.params.id),
-        this.ctx.request.body || {},
-      )
-      this.ok(item, '环节添加成功')
-    })
+    const file = this.ctx.request.files?.[0]
+    let value = this.ctx.request.body || {}
+
+    if (value.payload) {
+      try {
+        value = JSON.parse(value.payload)
+      } catch {
+        value = {}
+      }
+    }
+
+    try {
+      await this.run(async () => {
+        const item = await this.ctx.service.production.createBatchStep(
+          Number(this.ctx.params.id),
+          value,
+          file,
+        )
+        this.ok(item, '环节添加成功')
+      })
+    } finally {
+      await this.ctx.cleanupRequestFiles()
+    }
   }
 
   async deleteBatchStep() {

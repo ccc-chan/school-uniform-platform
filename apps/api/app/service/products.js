@@ -254,10 +254,12 @@ class ProductsService extends Service {
           ? Number(item.process.nodeOrder || 0)
           : 100000 + Number(item.id),
         custom: !item.processId,
+        notes: item.notes || '',
+        photoFileId: item.photoFileId ? Number(item.photoFileId) : null,
       }
       if (hasPermission('production.field.status')) step.status = item.status
       if (hasPermission('production.field.employee')) {
-        step.employeeName = item.employee?.name || ''
+        step.employeeName = item.operatorName || item.employee?.name || ''
       }
       if (hasPermission('production.field.date')) {
         step.startedAt = this.ctx.helper.formatDateTime(item.startedAt)

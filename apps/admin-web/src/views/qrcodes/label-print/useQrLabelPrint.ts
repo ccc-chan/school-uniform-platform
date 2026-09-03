@@ -224,8 +224,8 @@ export function useQrLabelPrint() {
   const dimensions = computed<LabelDimensions>(() => {
     if (selectedSizeKey.value === 'custom') {
       return {
-        width: Math.max(25, Number(customWidth.value) || 30),
-        height: Math.max(25, Number(customHeight.value) || 90),
+        width: Math.max(1, Number(customWidth.value) || 30),
+        height: Math.max(1, Number(customHeight.value) || 90),
       }
     }
     const preset = LABEL_SIZE_PRESETS.find(
