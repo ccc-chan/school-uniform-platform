@@ -6,6 +6,23 @@ interface ApiEnvelope<T> {
 
 export type QrCodeType = 'product' | 'batch' | 'school'
 
+export type ProductionStepStatus =
+  | 'pending'
+  | 'in_progress'
+  | 'completed'
+  | 'exception'
+
+export interface ProductionStep {
+  id: number
+  nodeName: string
+  nodeOrder: number
+  status: ProductionStepStatus
+  operatorName: string
+  startedAt: string
+  completedAt: string
+  notes: string
+}
+
 export interface SchoolUniformInfo {
   code: string
   status: string
@@ -22,6 +39,9 @@ export interface SchoolUniformInfo {
   executionStandard: string | null
   washingInstructions: string | null
   productionBatch: string | null
+  productionDate: string | null
+  productionFactoryName: string | null
+  productionSteps: ProductionStep[]
   productSku: string | null
   scanCount: number
   firstScan: boolean

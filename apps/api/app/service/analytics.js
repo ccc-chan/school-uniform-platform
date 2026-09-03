@@ -293,6 +293,9 @@ class AnalyticsService extends Service {
       `SELECT q.id AS qrCodeId, q.code, q.status,
         q.product_sku AS productSku,
         q.production_batch AS productionBatch,
+        pb.id AS productionBatchId,
+        pb.production_date AS productionDate,
+        pb.factory_name AS productionFactoryName,
         COALESCE(q.product_id, b.product_id) AS productId,
         p.code AS productCode, p.name AS productName,
         p.category, p.qr_code_type AS qrCodeType,
@@ -305,6 +308,8 @@ class AnalyticsService extends Service {
       JOIN qr_generation_batches b ON b.id = q.generation_batch_id
       LEFT JOIN prd_products p
         ON p.id = COALESCE(q.product_id, b.product_id)
+      LEFT JOIN production_batches pb
+        ON pb.batch_no = q.production_batch
       WHERE q.code = :code AND q.status <> 'voided' LIMIT 1`,
       { replacements: { code }, type: QueryTypes.SELECT },
     )
@@ -334,6 +339,25 @@ class AnalyticsService extends Service {
       },
     )
     const scanCount = Number(scanSummary.scanCount || 0)
+    const productionSteps = item.productionBatchId
+      ? await this.app.model.query(
+        `SELECT pr.id,
+          COALESCE(pp.node_name, NULLIF(pr.content, ''), '未命名工序') AS nodeName,
+          COALESCE(pp.node_order, 100000 + pr.id) AS nodeOrder,
+          pr.status, pr.operator_name AS operatorName,
+          pr.started_at AS startedAt, pr.completed_at AS completedAt,
+          pr.notes
+        FROM production_records pr
+        LEFT JOIN production_processes pp ON pp.id = pr.process_id
+        WHERE pr.batch_id = :batchId
+          AND (pp.id IS NULL OR pp.consumer_visible = 1)
+        ORDER BY COALESCE(pp.node_order, 100000 + pr.id), pr.id`,
+        {
+          replacements: { batchId: item.productionBatchId },
+          type: QueryTypes.SELECT,
+        },
+      )
+      : []
     const normalizeStringArray = (source) => {
       if (Array.isArray(source)) return source.map(String).filter(Boolean)
       if (typeof source !== 'string' || !source) return []
@@ -362,6 +386,22 @@ class AnalyticsService extends Service {
       executionStandard: item.executionStandard || '',
       washingInstructions: item.washingInstructions || '',
       productionBatch: item.productionBatch || '',
+      productionDate: item.productionDate || '',
+      productionFactoryName: item.productionFactoryName || '',
+      productionSteps: productionSteps.map((step) => ({
+        id: Number(step.id),
+        nodeName: step.nodeName,
+        nodeOrder: Number(step.nodeOrder),
+        status: ['pending', 'in_progress', 'completed', 'exception'].includes(
+          step.status,
+        )
+          ? step.status
+          : 'pending',
+        operatorName: step.operatorName || '',
+        startedAt: this.ctx.helper.formatDateTime(step.startedAt),
+        completedAt: this.ctx.helper.formatDateTime(step.completedAt),
+        notes: step.notes || '',
+      })),
       productSku: item.productSku || '',
       scanCount,
       firstScan: scanCount === 1,

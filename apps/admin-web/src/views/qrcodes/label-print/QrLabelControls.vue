@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 import { message } from 'ant-design-vue'
+import QrLabelIconPicker from './QrLabelIconPicker.vue'
 import QrLabelTextSettings from './QrLabelTextSettings.vue'
+import type { LabelIcon } from './labelIconCatalog'
 import {
   type CustomLabelLayer,
   type CustomLabelLayerType,
@@ -15,6 +17,7 @@ const imageInput = useTemplateRef<HTMLInputElement>('imageInput')
 const activeLayerId = shallowRef<string | null>(null)
 const editingLayerId = shallowRef<string | null>(null)
 const editingName = shallowRef('')
+const iconPickerOpen = shallowRef(false)
 
 const activeLayer = computed(
   () => customLayers.value.find((layer) => layer.id === activeLayerId.value) ?? null,
@@ -119,6 +122,21 @@ function handleImageChange(event: Event) {
   }
   reader.readAsDataURL(file)
   input.value = ''
+}
+
+function addIconLayer(icon: LabelIcon) {
+  const layer = createLayer('image', `${icon.categoryLabel} · ${icon.name}`)
+
+  customLayers.value = [
+    ...customLayers.value,
+    {
+      ...layer,
+      imageDataUrl: icon.url,
+      width: 24,
+      height: 8,
+    },
+  ]
+  activeLayerId.value = layer.id
 }
 
 function addDividerLayer() {
@@ -236,6 +254,7 @@ function replaceLayer(layer: CustomLabelLayer) {
         <div class="label-controls__insert-actions">
           <button type="button" @click="addTextLayer">＋ 文字</button>
           <button type="button" @click="chooseImage">＋ 图片</button>
+          <button type="button" @click="iconPickerOpen = true">＋ 图标</button>
           <button type="button" @click="addDividerLayer">＋ 分割线</button>
           <input
             ref="imageInput"
@@ -261,7 +280,7 @@ function replaceLayer(layer: CustomLabelLayer) {
         />
 
         <p v-else-if="activeLayer.type === 'image'" class="label-controls__note">
-          图片可在预览画布中拖动调整位置；再次点击“图片”可继续新增。
+          图片或图标可在预览画布中拖动、缩放和调整位置。
         </p>
         <p v-else class="label-controls__note">
           分割线可在预览画布中拖动调整位置。
@@ -270,6 +289,11 @@ function replaceLayer(layer: CustomLabelLayer) {
 
     </div>
   </aside>
+
+  <QrLabelIconPicker
+    v-model:open="iconPickerOpen"
+    @select="addIconLayer"
+  />
 </template>
 
 <style scoped>
@@ -440,7 +464,7 @@ function replaceLayer(layer: CustomLabelLayer) {
 
 .label-controls__insert-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-top: 9px;
 }
