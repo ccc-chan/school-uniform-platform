@@ -9,6 +9,8 @@
  */
 'use strict'
 
+const { inspect } = require('node:util')
+
 /**
  * 请求日志中间件 - 记录接口请求参数和返回参数
  * 用于开发环境和测试环境，生产环境需谨慎使用（可能泄露敏感信息）
@@ -71,7 +73,7 @@ module.exports = () => {
       }
 
       // 记录日志
-      ctx.logger.info('[HTTP Request]', {
+      const logData = {
         request: sanitizeData(requestInfo),
         response: {
           status: statusCode,
@@ -79,7 +81,19 @@ module.exports = () => {
         },
         duration: `${duration}ms`,
         userId: ctx.userId || ctx.currentUserId || 'anonymous',
-      })
+      }
+
+      ctx.logger.info(
+        '[HTTP Request] %s',
+        inspect(logData, {
+          depth: null,
+          colors: false,
+          compact: false,
+          breakLength: 120,
+          maxArrayLength: 100,
+          maxStringLength: 10000,
+        }),
+      )
     }
   }
 }
