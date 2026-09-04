@@ -8,6 +8,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      no_cache:
+        description: 忽略 Docker 构建缓存，完整重建 API 和 Web 镜像
+        required: false
+        default: false
+        type: boolean
 
 # 同一时间只允许一个测试部署运行，避免多个提交同时修改服务器。
 concurrency:
@@ -159,6 +165,7 @@ jobs:
           file: deploy/api.Dockerfile
           platforms: linux/amd64
           push: true
+          no-cache: ${{ inputs.no_cache }}
           tags: |
             ghcr.io/${{ github.repository }}-api:test-latest
             ghcr.io/${{ github.repository }}-api:${{ github.sha }}
@@ -196,6 +203,7 @@ jobs:
           file: deploy/web.Dockerfile
           platforms: linux/amd64
           push: true
+          no-cache: ${{ inputs.no_cache }}
           build-args: |
             VITE_QR_PUBLIC_BASE_URL=http://111.228.47.54:18080
             VITE_QR_ALLOW_HTTP_IN_TEST=true
