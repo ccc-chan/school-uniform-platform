@@ -255,6 +255,8 @@ jobs:
           DEPLOY_WEB: ${{ needs.changes.outputs.web }}
         run: |
           ssh \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=12 \
             -p "$DEPLOY_PORT" \
             -i ~/.ssh/test_deploy \
             "$DEPLOY_USER@$DEPLOY_HOST" \
