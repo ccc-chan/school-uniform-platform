@@ -1,4 +1,5 @@
 import { request, requestBlob } from '@/api/http'
+import type { PageData } from '@/types/common'
 // 产品档案、图片及关联生产批次/二维码数据接口。
 export type ProductStatus = 'enabled' | 'disabled'
 export type ProductCategory =
@@ -169,9 +170,7 @@ const qs = (params: Record<string, string | number>) =>
       .map(([k, v]) => [k, String(v)]),
   ).toString()
 export const getProducts = (params: Record<string, string | number>) =>
-  request<{ items: Product[]; total: number; page: number; pageSize: number }>(
-    `/api/v1/products?${qs(params)}`,
-  )
+  request<PageData<Product>>(`/api/v1/products?${qs(params)}`)
 export const getProduct = (id: number) =>
   request<Product>(`/api/v1/products/${id}`)
 export const getProductDetail = (id: number) =>

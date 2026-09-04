@@ -13,6 +13,15 @@ class DashboardController extends Controller {
       data: await this.ctx.service.dashboard.overview(),
     }
   }
+
+  async scanTrend() {
+    const days = parseInt(this.ctx.query.days) || 7
+    this.ctx.body = {
+      code: 200,
+      message: 'success',
+      data: await this.ctx.service.dashboard.scanTrend(days),
+    }
+  }
 }
 
 module.exports = DashboardController

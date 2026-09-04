@@ -1,3 +1,12 @@
+<!--
+ * @Author: Chan
+ * @Date: 2026-07-15 17:20:21
+ * @LastEditors: chan
+ * @LastEditTime: 2026-09-04 16:31:42
+ * @FilePath: /school-uniform-platform/apps/admin-web/src/components/dashboard/DashboardTables.vue
+ * @Description: 
+ * 
+-->
 <script setup lang="ts">
 import type { ActivityItem, RankingItem } from '@/types/dashboard'
 
@@ -27,7 +36,6 @@ function formatValue(value: number) {
     <div class="page-card min-w-0 pb-1">
       <div class="mb-4 flex items-center justify-between">
         <h3 class="m-0 text-base font-700 text-slate-900">最新动态</h3>
-        <a-button type="link" size="small">查看全部</a-button>
       </div>
 
       <ConfigTable
@@ -51,10 +59,14 @@ function formatValue(value: number) {
     <div class="page-card min-w-0">
       <div class="mb-5 flex items-center justify-between">
         <h3 class="m-0 text-base font-700 text-slate-900">热门产品 TOP5</h3>
-        <a-button type="link" size="small">查看全部</a-button>
+        <a-button type="link" size="small" @click="$router.push('/products')"
+          >查看全部</a-button
+        >
       </div>
 
-      <div class="grid grid-cols-[44px_minmax(0,1fr)_88px] border-b border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500 sm:grid-cols-[60px_minmax(0,1fr)_100px]">
+      <div
+        class="grid grid-cols-[44px_minmax(0,1fr)_88px] border-b border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500 sm:grid-cols-[60px_minmax(0,1fr)_100px]"
+      >
         <span>排名</span>
         <span>产品名称</span>
         <span class="text-right">扫码次数</span>
@@ -66,15 +78,22 @@ function formatValue(value: number) {
       >
         <span
           class="h-7 w-7 flex items-center justify-center rounded-full text-xs font-700"
-          :class="index === 0 ? 'bg-amber-100 text-amber-600' : index === 1 ? 'bg-slate-200 text-slate-500' : index === 2 ? 'bg-orange-100 text-orange-600' : 'text-slate-400'"
+          :class="
+            index === 0
+              ? 'bg-amber-100 text-amber-600'
+              : index === 1
+                ? 'bg-slate-200 text-slate-500'
+                : index === 2
+                  ? 'bg-orange-100 text-orange-600'
+                  : 'text-slate-400'
+          "
         >
           {{ index + 1 }}
         </span>
-        <OverflowTooltip
-          class="pr-2 text-slate-700"
-          :content="item.name"
-        />
-        <strong class="text-right text-slate-800">{{ formatValue(item.scans) }}</strong>
+        <OverflowTooltip class="pr-2 text-slate-700" :content="item.name" />
+        <strong class="text-right text-slate-800">{{
+          formatValue(item.scans)
+        }}</strong>
       </div>
     </div>
   </section>

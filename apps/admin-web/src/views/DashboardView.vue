@@ -44,7 +44,6 @@ onMounted(loadDashboard)
         <DashboardWelcome />
         <DashboardMetrics :items="dashboard.metrics" />
         <DashboardCharts
-          :scan-points="dashboard.scanPoints"
           :qr-statuses="dashboard.qrStatuses"
         />
         <DashboardTables

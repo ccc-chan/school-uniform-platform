@@ -96,6 +96,12 @@ module.exports = (app) => {
     dashboardMenu,
     controller.dashboard.overview,
   )
+  router.get(
+    '/api/v1/dashboard/scan-trend',
+    auth,
+    dashboardMenu,
+    controller.dashboard.scanTrend,
+  )
 
   // 产品中心。
   router.get(

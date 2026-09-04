@@ -1,6 +1,6 @@
 import { request } from '@/api/http'
 
-// 五类生产资源共享同一套列表、详情、创建、更新和状态接口。
+import type { PageData } from '@/types/common'
 export type ProductionResource =
   | 'orders'
   | 'batches'
@@ -62,13 +62,6 @@ export interface ProductionOptions {
   processes: Array<{ id: number; name: string }>
 }
 
-export interface ProductionPage {
-  items: ProductionItem[]
-  total: number
-  page: number
-  pageSize: number
-}
-
 function queryString(params: Record<string, string | number>) {
   return new URLSearchParams(
     Object.entries(params)
@@ -81,16 +74,9 @@ export function getProductionList(
   resource: ProductionResource,
   params: Record<string, string | number>,
 ) {
-  return request<ProductionPage>(
+  return request<PageData<ProductionItem>>(
     `/api/v1/production/${resource}?${queryString(params)}`,
   )
-}
-
-export function getProductionItem(
-  resource: ProductionResource,
-  id: number,
-) {
-  return request<ProductionItem>(`/api/v1/production/${resource}/${id}`)
 }
 
 export function createProductionItem(

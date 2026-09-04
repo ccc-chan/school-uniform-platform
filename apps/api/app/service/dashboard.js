@@ -44,27 +44,53 @@ class DashboardService extends Service {
     const detail = parseDetail(row.detail)
     const context = detail.context || {}
     const value =
-      context.name ||
-      context.batchNo ||
-      context.reportNo ||
-      context.code
+      context.name || context.batchNo || context.reportNo || context.code
 
     return value
       ? String(value)
       : `${row.module || '系统'} · ${row.targetType || '操作'}`
   }
 
+  async scanTrend(days) {
+    const validDays = [7, 30, 90].includes(days) ? days : 7
+
+    const trendRows = await this.app.model.query(
+      `SELECT
+        DATE_FORMAT(scanned_at, '%Y-%m-%d') AS date,
+        COUNT(*) AS value
+      FROM qr_scan_records
+      WHERE scanned_at >= DATE_SUB(CURDATE(), INTERVAL ${validDays - 1} DAY)
+        AND scanned_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+      GROUP BY DATE_FORMAT(scanned_at, '%Y-%m-%d')
+      ORDER BY DATE_FORMAT(scanned_at, '%Y-%m-%d')`,
+      { type: QueryTypes.SELECT },
+    )
+
+    const trendMap = new Map(
+      trendRows.map((item) => [String(item.date), Number(item.value || 0)]),
+    )
+
+    const scanPoints = Array.from({ length: validDays }, (_, index) => {
+      const date = new Date()
+      date.setHours(0, 0, 0, 0)
+      date.setDate(date.getDate() - (validDays - 1) + index)
+      const key = dateKey(date)
+
+      return {
+        date: key,
+        value: trendMap.get(key) || 0,
+      }
+    })
+
+    return scanPoints
+  }
+
   async overview() {
     // 五组统计互不依赖，使用并行查询避免串行等待。
-    const [
-      summaryRows,
-      trendRows,
-      statusRows,
-      activityRows,
-      rankingRows,
-    ] = await Promise.all([
-      this.app.model.query(
-        `SELECT
+    const [summaryRows, trendRows, statusRows, activityRows, rankingRows] =
+      await Promise.all([
+        this.app.model.query(
+          `SELECT
           (
             SELECT COUNT(*)
             FROM qr_scan_records
@@ -107,10 +133,10 @@ class DashboardService extends Service {
             WHERE created_at >= CURDATE()
               AND created_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
           ) AS todayReports`,
-        { type: QueryTypes.SELECT },
-      ),
-      this.app.model.query(
-        `SELECT
+          { type: QueryTypes.SELECT },
+        ),
+        this.app.model.query(
+          `SELECT
           DATE_FORMAT(scanned_at, '%Y-%m-%d') AS date,
           COUNT(*) AS value
         FROM qr_scan_records
@@ -118,16 +144,16 @@ class DashboardService extends Service {
           AND scanned_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
         GROUP BY DATE_FORMAT(scanned_at, '%Y-%m-%d')
         ORDER BY DATE_FORMAT(scanned_at, '%Y-%m-%d')`,
-        { type: QueryTypes.SELECT },
-      ),
-      this.app.model.query(
-        `SELECT status, COUNT(*) AS value
+          { type: QueryTypes.SELECT },
+        ),
+        this.app.model.query(
+          `SELECT status, COUNT(*) AS value
         FROM qr_codes
         GROUP BY status`,
-        { type: QueryTypes.SELECT },
-      ),
-      this.app.model.query(
-        `SELECT
+          { type: QueryTypes.SELECT },
+        ),
+        this.app.model.query(
+          `SELECT
           logs.id,
           logs.module,
           logs.action,
@@ -140,10 +166,10 @@ class DashboardService extends Service {
           ON employees.id = logs.employee_id
         ORDER BY logs.id DESC
         LIMIT 5`,
-        { type: QueryTypes.SELECT },
-      ),
-      this.app.model.query(
-        `SELECT
+          { type: QueryTypes.SELECT },
+        ),
+        this.app.model.query(
+          `SELECT
           products.name,
           COUNT(records.id) AS scans
         FROM qr_scan_records records
@@ -152,9 +178,9 @@ class DashboardService extends Service {
         GROUP BY products.id, products.name
         ORDER BY scans DESC, products.id DESC
         LIMIT 5`,
-        { type: QueryTypes.SELECT },
-      ),
-    ])
+          { type: QueryTypes.SELECT },
+        ),
+      ])
 
     const summary = summaryRows[0] || {}
     const todayScans = Number(summary.todayScans || 0)
@@ -162,19 +188,12 @@ class DashboardService extends Service {
     const qrTotal = Number(summary.qrTotal || 0)
 
     const statusMap = new Map(
-      statusRows.map((item) => [
-        item.status,
-        Number(item.value || 0),
-      ]),
+      statusRows.map((item) => [item.status, Number(item.value || 0)]),
     )
     const boundTotal =
-      (statusMap.get('bound') || 0) +
-      (statusMap.get('activated') || 0)
+      (statusMap.get('bound') || 0) + (statusMap.get('activated') || 0)
     const trendMap = new Map(
-      trendRows.map((item) => [
-        String(item.date),
-        Number(item.value || 0),
-      ]),
+      trendRows.map((item) => [String(item.date), Number(item.value || 0)]),
     )
 
     // 数据库只返回有扫码的日期，前端图表需要连续七天，因此补齐零值。
@@ -185,7 +204,7 @@ class DashboardService extends Service {
       const key = dateKey(date)
 
       return {
-        date: key.slice(5),
+        date: key,
         value: trendMap.get(key) || 0,
       }
     })
@@ -199,7 +218,7 @@ class DashboardService extends Service {
           trendLabel: '较昨日',
           color: '#2563EB',
           softColor: '#EAF2FF',
-          symbol: '⌁',
+          icon: 'scan',
         },
         {
           label: '二维码总数',
@@ -208,7 +227,7 @@ class DashboardService extends Service {
           trendLabel: '今日新增',
           color: '#14B8A6',
           softColor: '#E7F8F5',
-          symbol: '⌗',
+          icon: 'qrcode',
         },
         {
           label: '已绑定数量',
@@ -219,7 +238,7 @@ class DashboardService extends Service {
           trendLabel: '绑定率',
           color: '#F97316',
           softColor: '#FFF1E8',
-          symbol: '⌛',
+          icon: 'bound',
         },
         {
           label: '产品总数',
@@ -228,7 +247,7 @@ class DashboardService extends Service {
           trendLabel: '今日新增',
           color: '#8B5CF6',
           softColor: '#F1ECFF',
-          symbol: '▣',
+          icon: 'product',
         },
         {
           label: '检测报告总数',
@@ -237,7 +256,7 @@ class DashboardService extends Service {
           trendLabel: '今日新增',
           color: '#3B82F6',
           softColor: '#EAF2FF',
-          symbol: '♧',
+          icon: 'report',
         },
       ],
       scanPoints,
@@ -247,9 +266,7 @@ class DashboardService extends Service {
         return {
           name: item.name,
           value,
-          percent: qrTotal
-            ? Number(((value / qrTotal) * 100).toFixed(1))
-            : 0,
+          percent: qrTotal ? Number(((value / qrTotal) * 100).toFixed(1)) : 0,
           color: item.color,
         }
       }),

@@ -23,13 +23,6 @@ export interface EmployeeInput {
   status: AccountStatus
 }
 
-export interface EmployeePage {
-  items: Employee[]
-  total: number
-  page: number
-  pageSize: number
-}
-
 export interface Role {
   id: number
   name: string
@@ -65,11 +58,4 @@ export interface ManagedFile {
   size: number
   uploader: string
   createdAt: string
-}
-
-export interface ResourcePage<T> {
-  items: T[]
-  total: number
-  page: number
-  pageSize: number
 }

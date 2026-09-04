@@ -1,3 +1,12 @@
+<!--
+ * @Author: Chan
+ * @Date: 2026-07-15 17:19:50
+ * @LastEditors: chan
+ * @LastEditTime: 2026-09-04 16:36:24
+ * @FilePath: /school-uniform-platform/apps/admin-web/src/components/dashboard/DashboardWelcome.vue
+ * @Description: 
+ * 
+-->
 <script setup lang="ts">
 const today = new Intl.DateTimeFormat('zh-CN', {
   year: 'numeric',
@@ -8,7 +17,7 @@ const today = new Intl.DateTimeFormat('zh-CN', {
 </script>
 
 <template>
-  <section class="grid grid-cols-1 xl:grid-cols-[1.9fr_1fr]">
+  <section class="w-full">
     <div
       class="relative min-h-44 overflow-hidden rounded-4 border border-blue-100 bg-gradient-to-r from-[#edf5ff] via-[#e8f2ff] to-[#dceaff] px-5 py-6 shadow-sm sm:px-7 lg:px-9 lg:py-7"
     >
@@ -44,32 +53,3 @@ const today = new Intl.DateTimeFormat('zh-CN', {
     </div>
   </section>
 </template>
-
-<style scoped>
-.quick-action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  border: 0;
-  background: transparent;
-  color: #475569;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.quick-icon {
-  display: flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  font-size: 18px;
-  transition: transform 0.2s ease;
-}
-
-.quick-action:hover .quick-icon {
-  transform: translateY(-2px);
-}
-</style>

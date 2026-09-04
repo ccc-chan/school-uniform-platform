@@ -1,5 +1,21 @@
 <script setup lang="ts">
-import type { MetricItem } from '@/types/dashboard'
+import {
+  AppstoreOutlined,
+  FileSearchOutlined,
+  LinkOutlined,
+  QrcodeOutlined,
+  ScanOutlined,
+} from '@ant-design/icons-vue'
+import type { Component } from 'vue'
+import type { MetricIcon, MetricItem } from '@/types/dashboard'
+
+const metricIcons = {
+  scan: ScanOutlined,
+  qrcode: QrcodeOutlined,
+  bound: LinkOutlined,
+  product: AppstoreOutlined,
+  report: FileSearchOutlined,
+} satisfies Record<MetricIcon, Component>
 
 defineProps<{
   items: MetricItem[]
@@ -34,7 +50,11 @@ function formatValue(value: number) {
           class="h-11 w-11 flex items-center justify-center rounded-3 text-xl"
           :style="{ color: item.color, backgroundColor: item.softColor }"
         >
-          {{ item.symbol }}
+          <component
+            :is="metricIcons[item.icon]"
+            class="text-5"
+            aria-hidden="true"
+          />
         </div>
       </div>
       <div

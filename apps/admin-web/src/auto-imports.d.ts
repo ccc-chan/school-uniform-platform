@@ -83,7 +83,6 @@ declare global {
   const useProductionResource: typeof import('./composables/useProductionResource').useProductionResource
   const useProducts: typeof import('./composables/useProducts').useProducts
   const useQrOptions: typeof import('./composables/useQrOptions').useQrOptions
-  const useQrOverview: typeof import('./composables/useQrOverview').useQrOverview
   const useQualityReports: typeof import('./composables/useQualityReports').useQualityReports
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter

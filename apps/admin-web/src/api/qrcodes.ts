@@ -1,4 +1,5 @@
 import { request } from '@/api/http'
+import type { PageData } from '@/types/common'
 
 // 二维码生成、绑定、标签打印和公开追溯接口。
 export type QrStatus = 'unbound' | 'bound' | 'activated' | 'voided'
@@ -80,12 +81,8 @@ export interface QrLabelItem {
   size: string
 }
 
-export interface QrLabelBatchPage {
+export interface QrLabelBatchPage extends PageData<QrLabelItem> {
   batch: QrLabelBatch
-  items: QrLabelItem[]
-  total: number
-  page: number
-  pageSize: number
 }
 
 export interface QrPublicTrace {

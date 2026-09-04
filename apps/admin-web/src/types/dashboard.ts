@@ -1,4 +1,6 @@
 // 首页聚合接口与展示组件共用的数据类型。
+export type MetricIcon = 'scan' | 'qrcode' | 'bound' | 'product' | 'report'
+
 export interface MetricItem {
   label: string
   value: number
@@ -6,7 +8,7 @@ export interface MetricItem {
   trendLabel: string
   color: string
   softColor: string
-  symbol: string
+  icon: MetricIcon
 }
 
 export interface ScanPoint {

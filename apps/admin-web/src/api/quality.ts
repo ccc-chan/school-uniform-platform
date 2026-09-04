@@ -1,4 +1,5 @@
 import { request, requestBlob } from '@/api/http'
+import type { PageData } from '@/types/common'
 
 // 质量报告、检测项目、审核、附件下载和操作历史接口。
 export type QualityReportStatus =
@@ -7,7 +8,7 @@ export type QualityReportStatus =
   | 'rejected'
   | 'expired'
 export type QualityConclusion = 'qualified' | 'unqualified'
-export type QualityItemStatus = 'enabled' | 'disabled'
+
 export type QuickQualityReportType = 'certificate' | 'fabric' | 'quality'
 
 export interface QualityResultItem {
@@ -61,34 +62,14 @@ export interface QualityInspectionItem {
   category: string
   standardRequirement: string
   unit: string
-  status: QualityItemStatus
+  status: 'enabled' | 'disabled'
   createdAt: string
   updatedAt: string
-}
-
-export interface QualityHistory {
-  id: number
-  targetType: string
-  targetId: number | null
-  targetNo: string
-  action: string
-  status: string
-  note: string
-  operator: string
-  ip: string
-  createdAt: string
 }
 
 export interface QualityOptions {
   products: Array<{ id: number; code: string; name: string }>
   items: QualityInspectionItem[]
-}
-
-export interface QualityPage<T> {
-  items: T[]
-  total: number
-  page: number
-  pageSize: number
 }
 
 export interface QualityReportCreate {
@@ -112,11 +93,6 @@ export interface QuickQualityReportCreate {
   file: File
 }
 
-export type QualityInspectionItemInput = Pick<
-  QualityInspectionItem,
-  'code' | 'name' | 'category' | 'standardRequirement' | 'unit' | 'status'
->
-
 function queryString(params: Record<string, string | number>) {
   return new URLSearchParams(
     Object.entries(params)
@@ -130,13 +106,9 @@ export function getQualityOptions() {
 }
 
 export function getQualityReports(params: Record<string, string | number>) {
-  return request<QualityPage<QualityReport>>(
+  return request<PageData<QualityReport>>(
     `/api/v1/quality/reports?${queryString(params)}`,
   )
-}
-
-export function getQualityReport(id: number) {
-  return request<QualityReport>(`/api/v1/quality/reports/${id}`)
 }
 
 export function createQualityReport(data: QualityReportCreate) {
@@ -171,17 +143,6 @@ export function createQuickQualityReport(data: QuickQualityReportCreate) {
   })
 }
 
-export function reviewQualityReport(
-  id: number,
-  status: 'approved' | 'rejected',
-  note = '',
-) {
-  return request<QualityReport>(`/api/v1/quality/reports/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status, note }),
-  })
-}
-
 export function deleteQualityReport(id: number) {
   return request<null>(`/api/v1/quality/reports/${id}`, {
     method: 'DELETE',
@@ -190,43 +151,4 @@ export function deleteQualityReport(id: number) {
 
 export function getQualityReportBlob(id: number) {
   return requestBlob(`/api/v1/quality/reports/${id}/file`)
-}
-
-export function getQualityItems(params: Record<string, string | number>) {
-  return request<QualityPage<QualityInspectionItem>>(
-    `/api/v1/quality/items?${queryString(params)}`,
-  )
-}
-
-export function createQualityItem(data: QualityInspectionItemInput) {
-  return request<QualityInspectionItem>('/api/v1/quality/items', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
-}
-
-export function updateQualityItem(
-  id: number,
-  data: QualityInspectionItemInput,
-) {
-  return request<QualityInspectionItem>(`/api/v1/quality/items/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
-}
-
-export function updateQualityItemStatus(
-  id: number,
-  status: QualityItemStatus,
-) {
-  return request<QualityInspectionItem>(`/api/v1/quality/items/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status }),
-  })
-}
-
-export function getQualityHistory(params: Record<string, string | number>) {
-  return request<QualityPage<QualityHistory>>(
-    `/api/v1/quality/history?${queryString(params)}`
-  )
 }
