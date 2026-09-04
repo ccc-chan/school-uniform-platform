@@ -90,7 +90,6 @@ declare module 'vue' {
     ProductTable: typeof import('./components/products/ProductTable.vue')['default']
     QrBindingWizard: typeof import('./components/qrcodes/QrBindingWizard.vue')['default']
     QrGenerationWizard: typeof import('./components/qrcodes/QrGenerationWizard.vue')['default']
-    QualityItemEditor: typeof import('./components/quality/QualityItemEditor.vue')['default']
     QualityReportBasicFields: typeof import('./components/quality/QualityReportBasicFields.vue')['default']
     QualityReportDetail: typeof import('./components/quality/QualityReportDetail.vue')['default']
     QualityReportFileFields: typeof import('./components/quality/QualityReportFileFields.vue')['default']
