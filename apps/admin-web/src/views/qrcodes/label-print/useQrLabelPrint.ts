@@ -149,14 +149,7 @@ export const LABEL_SIZE_PRESETS: readonly LabelSizePreset[] = [
   { key: 'custom', label: '自定义', width: 30, height: 90, custom: true },
 ]
 
-export const LABEL_FIELDS: readonly { value: LabelField; label: string }[] = [
-  { value: 'company', label: '公司名称' },
-  { value: 'product', label: '产品名称' },
-  { value: 'batch', label: '批次号' },
-  { value: 'material', label: '款号/面料' },
-  { value: 'size', label: '尺码' },
-  { value: 'qrcode', label: '二维码' },
-]
+
 
 export const LABEL_STYLE_PRESETS: readonly {
   key: LabelStylePresetKey

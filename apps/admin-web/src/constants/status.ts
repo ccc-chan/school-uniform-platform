@@ -25,7 +25,4 @@ export const QUALITY_REPORT_STATUS_MAP: StatusPresentationMap = {
   expired: { label: '已过期', color: 'default' },
 }
 
-export const QUALITY_HISTORY_STATUS_MAP: StatusPresentationMap = {
-  ...QUALITY_REPORT_STATUS_MAP,
-  ...ENABLED_STATUS_MAP,
-}
+

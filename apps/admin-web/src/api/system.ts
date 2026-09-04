@@ -54,25 +54,4 @@ export function getOperationLogs(params: Record<string, string | number>) {
   return request<ResourcePage<OperationLog>>(`/api/v1/system/operation-logs?${queryString(params)}`)
 }
 
-export function getFiles(params: Record<string, string | number>) {
-  return request<ResourcePage<ManagedFile>>(`/api/v1/system/files?${queryString(params)}`)
-}
 
-export async function downloadFile(file: ManagedFile) {
-  const blob = await requestBlob(`/api/v1/system/files/${file.id}/download`)
-  // 创建临时对象 URL 触发浏览器下载，使用后立即释放。
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = file.name
-  link.click()
-  URL.revokeObjectURL(url)
-}
-
-export function getFileBlob(id: number) {
-  return requestBlob(`/api/v1/system/files/${id}/download`)
-}
-
-export function deleteFile(id: number) {
-  return request<null>(`/api/v1/system/files/${id}`, { method: 'DELETE' })
-}

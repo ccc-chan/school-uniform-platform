@@ -227,6 +227,6 @@ export function updateQualityItemStatus(
 
 export function getQualityHistory(params: Record<string, string | number>) {
   return request<QualityPage<QualityHistory>>(
-    `/api/v1/quality/history?${queryString(params)}`,
+    `/api/v1/quality/history?${queryString(params)}`
   )
 }

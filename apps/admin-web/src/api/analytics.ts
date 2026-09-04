@@ -8,7 +8,7 @@ export interface AnalyticsProductOption {
 }
 
 export interface AnalyticsOptions {
-  products: AnalyticsProductOption[]
+  products: Array<{ id: number; code: string; name: string }>
 }
 
 export interface AnalyticsMetrics {

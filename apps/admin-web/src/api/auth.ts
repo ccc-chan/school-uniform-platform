@@ -1,3 +1,12 @@
+/*
+ * @Author: Chan
+ * @Date: 2026-07-16 08:59:25
+ * @LastEditors: chan
+ * @LastEditTime: 2026-09-04 15:53:36
+ * @FilePath: /school-uniform-platform/apps/admin-web/src/api/auth.ts
+ * @Description:
+ *
+ */
 import { request } from '@/api/http'
 
 // 登录、密码、菜单和操作权限接口及其数据契约。
@@ -7,6 +16,16 @@ export interface AuthProfile {
   name: string
   role: string
   roleCode: string
+}
+
+export interface AuthUser {
+  id: number
+  username: string
+  name: string
+  departmentName: string
+  roleName: string
+  status: string
+  permissions: string[]
 }
 
 export interface AuthSession {

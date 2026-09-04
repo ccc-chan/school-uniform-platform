@@ -5,14 +5,19 @@ import ConfigTable from '@/components/common/ConfigTable.vue'
 import OverflowTooltip from '@/components/common/OverflowTooltip.vue'
 import StatusTag from '@/components/common/StatusTag.vue'
 import type { ConfigTableColumn } from '@/components/common/types'
-import { QUALITY_HISTORY_STATUS_MAP } from '@/constants/status'
+import { QUALITY_REPORT_STATUS_MAP } from '@/constants/status'
 
 const items = shallowRef<QualityHistory[]>([])
 const loading = shallowRef(false)
 const total = shallowRef(0)
 const page = shallowRef(1)
 const pageSize = shallowRef(10)
-const filters = reactive({ keyword: '', action: '', startDate: '', endDate: '' })
+const filters = reactive({
+  keyword: '',
+  action: '',
+  startDate: '',
+  endDate: '',
+})
 
 const columns: ConfigTableColumn[] = [
   { title: '记录编号', dataIndex: 'id', key: 'id', width: 105 },
@@ -48,7 +53,12 @@ function search() {
 }
 
 function reset() {
-  Object.assign(filters, { keyword: '', action: '', startDate: '', endDate: '' })
+  Object.assign(filters, {
+    keyword: '',
+    action: '',
+    startDate: '',
+    endDate: '',
+  })
   page.value = 1
   load()
 }
@@ -87,12 +97,22 @@ onMounted(load)
           ]"
         />
         <div class="flex w-full items-center gap-2 sm:w-auto">
-          <a-input v-model:value="filters.startDate" type="date" aria-label="开始日期" />
+          <a-input
+            v-model:value="filters.startDate"
+            type="date"
+            aria-label="开始日期"
+          />
           <span class="text-slate-400">至</span>
-          <a-input v-model:value="filters.endDate" type="date" aria-label="结束日期" />
+          <a-input
+            v-model:value="filters.endDate"
+            type="date"
+            aria-label="结束日期"
+          />
         </div>
         <a-space>
-          <a-button type="primary" :loading="loading" @click="search">查询</a-button>
+          <a-button type="primary" :loading="loading" @click="search"
+            >查询</a-button
+          >
           <a-button :disabled="loading" @click="reset">重置</a-button>
         </a-space>
       </div>
@@ -107,13 +127,16 @@ onMounted(load)
         :page="page"
         :page-size="pageSize"
         :scroll-x="1300"
-        @change="page = $event; load()"
+        @change="
+          page = $event
+          load()
+        "
       >
         <template #cell="{ column, value }">
           <StatusTag
             v-if="column.key === 'status'"
             :value="String(value || '')"
-            :map="QUALITY_HISTORY_STATUS_MAP"
+            :map="QUALITY_REPORT_STATUS_MAP"
           />
           <OverflowTooltip v-else :content="value" />
         </template>
