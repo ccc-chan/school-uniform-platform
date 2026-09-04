@@ -16,6 +16,91 @@ concurrency:
 
 # 测试和类型检查通过后才允许发布镜像。
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      api: ${{ steps.detect.outputs.api }}
+      web: ${{ steps.detect.outputs.web }}
+      deploy: ${{ steps.detect.outputs.deploy }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Detect affected components
+        id: detect
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          api=false
+          web=false
+          compose=false
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            api=true
+            web=true
+            compose=true
+          else
+            changed_file_list="$(mktemp)"
+
+            if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+              git diff-tree \
+                --root \
+                --no-commit-id \
+                --name-only \
+                -r "$CURRENT_SHA" > "$changed_file_list"
+            else
+              if ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+                git fetch --no-tags --depth=1 origin "$BEFORE_SHA"
+              fi
+              git diff --name-only \
+                "$BEFORE_SHA" \
+                "$CURRENT_SHA" > "$changed_file_list"
+            fi
+
+            while IFS= read -r changed_file; do
+              case "$changed_file" in
+                package.json|package-lock.json|.dockerignore)
+                  api=true
+                  web=true
+                  ;;
+                apps/api/package.json)
+                  api=true
+                  web=true
+                  ;;
+                apps/admin-web/package.json)
+                  api=true
+                  web=true
+                  ;;
+                apps/api/*|deploy/api.Dockerfile)
+                  api=true
+                  ;;
+                apps/admin-web/*|apps/school_uniform_info/*|deploy/web.Dockerfile|deploy/nginx.conf)
+                  web=true
+                  ;;
+                docker-compose.prod.yml)
+                  compose=true
+                  ;;
+              esac
+            done < "$changed_file_list"
+          fi
+
+          deploy=false
+          if [[ "$api" == true || "$web" == true || "$compose" == true ]]; then
+            deploy=true
+          fi
+
+          echo "api=$api" >> "$GITHUB_OUTPUT"
+          echo "web=$web" >> "$GITHUB_OUTPUT"
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
   verify:
     name: Verify
     runs-on: ubuntu-latest
@@ -43,25 +128,16 @@ jobs:
       - name: Check H5 types
         run: npm run typecheck:info
 
-  build:
-    name: Build ${{ matrix.component }}
-    needs: verify
+  build-api:
+    name: Build api
+    needs:
+      - changes
+      - verify
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - component: api
-            dockerfile: deploy/api.Dockerfile
-            build_args: ""
-          - component: web
-            dockerfile: deploy/web.Dockerfile
-            build_args: |
-              VITE_QR_PUBLIC_BASE_URL=http://111.228.47.54:18080
-              VITE_QR_ALLOW_HTTP_IN_TEST=true
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -76,25 +152,72 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      # 京东云服务器为 x86_64，因此镜像固定构建为 linux/amd64。
-      - name: Build and push image
+      - name: Build and push API image
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: deploy/api.Dockerfile
           platforms: linux/amd64
           push: true
-          build-args: ${{ matrix.build_args }}
-          # test-latest 供日常自动部署；commit SHA 标签用于精确回滚。
           tags: |
-            ghcr.io/${{ github.repository }}-${{ matrix.component }}:test-latest
-            ghcr.io/${{ github.repository }}-${{ matrix.component }}:${{ github.sha }}
-          cache-from: type=gha,scope=${{ matrix.component }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+            ghcr.io/${{ github.repository }}-api:test-latest
+            ghcr.io/${{ github.repository }}-api:${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+  build-web:
+    name: Build web
+    needs:
+      - changes
+      - verify
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/web.Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            VITE_QR_PUBLIC_BASE_URL=http://111.228.47.54:18080
+            VITE_QR_ALLOW_HTTP_IN_TEST=true
+          tags: |
+            ghcr.io/${{ github.repository }}-web:test-latest
+            ghcr.io/${{ github.repository }}-web:${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
 
   deploy:
     name: Deploy to JD Cloud
-    needs: build
+    needs:
+      - changes
+      - verify
+      - build-api
+      - build-web
+    if: >-
+      always() &&
+      needs.changes.outputs.deploy == 'true' &&
+      needs.verify.result == 'success' &&
+      (needs.build-api.result == 'success' || needs.build-api.result == 'skipped') &&
+      (needs.build-web.result == 'success' || needs.build-web.result == 'skipped')
     runs-on: ubuntu-latest
     environment: test
     permissions:
@@ -126,19 +249,71 @@ jobs:
             docker-compose.prod.yml \
             "$DEPLOY_USER@$DEPLOY_HOST:/opt/school-uniform-platform/docker-compose.prod.yml"
 
-      - name: Pull and deploy
+      - name: Pull and deploy changed services
+        env:
+          DEPLOY_API: ${{ needs.changes.outputs.api }}
+          DEPLOY_WEB: ${{ needs.changes.outputs.web }}
         run: |
           ssh \
             -p "$DEPLOY_PORT" \
             -i ~/.ssh/test_deploy \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            'set -e
-             cd /opt/school-uniform-platform
-             docker compose --env-file .env.test -f docker-compose.prod.yml pull api web
-             # 迁移可以重复安全执行；seed 不自动执行，防止重复写入初始化数据。
-             docker compose --env-file .env.test -f docker-compose.prod.yml run --rm api npm run db:migrate:test
-             docker compose --env-file .env.test -f docker-compose.prod.yml up -d --no-build --wait --wait-timeout 180
-             curl --fail --silent --show-error http://127.0.0.1:18080/healthz
-             curl --fail --silent --show-error http://127.0.0.1:18080/api/v1/health
-             curl --fail --silent --show-error http://127.0.0.1:18080/school_uniform_info/
-             docker image prune -f'
+            "bash -s -- '$DEPLOY_API' '$DEPLOY_WEB'" <<'REMOTE'
+          set -euo pipefail
+
+          cd /opt/school-uniform-platform
+
+          api_changed="$1"
+          web_changed="$2"
+          changed_services=()
+
+          if [[ "$api_changed" == true ]]; then
+            changed_services+=(api)
+          fi
+
+          if [[ "$web_changed" == true ]]; then
+            changed_services+=(web)
+          fi
+
+          if ((${#changed_services[@]} > 0)); then
+            docker compose \
+              --env-file .env.test \
+              -f docker-compose.prod.yml \
+              pull --quiet "${changed_services[@]}"
+          fi
+
+          if [[ "$api_changed" == true ]]; then
+            # 迁移可以重复安全执行；seed 不自动执行，防止重复写入初始化数据。
+            docker compose \
+              --env-file .env.test \
+              -f docker-compose.prod.yml \
+              run --rm api npm run db:migrate:test
+          fi
+
+          if ((${#changed_services[@]} > 0)); then
+            docker compose \
+              --env-file .env.test \
+              -f docker-compose.prod.yml \
+              up -d --no-build --wait --wait-timeout 180 \
+              "${changed_services[@]}"
+          else
+            # Compose 配置变化时重新核对整个服务栈。
+            docker compose \
+              --env-file .env.test \
+              -f docker-compose.prod.yml \
+              up -d --no-build --wait --wait-timeout 180
+          fi
+
+          if [[ "$api_changed" == true && "$web_changed" != true ]]; then
+            # Nginx 启动时解析 API 容器地址，因此 API 被替换后需要重建 Web。
+            docker compose \
+              --env-file .env.test \
+              -f docker-compose.prod.yml \
+              up -d --no-build --force-recreate \
+              --wait --wait-timeout 180 web
+          fi
+
+          curl --fail --silent --show-error http://127.0.0.1:18080/healthz
+          curl --fail --silent --show-error http://127.0.0.1:18080/api/v1/health
+          curl --fail --silent --show-error http://127.0.0.1:18080/school_uniform_info/
+          REMOTE

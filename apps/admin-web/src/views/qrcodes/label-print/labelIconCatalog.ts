@@ -1,3 +1,11 @@
+interface LabelIconManifestEntry {
+  categoryKey: string
+  filename: string
+  url: string
+}
+
+declare const __LABEL_ICON_MANIFEST__: readonly LabelIconManifestEntry[]
+
 const categoryDefinitions = [
   { key: 'electrical', label: '电子电器' },
   { key: 'office', label: '办公' },
@@ -25,15 +33,6 @@ export interface LabelIconCategory {
   icons: LabelIcon[]
 }
 
-const iconModules = import.meta.glob<string>(
-  '../../../assets/label-icons/*/*.png',
-  {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  },
-)
-
 const collator = new Intl.Collator('zh-CN', {
   numeric: true,
   sensitivity: 'base',
@@ -41,15 +40,12 @@ const collator = new Intl.Collator('zh-CN', {
 
 const iconsByCategory = new Map<string, LabelIcon[]>()
 
-for (const [path, url] of Object.entries(iconModules)) {
-  const segments = path.split('/')
-  const filename = segments.at(-1)
-  const categoryKey = segments.at(-2)
+for (const { categoryKey, filename, url } of __LABEL_ICON_MANIFEST__) {
   const category = categoryDefinitions.find(
     (item) => item.key === categoryKey,
   )
 
-  if (!filename || !categoryKey || !category) continue
+  if (!category) continue
 
   const name = filename.replace(/\.png$/i, '')
   const icons = iconsByCategory.get(categoryKey) ?? []

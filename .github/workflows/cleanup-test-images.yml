@@ -1,0 +1,43 @@
+name: Clean test deployment images
+
+on:
+  schedule:
+    # 每周日北京时间 03:30，即周六 UTC 19:30。
+    - cron: "30 19 * * 6"
+  workflow_dispatch:
+
+# 避免镜像清理和测试环境部署同时操作服务器。
+concurrency:
+  group: deploy-test
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Clean old images on JD Cloud
+    runs-on: ubuntu-latest
+    environment: test
+    permissions:
+      contents: read
+    env:
+      DEPLOY_HOST: ${{ vars.TEST_SSH_HOST }}
+      DEPLOY_PORT: ${{ vars.TEST_SSH_PORT }}
+      DEPLOY_USER: ${{ vars.TEST_SSH_USER }}
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.TEST_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/test_deploy
+          chmod 600 ~/.ssh/test_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Clean dangling images older than seven days
+        run: |
+          ssh \
+            -p "$DEPLOY_PORT" \
+            -i ~/.ssh/test_deploy \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            'docker image prune -f --filter "until=168h"'

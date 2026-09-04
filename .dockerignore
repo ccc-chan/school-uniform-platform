@@ -16,3 +16,6 @@ apps/api/storage/uploads
 *.log
 *.tsbuildinfo
 .DS_Store
+
+# 标签选择器只使用分类子目录，根目录图片不进入 Docker 构建上下文。
+apps/admin-web/src/assets/label-icons/*.png
