@@ -7,6 +7,7 @@ const { Op } = require('sequelize')
 const { Service } = require('egg')
 
 const batchStepStatuses = new Set(['pending', 'in_progress', 'completed'])
+
 const batchStepPhotoExtensions = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
@@ -14,7 +15,13 @@ const batchStepPhotoExtensions = {
 }
 
 const statuses = {
-  orders: new Set(['pending', 'scheduled', 'producing', 'completed', 'cancelled']),
+  orders: new Set([
+    'pending',
+    'scheduled',
+    'producing',
+    'completed',
+    'cancelled',
+  ]),
   batches: new Set(['planned', 'in_progress', 'paused', 'completed']),
   processes: new Set(['enabled', 'disabled']),
   records: new Set(['pending', 'in_progress', 'completed', 'exception']),
@@ -87,21 +94,55 @@ class ProductionService extends Service {
 
   include(resource) {
     const model = this.app.model
-    if (resource === 'orders') return [{ model: model.Product, as: 'product', attributes: ['id', 'code', 'name'] }]
-    if (resource === 'batches') return [
-      { model: model.ProductionOrder, as: 'order', attributes: ['id', 'orderNo'] },
-      { model: model.Product, as: 'product', attributes: ['id', 'code', 'name'] },
-      { model: model.Employee, as: 'responsibleEmployee', attributes: ['id', 'name'] },
-    ]
-    if (resource === 'records') return [
-      { model: model.ProductionBatch, as: 'batch', attributes: ['id', 'batchNo'] },
-      { model: model.Employee, as: 'employee', attributes: ['id', 'name'] },
-      { model: model.ProductionProcess, as: 'process', attributes: ['id', 'flowName', 'nodeName'] },
-    ]
-    if (resource === 'outbounds') return [
-      { model: model.ProductionBatch, as: 'batch', attributes: ['id', 'batchNo', 'quantity'] },
-      { model: model.Employee, as: 'handler', attributes: ['id', 'name'] },
-    ]
+    if (resource === 'orders')
+      return [
+        {
+          model: model.Product,
+          as: 'product',
+          attributes: ['id', 'code', 'name'],
+        },
+      ]
+    if (resource === 'batches')
+      return [
+        {
+          model: model.ProductionOrder,
+          as: 'order',
+          attributes: ['id', 'orderNo'],
+        },
+        {
+          model: model.Product,
+          as: 'product',
+          attributes: ['id', 'code', 'name'],
+        },
+        {
+          model: model.Employee,
+          as: 'responsibleEmployee',
+          attributes: ['id', 'name'],
+        },
+      ]
+    if (resource === 'records')
+      return [
+        {
+          model: model.ProductionBatch,
+          as: 'batch',
+          attributes: ['id', 'batchNo'],
+        },
+        { model: model.Employee, as: 'employee', attributes: ['id', 'name'] },
+        {
+          model: model.ProductionProcess,
+          as: 'process',
+          attributes: ['id', 'flowName', 'nodeName'],
+        },
+      ]
+    if (resource === 'outbounds')
+      return [
+        {
+          model: model.ProductionBatch,
+          as: 'batch',
+          attributes: ['id', 'batchNo', 'quantity'],
+        },
+        { model: model.Employee, as: 'handler', attributes: ['id', 'name'] },
+      ]
     return []
   }
 
@@ -138,9 +179,7 @@ class ProductionService extends Service {
           ? Number(item.responsibleEmployeeId)
           : undefined,
         responsibleEmployeeName:
-          item.responsibleEmployeeName ||
-          item.responsibleEmployee?.name ||
-          '',
+          item.responsibleEmployeeName || item.responsibleEmployee?.name || '',
         notes: item.notes || '',
       },
       processes: {
@@ -156,7 +195,9 @@ class ProductionService extends Service {
         employeeId: Number(item.employeeId),
         employeeName: item.operatorName || item.employee?.name || '',
         processId: Number(item.processId),
-        processName: item.process ? `${item.process.flowName} / ${item.process.nodeName}` : '',
+        processName: item.process
+          ? `${item.process.flowName} / ${item.process.nodeName}`
+          : '',
         content: item.content || item.process?.nodeName || '',
         quantity: Number(item.quantity),
         startedAt: this.ctx.helper.formatDateTime(item.startedAt),
@@ -186,25 +227,28 @@ class ProductionService extends Service {
   }
 
   async log(action, resource, item, detail = null, transaction = null) {
-    const log = await this.app.model.OperationLog.create({
-      employeeId: this.ctx.state.user.id,
-      module: '生产中心',
-      action,
-      targetType: `production_${resource}`,
-      targetId: item.id,
-      detail: {
-        request: {
-          method: this.ctx.method,
-          path: this.ctx.path,
-          params: this.ctx.params,
-          query: this.ctx.query,
-          body: this.ctx.request.body,
+    const log = await this.app.model.OperationLog.create(
+      {
+        employeeId: this.ctx.state.user.id,
+        module: '生产中心',
+        action,
+        targetType: `production_${resource}`,
+        targetId: item.id,
+        detail: {
+          request: {
+            method: this.ctx.method,
+            path: this.ctx.path,
+            params: this.ctx.params,
+            query: this.ctx.query,
+            body: this.ctx.request.body,
+          },
+          response: null,
+          context: detail,
         },
-        response: null,
-        context: detail,
+        ip: this.ctx.ip,
       },
-      ip: this.ctx.ip,
-    }, { transaction })
+      { transaction },
+    )
     this.ctx.state.operationLogIds ||= []
     this.ctx.state.operationLogIds.push(Number(log.id))
   }
@@ -231,7 +275,12 @@ class ProductionService extends Service {
         'responsibleEmployeeName',
       ],
       processes: ['flowName', 'nodeName', 'description'],
-      records: ['content', '$batch.batch_no$', '$employee.name$', '$process.node_name$'],
+      records: [
+        'content',
+        '$batch.batch_no$',
+        '$employee.name$',
+        '$process.node_name$',
+      ],
       outbounds: ['outboundNo', 'recipient', 'destination', '$batch.batch_no$'],
     }[resource]
     where[Op.or] = keys.map((key) => ({ [key]: like }))
@@ -239,39 +288,88 @@ class ProductionService extends Service {
   }
 
   async list(resource, query, permissions) {
-    const { page, pageSize, offset } =
-      this.ctx.helper.pagination(query)
+    const { page, pageSize, offset } = this.ctx.helper.pagination(query)
     const { rows, count } = await this.model(resource).findAndCountAll({
       where: this.where(resource, query),
       include: this.include(resource),
       distinct: true,
-      order: resource === 'processes' ? [['flowName', 'ASC'], ['nodeOrder', 'ASC']] : [['id', 'DESC']],
+      order:
+        resource === 'processes'
+          ? [
+              ['flowName', 'ASC'],
+              ['nodeOrder', 'ASC'],
+            ]
+          : [['id', 'DESC']],
       limit: pageSize,
       offset,
     })
-    return { items: rows.map((item) => this.json(resource, item, permissions)), total: count, page, pageSize }
+    return {
+      items: rows.map((item) => this.json(resource, item, permissions)),
+      total: count,
+      page,
+      pageSize,
+    }
   }
 
   async get(resource, id, permissions = null) {
-    const item = await this.model(resource).findByPk(id, { include: this.include(resource) })
+    const item = await this.model(resource).findByPk(id, {
+      include: this.include(resource),
+    })
     return item ? this.json(resource, item, permissions) : null
   }
 
   async options() {
     const model = this.app.model
-    const [products, employees, orders, batches, processes] = await Promise.all([
-      model.Product.findAll({ where: { status: 'enabled' }, attributes: ['id', 'code', 'name'], order: [['name', 'ASC']] }),
-      model.Employee.findAll({ where: { status: 'enabled' }, attributes: ['id', 'name'], order: [['name', 'ASC']] }),
-      model.ProductionOrder.findAll({ where: { status: { [Op.ne]: 'cancelled' } }, include: this.include('orders'), order: [['id', 'DESC']] }),
-      model.ProductionBatch.findAll({ attributes: ['id', 'batchNo', 'quantity'], order: [['id', 'DESC']] }),
-      model.ProductionProcess.findAll({ where: { status: 'enabled' }, attributes: ['id', 'flowName', 'nodeName'], order: [['flowName', 'ASC'], ['nodeOrder', 'ASC']] }),
+    const [products, employees, orders, batches] = await Promise.all([
+      model.Product.findAll({
+        where: { status: 'enabled' },
+        attributes: ['id', 'code', 'name'],
+        order: [['name', 'ASC']],
+      }),
+      model.Employee.findAll({
+        where: { status: 'enabled' },
+        attributes: ['id', 'name'],
+        order: [['name', 'ASC']],
+      }),
+      model.ProductionOrder.findAll({
+        where: { status: { [Op.ne]: 'cancelled' } },
+        include: this.include('orders'),
+        order: [['id', 'DESC']],
+      }),
+      model.ProductionBatch.findAll({
+        attributes: ['id', 'batchNo', 'quantity'],
+        order: [['id', 'DESC']],
+      }),
     ])
     return {
-      products: products.map((item) => ({ id: Number(item.id), code: item.code, name: item.name })),
-      employees: employees.map((item) => ({ id: Number(item.id), name: item.name })),
-      orders: orders.map((item) => ({ id: Number(item.id), orderNo: item.orderNo, productId: Number(item.productId), productName: item.product?.name || '', quantity: Number(item.quantity) })),
-      batches: batches.map((item) => ({ id: Number(item.id), batchNo: item.batchNo, quantity: Number(item.quantity) })),
-      processes: processes.map((item) => ({ id: Number(item.id), name: `${item.flowName} / ${item.nodeName}` })),
+      products: products.map((item) => ({
+        id: Number(item.id),
+        code: item.code,
+        name: item.name,
+      })),
+      employees: employees.map((item) => ({
+        id: Number(item.id),
+        name: item.name,
+      })),
+      orders: orders.map((item) => ({
+        id: Number(item.id),
+        orderNo: item.orderNo,
+        productId: Number(item.productId),
+        productName: item.product?.name || '',
+        quantity: Number(item.quantity),
+      })),
+      batches: batches.map((item) => ({
+        id: Number(item.id),
+        batchNo: item.batchNo,
+        quantity: Number(item.quantity),
+      })),
+      processes: [
+        { id: 1, name: '裁剪' },
+        { id: 2, name: '缝制' },
+        { id: 3, name: '质检' },
+        { id: 4, name: '包装入库' },
+        { id: 5, name: '其他（自定义）' },
+      ],
     }
   }
 
@@ -279,38 +377,54 @@ class ProductionService extends Service {
     // 按资源类型归一化请求字段，并执行格式、范围和状态校验。
     const status = String(value.status || [...statuses[resource]][0])
     if (!statuses[resource].has(status)) invalid('状态值无效')
-    if (resource === 'orders') return {
-      customerName: required(value.customerName, '客户名称', 120),
-      productId: positiveInteger(value.productId, '产品'),
-      quantity: positiveInteger(value.quantity, '订单数量'),
-      deliveryDate: validDate(value.deliveryDate, '交付日期'),
-      status,
-      notes: String(value.notes || '').trim().slice(0, 500),
-    }
-    if (resource === 'processes') return {
-      flowName: required(value.flowName, '流程名称', 100),
-      nodeName: required(value.nodeName, '节点名称', 100),
-      nodeOrder: positiveInteger(value.nodeOrder, '节点排序'),
-      description: String(value.description || '').trim().slice(0, 500),
-      consumerVisible: Boolean(value.consumerVisible),
-      status,
-    }
-    if (resource === 'batches') return {
-      orderId: null,
-      orderNo: required(value.orderNo, '生产订单', 120),
-      productId: positiveInteger(value.productId, '生产产品'),
-      quantity: positiveInteger(value.quantity, '生产数量'),
-      productionDate: validDate(value.productionDate, '生产日期'),
-      factoryName: required(value.factoryName, '生产工厂', 120),
-      responsibleEmployeeId: null,
-      responsibleEmployeeName: required(value.responsibleEmployeeName, '负责人', 80),
-      status,
-      notes: String(value.notes || '').trim().slice(0, 500),
-    }
+    if (resource === 'orders')
+      return {
+        customerName: required(value.customerName, '客户名称', 120),
+        productId: positiveInteger(value.productId, '产品'),
+        quantity: positiveInteger(value.quantity, '订单数量'),
+        deliveryDate: validDate(value.deliveryDate, '交付日期'),
+        status,
+        notes: String(value.notes || '')
+          .trim()
+          .slice(0, 500),
+      }
+    if (resource === 'processes')
+      return {
+        flowName: required(value.flowName, '流程名称', 100),
+        nodeName: required(value.nodeName, '节点名称', 100),
+        nodeOrder: positiveInteger(value.nodeOrder, '节点排序'),
+        description: String(value.description || '')
+          .trim()
+          .slice(0, 500),
+        consumerVisible: Boolean(value.consumerVisible),
+        status,
+      }
+    if (resource === 'batches')
+      return {
+        orderId: null,
+        orderNo: required(value.orderNo, '生产订单', 120),
+        productId: positiveInteger(value.productId, '生产产品'),
+        quantity: positiveInteger(value.quantity, '生产数量'),
+        productionDate: validDate(value.productionDate, '生产日期'),
+        factoryName: required(value.factoryName, '生产工厂', 120),
+        responsibleEmployeeId: null,
+        responsibleEmployeeName: required(
+          value.responsibleEmployeeName,
+          '负责人',
+          80,
+        ),
+        status,
+        notes: String(value.notes || '')
+          .trim()
+          .slice(0, 500),
+      }
     if (resource === 'records') {
       const startedAt = validDate(value.startedAt, '开始时间')
-      const completedAt = value.completedAt ? validDate(value.completedAt, '完成时间') : null
-      if (completedAt && new Date(completedAt) < new Date(startedAt)) invalid('完成时间不能早于开始时间')
+      const completedAt = value.completedAt
+        ? validDate(value.completedAt, '完成时间')
+        : null
+      if (completedAt && new Date(completedAt) < new Date(startedAt))
+        invalid('完成时间不能早于开始时间')
       return {
         batchId: positiveInteger(value.batchId, '生产批次'),
         employeeId: positiveInteger(value.employeeId, '员工'),
@@ -319,7 +433,9 @@ class ProductionService extends Service {
         startedAt,
         completedAt,
         status,
-        notes: String(value.notes || '').trim().slice(0, 500),
+        notes: String(value.notes || '')
+          .trim()
+          .slice(0, 500),
       }
     }
     return {
@@ -330,29 +446,46 @@ class ProductionService extends Service {
       destination: required(value.destination, '目的地', 255),
       handledBy: positiveInteger(value.handledBy, '经办人'),
       status,
-      notes: String(value.notes || '').trim().slice(0, 500),
+      notes: String(value.notes || '')
+        .trim()
+        .slice(0, 500),
     }
   }
 
-  async validateRelations(resource, payload, currentId = 0, transaction = null) {
+  async validateRelations(
+    resource,
+    payload,
+    currentId = 0,
+    transaction = null,
+  ) {
     // 在写入事务内检查关联对象及累计数量，降低并发修改造成的数据不一致。
     const model = this.app.model
     if (resource === 'orders') {
-      if (!await model.Product.findByPk(payload.productId, { transaction })) invalid('所选产品不存在')
+      if (!(await model.Product.findByPk(payload.productId, { transaction })))
+        invalid('所选产品不存在')
       if (currentId) {
-        const current = await model.ProductionOrder.findByPk(currentId, { transaction })
-        const allocated = Number(await model.ProductionBatch.sum('quantity', {
-          where: { orderId: currentId }, transaction,
-        }) || 0)
+        const current = await model.ProductionOrder.findByPk(currentId, {
+          transaction,
+        })
+        const allocated = Number(
+          (await model.ProductionBatch.sum('quantity', {
+            where: { orderId: currentId },
+            transaction,
+          })) || 0,
+        )
         if (payload.quantity < allocated) invalid('订单数量不能小于已排产数量')
-        if (allocated > 0 && current && Number(current.productId) !== payload.productId) {
+        if (
+          allocated > 0 &&
+          current &&
+          Number(current.productId) !== payload.productId
+        ) {
           invalid('已有生产批次的订单不能更换产品')
         }
       }
       return payload
     }
     if (resource === 'batches') {
-      if (!await model.Product.findByPk(payload.productId, { transaction })) {
+      if (!(await model.Product.findByPk(payload.productId, { transaction }))) {
         invalid('生产产品不存在')
       }
       return payload
@@ -360,22 +493,48 @@ class ProductionService extends Service {
     if (resource === 'records') {
       const [batch, employee, process] = await Promise.all([
         model.ProductionBatch.findByPk(payload.batchId, { transaction }),
-        model.Employee.findOne({ where: { id: payload.employeeId, status: 'enabled' }, transaction }),
-        model.ProductionProcess.findOne({ where: { id: payload.processId, status: 'enabled' }, transaction }),
+        model.Employee.findOne({
+          where: { id: payload.employeeId, status: 'enabled' },
+          transaction,
+        }),
+        model.ProductionProcess.findOne({
+          where: { id: payload.processId, status: 'enabled' },
+          transaction,
+        }),
       ])
       if (!batch) invalid('所选生产批次不存在')
-      if (payload.quantity > Number(batch.quantity)) invalid('生产记录数量不能超过批次数量')
+      if (payload.quantity > Number(batch.quantity))
+        invalid('生产记录数量不能超过批次数量')
       if (!employee) invalid('所选员工不存在或已停用')
       if (!process) invalid('所选工序不存在或已停用')
     }
     if (resource === 'outbounds') {
-      const batch = await model.ProductionBatch.findByPk(payload.batchId, { transaction })
+      const batch = await model.ProductionBatch.findByPk(payload.batchId, {
+        transaction,
+      })
       if (!batch) invalid('所选生产批次不存在')
-      const shipped = Number(await model.ProductionOutbound.sum('quantity', {
-        where: { batchId: batch.id, id: { [Op.ne]: currentId || 0 }, status: { [Op.ne]: 'cancelled' } }, transaction,
-      }) || 0)
-      if (payload.status !== 'cancelled' && shipped + payload.quantity > Number(batch.quantity)) invalid('累计出厂数量不能超过生产批次数量')
-      if (!await model.Employee.findOne({ where: { id: payload.handledBy, status: 'enabled' }, transaction })) invalid('所选经办人不存在或已停用')
+      const shipped = Number(
+        (await model.ProductionOutbound.sum('quantity', {
+          where: {
+            batchId: batch.id,
+            id: { [Op.ne]: currentId || 0 },
+            status: { [Op.ne]: 'cancelled' },
+          },
+          transaction,
+        })) || 0,
+      )
+      if (
+        payload.status !== 'cancelled' &&
+        shipped + payload.quantity > Number(batch.quantity)
+      )
+        invalid('累计出厂数量不能超过生产批次数量')
+      if (
+        !(await model.Employee.findOne({
+          where: { id: payload.handledBy, status: 'enabled' },
+          transaction,
+        }))
+      )
+        invalid('所选经办人不存在或已停用')
     }
     return payload
   }
@@ -388,7 +547,10 @@ class ProductionService extends Service {
       if (resource === 'orders') payload.orderNo = this.number('PO')
       if (resource === 'batches') payload.batchNo = this.number('PB')
       if (resource === 'outbounds') payload.outboundNo = this.number('OUT')
-      const item = await this.model(resource).create({ ...payload, createdBy: this.ctx.state.user.id }, { transaction })
+      const item = await this.model(resource).create(
+        { ...payload, createdBy: this.ctx.state.user.id },
+        { transaction },
+      )
       await this.log(`新增${resource}`, resource, item, payload, transaction)
       return Number(item.id)
     })
@@ -410,7 +572,16 @@ class ProductionService extends Service {
   }
 
   async createBatchStep(batchId, value, file = null) {
-    const processId = positiveInteger(value.processId, '环节名称')
+    const hasProcess =
+      value.processId !== null &&
+      value.processId !== undefined &&
+      value.processId !== ''
+    const processId = hasProcess
+      ? positiveInteger(value.processId, '环节名称')
+      : null
+    const customContent = processId
+      ? ''
+      : required(value.content, '自定义环节名称', 200)
     const operatorName = required(value.operatorName, '操作人', 80)
     const startedAt = validDate(value.startedAt, '开始日期')
     const completedAt = value.completedAt
@@ -423,16 +594,22 @@ class ProductionService extends Service {
       invalid('完成日期不能早于开始日期')
     }
 
-    const notes = String(value.notes || '').trim().slice(0, 500)
+    const notes = String(value.notes || '')
+      .trim()
+      .slice(0, 500)
     const [batch, process] = await Promise.all([
       this.app.model.ProductionBatch.findByPk(batchId),
-      this.app.model.ProductionProcess.findOne({
-        where: { id: processId, status: 'enabled' },
-      }),
+      processId
+        ? this.app.model.ProductionProcess.findOne({
+            where: { id: processId, status: 'enabled' },
+          })
+        : Promise.resolve(null),
     ])
 
     if (!batch) invalid('生产批次不存在', 404)
-    if (!process) invalid('所选生产环节不存在或已停用')
+    if (processId && !process) invalid('所选生产环节不存在或已停用')
+
+    const nodeName = process?.nodeName || customContent
 
     let targetPath = ''
     let fileStat = null
@@ -477,8 +654,8 @@ class ProductionService extends Service {
           {
             batchId: Number(batch.id),
             employeeId: this.ctx.state.user.id,
-            processId: Number(process.id),
-            content: process.nodeName,
+            processId: process ? Number(process.id) : null,
+            content: nodeName,
             operatorName,
             photoFileId,
             quantity: Number(batch.quantity),
@@ -497,7 +674,8 @@ class ProductionService extends Service {
           item,
           {
             batchId: Number(batch.id),
-            processId: Number(process.id),
+            processId: process ? Number(process.id) : null,
+            content: nodeName,
             operatorName,
             startedAt,
             completedAt,
@@ -513,9 +691,11 @@ class ProductionService extends Service {
       const item = await this.app.model.ProductionRecord.findByPk(id)
       return {
         id: Number(item.id),
-        nodeName: process.nodeName,
-        nodeOrder: Number(process.nodeOrder),
-        custom: false,
+        nodeName,
+        nodeOrder: process
+          ? Number(process.nodeOrder)
+          : 100000 + Number(item.id),
+        custom: !process,
         status: item.status,
         employeeName: item.operatorName,
         startedAt: this.ctx.helper.formatDateTime(item.startedAt),

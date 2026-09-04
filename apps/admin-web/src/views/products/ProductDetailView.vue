@@ -23,6 +23,7 @@ import ProductQrPanel from '@/components/products/ProductQrPanel.vue'
 import ProductQualityPanel from '@/components/products/ProductQualityPanel.vue'
 import ProductQualityUploadModal from '@/components/products/ProductQualityUploadModal.vue'
 import { useAuthStore } from '@/stores/auth'
+import { downloadQrImagesZip } from '@/utils/download-qr-images-zip'
 
 const route = useRoute()
 const router = useRouter()
@@ -37,6 +38,7 @@ const qualityUploadOpen = shallowRef(false)
 const stepSubmitting = shallowRef(false)
 const qualitySubmitting = shallowRef(false)
 const qrGenerating = shallowRef(false)
+const qrDownloading = shallowRef(false)
 const deletingStepId = shallowRef<number | null>(null)
 const deletingQualityReportId = shallowRef<number | null>(null)
 const id = computed(() => Number(route.params.id || 0))
@@ -144,6 +146,24 @@ async function generateCurrentBatchQrCodes() {
     message.error(error instanceof Error ? error.message : '二维码生成失败')
   } finally {
     qrGenerating.value = false
+  }
+}
+
+async function downloadCurrentBatchQrImages() {
+  if (!selectedBatch.value || qrDownloading.value) return
+
+  const batchNo = selectedBatch.value.batchNo
+  qrDownloading.value = true
+
+  try {
+    const count = await downloadQrImagesZip(batchNo)
+    message.success(`已下载 ${count.toLocaleString('zh-CN')} 张二维码图片`)
+  } catch (error) {
+    message.error(
+      error instanceof Error ? error.message : '二维码图片下载失败',
+    )
+  } finally {
+    qrDownloading.value = false
   }
 }
 
@@ -268,8 +288,9 @@ watch(id, () => load(null), { immediate: true })
             :batch="selectedBatch"
             :can-view="detail.access.qrcode"
             :can-print="auth.hasPermission('qrcode.view')"
+            :downloading="qrDownloading"
             @preview="qrListOpen = true"
-            @print="openLabels('print')"
+            @download="downloadCurrentBatchQrImages"
           />
 
           <div class="product-detail__support-grid">
@@ -333,7 +354,8 @@ watch(id, () => load(null), { immediate: true })
         v-model:open="qrListOpen"
         :batch-no="selectedBatch.batchNo"
         :total="selectedBatch.qrTotal"
-        @download="openLabels('print')"
+        :downloading="qrDownloading"
+        @download="downloadCurrentBatchQrImages"
       />
     </section>
   </a-spin>

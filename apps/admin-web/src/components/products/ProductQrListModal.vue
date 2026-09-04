@@ -7,6 +7,7 @@ import { buildQrTraceUrl } from '@/utils/qr-payload'
 const props = defineProps<{
   batchNo: string
   total: number
+  downloading: boolean
 }>()
 
 const open = defineModel<boolean>('open', { required: true })
@@ -126,8 +127,13 @@ watch(page, () => {
             批次 {{ batchNo }} · 共 {{ total.toLocaleString('zh-CN') }} 个二维码
           </span>
         </div>
-        <a-button type="primary" @click="emit('download')">
-          打印下载全部
+        <a-button
+          type="primary"
+          :loading="downloading"
+          :disabled="downloading || total === 0"
+          @click="emit('download')"
+        >
+          下载全部图片
         </a-button>
       </div>
     </template>

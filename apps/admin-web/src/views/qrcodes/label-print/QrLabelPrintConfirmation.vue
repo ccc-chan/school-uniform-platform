@@ -8,13 +8,11 @@ const props = defineProps<{
   dimensions: LabelDimensions
   printCount: number
   printing: boolean
-  exportingWord: boolean
 }>()
 const emit = defineEmits<{
   resize: [dimensions: LabelDimensions]
   print: []
   printTest: []
-  exportWord: []
 }>()
 
 const rangeMode = defineModel<PrintRangeMode>('rangeMode', { required: true })
@@ -33,10 +31,7 @@ function changeCopies(change: number) {
   copies.value = Math.min(99, Math.max(1, copies.value + change))
 }
 
-function updateDimension(
-  key: keyof LabelDimensions,
-  value: unknown,
-) {
+function updateDimension(key: keyof LabelDimensions, value: unknown) {
   const dimension = Number(value)
   if (!Number.isFinite(dimension) || dimension <= 0) return
 
@@ -57,7 +52,9 @@ function updateDimension(
       <dl class="print-confirmation__summary">
         <div>
           <dt>标签数量</dt>
-          <dd class="print-confirmation__count">{{ total.toLocaleString('zh-CN') }} 枚</dd>
+          <dd class="print-confirmation__count">
+            {{ total.toLocaleString('zh-CN') }} 枚
+          </dd>
         </div>
         <div class="print-confirmation__size-row">
           <dt class="print-confirmation__size-heading">
@@ -133,48 +130,44 @@ function updateDimension(
       <section class="print-confirmation__section">
         <h3>打印份数</h3>
         <div class="print-confirmation__stepper">
-          <button type="button" :disabled="copies <= 1" @click="changeCopies(-1)">−</button>
+          <button
+            type="button"
+            :disabled="copies <= 1"
+            @click="changeCopies(-1)"
+          >
+            −
+          </button>
           <span>{{ copies }}</span>
-          <button type="button" :disabled="copies >= 99" @click="changeCopies(1)">＋</button>
+          <button
+            type="button"
+            :disabled="copies >= 99"
+            @click="changeCopies(1)"
+          >
+            ＋
+          </button>
           <small>份</small>
         </div>
       </section>
-
-      <p class="print-confirmation__notice">
-        <span aria-hidden="true">ⓘ</span>
-        建议生成 Word 文档后打印，每枚标签独占一页，页面尺寸为
-        {{ dimensions.width }} × {{ dimensions.height }} mm，且首页不留空白。
-      </p>
 
       <div class="print-confirmation__actions">
         <a-button
           size="large"
           block
-          :disabled="!printable || printing || exportingWord"
+          :disabled="!printable || printing"
           @click="emit('printTest')"
         >
           浏览器打印测试页
         </a-button>
         <a-button
+          type="primary"
           size="large"
           block
           :loading="printing"
-          :disabled="!printable || exportingWord"
+          :disabled="!printable"
           @click="emit('print')"
         >
           <span aria-hidden="true">▣</span>
           浏览器打印 {{ printCount.toLocaleString('zh-CN') }} 枚
-        </a-button>
-        <a-button
-          type="primary"
-          size="large"
-          block
-          :loading="exportingWord"
-          :disabled="!printable || printing"
-          @click="emit('exportWord')"
-        >
-          <span aria-hidden="true">▣</span>
-          生成 Word 文档（{{ printCount.toLocaleString('zh-CN') }} 枚）
         </a-button>
       </div>
     </div>

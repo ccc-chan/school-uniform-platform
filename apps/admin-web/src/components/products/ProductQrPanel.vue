@@ -5,11 +5,12 @@ defineProps<{
   batch: ProductProductionBatch
   canView: boolean
   canPrint: boolean
+  downloading: boolean
 }>()
 
 const emit = defineEmits<{
   preview: []
-  print: []
+  download: []
 }>()
 </script>
 
@@ -35,10 +36,11 @@ const emit = defineEmits<{
         </a-button>
         <a-button
           type="primary"
-          :disabled="!batch.qrBatches.length"
-          @click="emit('print')"
+          :loading="downloading"
+          :disabled="downloading || !batch.qrBatches.length"
+          @click="emit('download')"
         >
-          打印下载
+          下载图片 ZIP
         </a-button>
       </div>
     </header>

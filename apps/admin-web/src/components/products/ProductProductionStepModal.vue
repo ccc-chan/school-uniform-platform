@@ -18,12 +18,18 @@ const emit = defineEmits<{
   submit: [value: ProductProductionStepInput]
 }>()
 
-const processOptions = shallowRef<Array<{ label: string; value: number }>>([])
+const CUSTOM_PROCESS_VALUE = 'custom' as const
+type ProcessSelection = number | typeof CUSTOM_PROCESS_VALUE
+
+const processOptions = shallowRef<
+  Array<{ label: string; value: ProcessSelection }>
+>([])
 const optionsLoading = shallowRef(false)
 const photo = shallowRef<File | null>(null)
 
 const form = reactive({
-  processId: undefined as number | undefined,
+  processId: undefined as ProcessSelection | undefined,
+  customName: '',
   operatorName: '',
   startedAt: '',
   completedAt: '',
@@ -42,6 +48,7 @@ const statusOptions: Array<{
 
 function reset() {
   form.processId = undefined
+  form.customName = ''
   form.operatorName = ''
   form.startedAt = ''
   form.completedAt = ''
@@ -58,7 +65,7 @@ async function loadOptions() {
     const options = await getProductionOptions()
     processOptions.value = options.processes.map((item) => ({
       label: item.name,
-      value: item.id,
+      value: item.id || CUSTOM_PROCESS_VALUE,
     }))
   } catch (error) {
     message.error(
@@ -86,8 +93,15 @@ function beforeUpload(file: File) {
 }
 
 function submit() {
-  if (!form.processId) {
+  const processId = form.processId
+  if (!processId) {
     message.warning('请选择环节名称')
+    return
+  }
+  const custom = processId === CUSTOM_PROCESS_VALUE
+  const customName = form.customName.trim()
+  if (custom && !customName) {
+    message.warning('请输入自定义环节名称')
     return
   }
   if (!form.operatorName.trim()) {
@@ -104,7 +118,8 @@ function submit() {
   }
 
   emit('submit', {
-    processId: form.processId,
+    processId: custom ? null : processId,
+    content: custom ? customName : '',
     operatorName: form.operatorName.trim(),
     startedAt: form.startedAt,
     completedAt: form.completedAt,
@@ -146,6 +161,18 @@ watch(open, (visible) => {
             :options="processOptions"
             :loading="optionsLoading"
             placeholder="选择环节"
+          />
+        </section>
+
+        <section
+          v-if="form.processId === CUSTOM_PROCESS_VALUE"
+          class="production-step-modal__field"
+        >
+          <label>自定义环节名称 <i>*</i></label>
+          <a-input
+            v-model:value="form.customName"
+            :maxlength="200"
+            placeholder="请输入环节名称"
           />
         </section>
 

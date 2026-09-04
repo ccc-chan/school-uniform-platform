@@ -21,9 +21,16 @@ const props = defineProps<{
   labelImageUrl: string
   loading: boolean
 }>()
+const emit = defineEmits<{
+  saveLabel: []
+}>()
 const labelLayout = defineModel<LabelLayout>('labelLayout', { required: true })
-const customLayers = defineModel<CustomLabelLayer[]>('customLayers', { required: true })
-const labelStyle = defineModel<LabelStyleConfig>('labelStyle', { required: true })
+const customLayers = defineModel<CustomLabelLayer[]>('customLayers', {
+  required: true,
+})
+const labelStyle = defineModel<LabelStyleConfig>('labelStyle', {
+  required: true,
+})
 
 const millimeterToPixel = 3.7795275591
 const zoom = shallowRef(1)
@@ -67,7 +74,6 @@ function fitCanvas() {
 function resetLayout() {
   labelLayout.value = createDefaultLabelLayout()
 }
-
 </script>
 
 <template>
@@ -75,11 +81,16 @@ function resetLayout() {
     <header class="label-preview__header">
       <h2>实时预览</h2>
       <div class="label-preview__tools">
+        <button type="button" @click="emit('saveLabel')">保存为模版</button>
         <button type="button" @click="fitCanvas">适应画布</button>
         <div class="label-preview__zoom" aria-label="预览缩放">
-          <button type="button" aria-label="缩小" @click="changeZoom(-0.1)">−</button>
+          <button type="button" aria-label="缩小" @click="changeZoom(-0.1)">
+            −
+          </button>
           <span>{{ zoomPercent }}%</span>
-          <button type="button" aria-label="放大" @click="changeZoom(0.1)">＋</button>
+          <button type="button" aria-label="放大" @click="changeZoom(0.1)">
+            ＋
+          </button>
         </div>
         <button type="button" @click="resetLayout">复位布局</button>
       </div>
@@ -92,8 +103,14 @@ function resetLayout() {
         description="暂无已绑定二维码的生产批次"
       />
       <template v-else>
-        <span class="label-preview__guide label-preview__guide--x" aria-hidden="true" />
-        <span class="label-preview__guide label-preview__guide--y" aria-hidden="true" />
+        <span
+          class="label-preview__guide label-preview__guide--x"
+          aria-hidden="true"
+        />
+        <span
+          class="label-preview__guide label-preview__guide--y"
+          aria-hidden="true"
+        />
         <div
           class="label-preview__frame"
           :style="frameStyle"

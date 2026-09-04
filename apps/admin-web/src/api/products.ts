@@ -5,7 +5,7 @@ export interface Product {id:number;imageId?:number|null;code?:string;name?:stri
 export interface ProductQrBatch {id:number;batchNo:string;total:number;bound:number;activated:number;voided:number;scans:number}
 export type ProductProductionStepStatus='pending'|'in_progress'|'completed'
 export interface ProductProductionStep {id:number;nodeName:string;nodeOrder:number;custom:boolean;status?:ProductProductionStepStatus;employeeName?:string;startedAt?:string;completedAt?:string;notes?:string;photoFileId?:number|null}
-export interface ProductProductionStepInput {processId:number;operatorName:string;startedAt:string;completedAt:string;status:ProductProductionStepStatus;notes:string;photo:File|null}
+export interface ProductProductionStepInput {processId:number|null;content:string;operatorName:string;startedAt:string;completedAt:string;status:ProductProductionStepStatus;notes:string;photo:File|null}
 export interface ProductQualityReport {id:number;name:string;fileName:string;conclusion?:'qualified'|'unqualified';status?:'pending'|'approved'|'rejected'|'expired';inspectionDate?:string}
 export interface ProductProductionBatch {id:number;batchNo:string;quantity?:number;productionDate?:string;status?:string;factoryName?:string;responsibleEmployeeName?:string;qrTotal:number;qrBatches:ProductQrBatch[];productionSteps:ProductProductionStep[]}
 export interface ProductDetail {product:Product;batches:ProductProductionBatch[];qualityReports:ProductQualityReport[];access:{production:boolean;qrcode:boolean;quality:boolean}}

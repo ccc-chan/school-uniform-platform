@@ -43,6 +43,7 @@ const storageKey = 'school-uniform-label-templates-v2'
 localStorage.removeItem('school-uniform-label-templates-v1')
 const saveOpen = shallowRef(false)
 const createOpen = shallowRef(false)
+const dialogIntent = shallowRef<'create' | 'open'>('create')
 const creationMode = shallowRef<'blank' | 'template'>('blank')
 const selectedTemplateId = shallowRef('')
 const templateQuery = shallowRef('')
@@ -152,13 +153,25 @@ function openSave() {
   saveOpen.value = true
 }
 
-function openCreate() {
-  createLabelName.value =
-    props.currentLabelName.trim() || '未命名标签'
+function prepareLabelDialog() {
+  createLabelName.value = props.currentLabelName.trim() || '未命名标签'
   templateQuery.value = ''
-  creationMode.value = 'blank'
   selectedTemplateId.value = customTemplates.value[0]?.id ?? ''
+}
+
+function openCreate() {
+  prepareLabelDialog()
+  dialogIntent.value = 'create'
+  creationMode.value = 'blank'
   applyCreateSize(props.snapshot)
+  createOpen.value = true
+}
+
+function openTemplates() {
+  prepareLabelDialog()
+  dialogIntent.value = 'open'
+  creationMode.value = 'template'
+  applyCreateSize(selectedTemplate.value ?? props.snapshot)
   createOpen.value = true
 }
 
@@ -224,7 +237,9 @@ function deleteTemplate(templateId: string) {
     if (nextTemplate && creationMode.value === 'template') {
       applyCreateSize(nextTemplate)
     } else if (!nextTemplate) {
-      creationMode.value = 'blank'
+      if (dialogIntent.value === 'create') {
+        creationMode.value = 'blank'
+      }
       applyCreateSize(props.snapshot)
     }
   }
@@ -289,7 +304,18 @@ function createLabel() {
   message.success('新标签已创建，可继续编辑内容和样式')
 }
 
-defineExpose({ openSave, openCreate })
+function openSelectedTemplate() {
+  if (!selectedTemplate.value) {
+    message.warning('暂无可用模板，请先保存标签')
+    return
+  }
+
+  emit('applyTemplate', cloneSnapshot(selectedTemplate.value))
+  createOpen.value = false
+  message.success('模板已打开，可继续编辑内容和样式')
+}
+
+defineExpose({ openSave, openCreate, openTemplates })
 </script>
 
 <template>
@@ -337,98 +363,106 @@ defineExpose({ openSave, openCreate })
     wrap-class-name="label-template-dialog label-template-dialog--create"
   >
     <div class="template-dialog__title">
-      <h2>新建标签</h2>
-      <p>选择模板快速创建，创建后仍可继续编辑内容和样式</p>
+      <h2>{{ dialogIntent === 'open' ? '打开模板' : '新建标签' }}</h2>
+      <p>
+        {{
+          dialogIntent === 'open'
+            ? '选择我的模板并应用到当前标签'
+            : '选择模板快速创建，创建后仍可继续编辑内容和样式'
+        }}
+      </p>
     </div>
 
     <div class="template-create">
       <div class="template-create__main">
-        <label class="template-create__label" for="create-label-name">
-          标签名称
-        </label>
-        <a-input
-          id="create-label-name"
-          v-model:value="createLabelName"
-          :maxlength="40"
-        />
+        <template v-if="dialogIntent === 'create'">
+          <label class="template-create__label" for="create-label-name">
+            标签名称
+          </label>
+          <a-input
+            id="create-label-name"
+            v-model:value="createLabelName"
+            :maxlength="40"
+          />
 
-        <label class="template-create__label">创建方式</label>
-        <div class="template-create__modes">
-          <button
-            type="button"
-            :class="{
-              'template-create__mode--active': creationMode === 'blank',
-            }"
-            @click="selectCreationMode('blank')"
-          >
-            <span aria-hidden="true">□</span>
-            <strong>空白标签</strong>
-            <small>从空白画布开始</small>
-          </button>
-          <button
-            type="button"
-            :class="{
-              'template-create__mode--active': creationMode === 'template',
-            }"
-            :disabled="!customTemplates.length"
-            @click="selectCreationMode('template')"
-          >
-            <span aria-hidden="true">▦</span>
-            <strong>使用我的模板</strong>
-            <small>{{
-              customTemplates.length ? '选择已保存模板' : '暂无已保存模板'
-            }}</small>
-          </button>
-        </div>
-
-        <section class="template-create__size">
-          <label class="template-create__label">标签尺寸</label>
-
-          <div class="template-create__size-fields">
-            <label>
-              <span>宽度</span>
-              <span class="template-create__size-input">
-                <a-input-number
-                  :value="createWidth"
-                  :min="25"
-                  :max="500"
-                  @update:value="updateCreateDimension('width', $event)"
-                />
-                <i>mm</i>
-              </span>
-            </label>
-
-            <label>
-              <span>高度</span>
-              <span class="template-create__size-input">
-                <a-input-number
-                  :value="createHeight"
-                  :min="25"
-                  :max="500"
-                  @update:value="updateCreateDimension('height', $event)"
-                />
-                <i>mm</i>
-              </span>
-            </label>
-          </div>
-
-          <div class="template-create__size-presets">
+          <label class="template-create__label">创建方式</label>
+          <div class="template-create__modes">
             <button
-              v-for="preset in createSizePresets"
-              :key="preset.key"
               type="button"
               :class="{
-                'template-create__size-preset--active':
-                  createSizeKey === preset.key,
+                'template-create__mode--active': creationMode === 'blank',
               }"
-              @click="selectCreateSize(preset.key)"
+              @click="selectCreationMode('blank')"
             >
-              {{ preset.width }} × {{ preset.height }} mm
+              <span aria-hidden="true">□</span>
+              <strong>空白标签</strong>
+              <small>从空白画布开始</small>
+            </button>
+            <button
+              type="button"
+              :class="{
+                'template-create__mode--active': creationMode === 'template',
+              }"
+              :disabled="!customTemplates.length"
+              @click="selectCreationMode('template')"
+            >
+              <span aria-hidden="true">▦</span>
+              <strong>使用我的模板</strong>
+              <small>{{
+                customTemplates.length ? '选择已保存模板' : '暂无已保存模板'
+              }}</small>
             </button>
           </div>
-        </section>
 
-        <template v-if="creationMode === 'template'">
+          <section class="template-create__size">
+            <label class="template-create__label">标签尺寸</label>
+
+            <div class="template-create__size-fields">
+              <label>
+                <span>宽度</span>
+                <span class="template-create__size-input">
+                  <a-input-number
+                    :value="createWidth"
+                    :min="25"
+                    :max="500"
+                    @update:value="updateCreateDimension('width', $event)"
+                  />
+                  <i>mm</i>
+                </span>
+              </label>
+
+              <label>
+                <span>高度</span>
+                <span class="template-create__size-input">
+                  <a-input-number
+                    :value="createHeight"
+                    :min="25"
+                    :max="500"
+                    @update:value="updateCreateDimension('height', $event)"
+                  />
+                  <i>mm</i>
+                </span>
+              </label>
+            </div>
+
+            <div class="template-create__size-presets">
+              <button
+                v-for="preset in createSizePresets"
+                :key="preset.key"
+                type="button"
+                :class="{
+                  'template-create__size-preset--active':
+                    createSizeKey === preset.key,
+                }"
+                @click="selectCreateSize(preset.key)"
+              >
+                {{ preset.width }} × {{ preset.height }} mm
+              </button>
+            </div>
+          </section>
+        </template>
+
+        <template v-if="dialogIntent === 'open' || creationMode === 'template'">
           <label class="template-create__label">我的模板</label>
           <div class="template-create__search">
             <a-input
@@ -552,11 +586,27 @@ defineExpose({ openSave, openCreate })
     </div>
 
     <div class="template-dialog__footer template-dialog__footer--create">
-      <span>ⓘ 创建后不会修改原模板</span>
+      <span>
+        ⓘ
+        {{
+          dialogIntent === 'open'
+            ? '打开后可继续编辑，不会修改原模板'
+            : '创建后不会修改原模板'
+        }}
+      </span>
       <div>
         <a-button @click="createOpen = false">取消</a-button>
-        <a-button type="primary" @click="createLabel">
-          {{ creationMode === 'blank' ? '创建空白标签' : '使用此模板并创建' }}
+        <a-button
+          type="primary"
+          @click="dialogIntent === 'open' ? openSelectedTemplate() : createLabel()"
+        >
+          {{
+            dialogIntent === 'open'
+              ? '打开此模板'
+              : creationMode === 'blank'
+                ? '创建空白标签'
+                : '使用此模板并创建'
+          }}
         </a-button>
       </div>
     </div>
