@@ -309,7 +309,7 @@ jobs:
             docker compose \
               --env-file .env.test \
               -f docker-compose.prod.yml \
-              run --rm api npm run db:migrate:test
+              run --rm -T --interactive=false api npm run db:migrate:test </dev/null
           fi
 
           if ((${#changed_services[@]} > 0)); then
