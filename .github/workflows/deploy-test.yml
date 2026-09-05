@@ -261,6 +261,8 @@ jobs:
         env:
           DEPLOY_API: ${{ needs.changes.outputs.api }}
           DEPLOY_WEB: ${{ needs.changes.outputs.web }}
+          IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           ssh \
             -o ServerAliveInterval=15 \
@@ -268,14 +270,24 @@ jobs:
             -p "$DEPLOY_PORT" \
             -i ~/.ssh/test_deploy \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            "bash -s -- '$DEPLOY_API' '$DEPLOY_WEB'" <<'REMOTE'
+            "bash -s -- '$DEPLOY_API' '$DEPLOY_WEB' '$IMAGE_REPOSITORY' '$IMAGE_TAG'" <<'REMOTE'
           set -euo pipefail
 
           cd /opt/school-uniform-platform
 
           api_changed="$1"
           web_changed="$2"
+          image_repository="$3"
+          image_tag="$4"
           changed_services=()
+
+          if [[ "$api_changed" == true ]]; then
+            export API_IMAGE="${image_repository}-api:${image_tag}"
+          fi
+
+          if [[ "$web_changed" == true ]]; then
+            export WEB_IMAGE="${image_repository}-web:${image_tag}"
+          fi
 
           if [[ "$api_changed" == true ]]; then
             changed_services+=(api)
@@ -304,7 +316,8 @@ jobs:
             docker compose \
               --env-file .env.test \
               -f docker-compose.prod.yml \
-              up -d --no-build --wait --wait-timeout 180 \
+              up -d --no-build --force-recreate \
+              --wait --wait-timeout 180 \
               "${changed_services[@]}"
           else
             # Compose 配置变化时重新核对整个服务栈。
@@ -322,6 +335,26 @@ jobs:
               up -d --no-build --force-recreate \
               --wait --wait-timeout 180 web
           fi
+
+          for changed_service in "${changed_services[@]}"; do
+            expected_image_var="${changed_service^^}_IMAGE"
+            expected_image="${!expected_image_var}"
+            container_id="$(
+              docker compose \
+                --env-file .env.test \
+                -f docker-compose.prod.yml \
+                ps -q "$changed_service"
+            )"
+            running_image_id="$(docker inspect --format '{{.Image}}' "$container_id")"
+            expected_image_id="$(docker image inspect --format '{{.Id}}' "$expected_image")"
+
+            if [[ "$running_image_id" != "$expected_image_id" ]]; then
+              echo "部署镜像校验失败：$changed_service" >&2
+              exit 1
+            fi
+
+            echo "$changed_service 已部署镜像：$expected_image"
+          done
 
           curl --fail --silent --show-error http://127.0.0.1:18080/healthz
           curl --fail --silent --show-error http://127.0.0.1:18080/api/v1/health
