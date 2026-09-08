@@ -165,7 +165,7 @@ jobs:
           file: deploy/api.Dockerfile
           platforms: linux/amd64
           push: true
-          no-cache: ${{ inputs.no_cache }}
+          no-cache: ${{ inputs.no_cache || false }}
           tags: |
             ghcr.io/${{ github.repository }}-api:test-latest
             ghcr.io/${{ github.repository }}-api:${{ github.sha }}
@@ -203,7 +203,7 @@ jobs:
           file: deploy/web.Dockerfile
           platforms: linux/amd64
           push: true
-          no-cache: ${{ inputs.no_cache }}
+          no-cache: ${{ inputs.no_cache || false }}
           build-args: |
             VITE_QR_PUBLIC_BASE_URL=http://111.228.47.54:18080
             VITE_QR_ALLOW_HTTP_IN_TEST=true
