@@ -28,10 +28,20 @@ const navigation = computed(() => [
 
 <template>
   <main class="school-uniform-shell">
-    <header class="app-bar">
+    <header
+      class="app-bar"
+      :class="{
+        'app-bar--cover':
+          viewModel.info.value &&
+          !viewModel.loading.value &&
+          !viewModel.errorMessage.value &&
+          viewModel.qrCodeType.value === 'product' &&
+          $route.name === 'school-uniform-info-home',
+      }"
+    >
       <span class="app-bar__mark">SU</span>
-      <strong>校服溯源</strong>
-      <span class="app-bar__more">···</span>
+      <strong>校服数字档案</strong>
+      <span class="app-bar__more">溯源查询</span>
     </header>
 
     <section v-if="viewModel.loading.value" class="state-panel" aria-live="polite">
@@ -80,7 +90,8 @@ const navigation = computed(() => [
             <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-1-14h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4" />
           </svg>
           <svg v-else aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Zm10-10V7a4 4 0 0 0-8 0v4h8Z" />
+            <path d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z" />
+            <path d="m8 12 3 3 5-5" />
           </svg>
           <span>{{ item.label }}</span>
         </RouterLink>
@@ -91,10 +102,11 @@ const navigation = computed(() => [
 
 <style scoped>
 .school-uniform-shell {
+  --archive-unit: min(calc(100vw / 853), calc(480px / 853));
   width: min(100%, 480px);
   min-height: 100vh;
   margin: 0 auto;
-  padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--archive-unit) * 150 + env(safe-area-inset-bottom));
   color: #0f172a;
   background: #fff;
   box-shadow: 0 20px 60px rgb(15 23 42 / 12%);
@@ -107,16 +119,16 @@ const navigation = computed(() => [
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  min-height: 42px;
-  padding: 7px 20px;
+  min-height: 56px;
+  padding: 12px 20px;
   color: #64748b;
   background: rgb(255 255 255 / 96%);
   backdrop-filter: blur(10px);
 }
 
 .app-bar strong {
-  color: #475569;
-  font-size: 12px;
+  color: var(--trace-primary);
+  font-size: 15px;
   font-weight: 650;
 }
 
@@ -126,7 +138,7 @@ const navigation = computed(() => [
   height: 26px;
   border-radius: 9px;
   color: #fff;
-  background: #2563eb;
+  background: var(--trace-primary);
   font-family: "DIN Alternate", ui-monospace, monospace;
   font-size: 10px;
   font-weight: 800;
@@ -135,7 +147,21 @@ const navigation = computed(() => [
 
 .app-bar__more {
   justify-self: end;
-  letter-spacing: 2px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.app-bar--cover {
+  display: none;
+}
+
+.app-bar--cover strong,
+.app-bar--cover .app-bar__more {
+  color: #fff;
+}
+
+.app-bar--cover .app-bar__mark {
+  background: rgb(255 255 255 / 18%);
 }
 
 .state-panel {
@@ -150,8 +176,8 @@ const navigation = computed(() => [
 .state-panel__spinner {
   width: 38px;
   height: 38px;
-  border: 3px solid #dbeafe;
-  border-top-color: #2563eb;
+  border: 3px solid var(--trace-primary-border);
+  border-top-color: var(--trace-primary);
   border-radius: 50%;
   animation: spin 700ms linear infinite;
 }
@@ -191,7 +217,7 @@ const navigation = computed(() => [
   border: 0;
   border-radius: 12px;
   color: #fff;
-  background: #2563eb;
+  background: var(--trace-primary);
   font-size: 14px;
   font-weight: 650;
 }
@@ -208,25 +234,31 @@ const navigation = computed(() => [
   margin: 0 auto;
   border-top: 1px solid #f1f5f9;
   background: rgb(255 255 255 / 96%);
-  box-shadow: 0 -8px 24px rgb(15 23 42 / 4%);
+  box-shadow: none;
   backdrop-filter: blur(14px);
 }
 
 .bottom-navigation__item {
   display: flex;
-  min-height: 58px;
+  min-height: calc(var(--archive-unit) * 150);
+  margin: 0;
+  border-radius: 14px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  color: #94a3b8;
-  font-size: 10px;
+  gap: calc(var(--archive-unit) * 10);
+  color: #64748b;
+  font-size: calc(var(--archive-unit) * 28);
   text-decoration: none;
 }
 
+.bottom-navigation__item.nav-active {
+  background: transparent;
+}
+
 .bottom-navigation__item svg {
-  width: 21px;
-  height: 21px;
+  width: calc(var(--archive-unit) * 52);
+  height: calc(var(--archive-unit) * 52);
   stroke: currentcolor;
   stroke-width: 2;
   stroke-linecap: round;

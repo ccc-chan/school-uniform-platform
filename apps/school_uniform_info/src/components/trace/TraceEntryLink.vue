@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
 
+const descriptions = {
+  product: '查看款式、面料与产品资料',
+  quality: '查看质量检测相关资料',
+  production: '了解生产节点与加工记录',
+  verify: '查询这件校服的身份信息',
+}
+
 defineProps<{
   icon: 'product' | 'production' | 'quality' | 'verify'
   label: string
@@ -15,16 +22,21 @@ defineProps<{
         <path d="M20 7 12 3 4 7m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
       </svg>
       <svg v-else-if="icon === 'production'" aria-hidden="true" fill="none" viewBox="0 0 24 24">
-        <path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        <path d="m9 3 1-2h4l1 2 2 1 2-.2 2 3.4-1.2 1.8v3l1.2 1.8-2 3.4-2-.2-2 1-1 2h-4l-1-2-2-1-2 .2-2-3.4L4.2 12V9L3 7.2l2-3.4L7 4Z" transform="translate(0 1)" />
+        <circle cx="12" cy="11.5" r="3.5" />
       </svg>
       <svg v-else-if="icon === 'quality'" aria-hidden="true" fill="none" viewBox="0 0 24 24">
         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.6L19 9.4V19a2 2 0 0 1-2 2Z" />
       </svg>
       <svg v-else aria-hidden="true" fill="none" viewBox="0 0 24 24">
-        <path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Zm10-10V7a4 4 0 0 0-8 0v4h8Z" />
+        <path d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z" />
+        <path d="m8 12 3 3 5-5" />
       </svg>
     </span>
-    <span class="trace-entry__label">{{ label }}</span>
+    <span class="trace-entry__content">
+      <span class="trace-entry__label">{{ label }}</span>
+      <span class="trace-entry__description">{{ descriptions[icon] }}</span>
+    </span>
     <svg class="trace-entry__arrow" aria-hidden="true" fill="none" viewBox="0 0 24 24">
       <path d="m9 5 7 7-7 7" />
     </svg>
@@ -36,12 +48,12 @@ defineProps<{
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
-  border: 1px solid #f1f5f9;
-  border-radius: 12px;
+  padding: 17px 16px;
+  border: 1px solid #e2eaf3;
+  border-radius: 18px;
   color: #1e293b;
   background: #fff;
-  box-shadow: 0 1px 3px rgb(15 23 42 / 5%), 0 1px 2px rgb(15 23 42 / 5%);
+  box-shadow: 0 4px 14px rgb(30 58 95 / 4%);
   text-decoration: none;
   transition: transform 150ms ease, border-color 150ms ease;
 }
@@ -52,9 +64,9 @@ defineProps<{
 
 .trace-entry__icon {
   display: grid;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
   border-radius: 12px;
   place-items: center;
 }
@@ -70,24 +82,28 @@ defineProps<{
 }
 
 .trace-entry__icon--product,
-.trace-entry__icon--quality {
-  color: #2563eb;
-  background: #eff6ff;
-}
-
-.trace-entry__icon--production {
-  color: #d97706;
-  background: #fffbeb;
-}
-
+.trace-entry__icon--quality,
+.trace-entry__icon--production,
 .trace-entry__icon--verify {
-  color: #7c3aed;
-  background: #f5f3ff;
+  color: var(--trace-primary);
+  background: var(--trace-primary-soft);
+}
+
+.trace-entry__content {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+}
+
+.trace-entry__description {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .trace-entry__label {
-  flex: 1;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 650;
 }
 

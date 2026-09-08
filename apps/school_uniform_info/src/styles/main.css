@@ -1,4 +1,7 @@
 :root {
+  --trace-primary: #1677ff;
+  --trace-primary-soft: #f0f6ff;
+  --trace-primary-border: #d6e7ff;
   color: #0f172a;
   background: #f1f5f9;
   font-family:
@@ -32,62 +35,96 @@ button { cursor: pointer; }
 
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid rgb(37 99 235 / 25%);
+  outline: 3px solid rgb(22 119 255 / 40%);
   outline-offset: 2px;
 }
 
 ::selection {
   color: #fff;
-  background: #2563eb;
+  background: var(--trace-primary);
 }
 
 .nav-active {
-  color: #2563eb !important;
+  color: var(--trace-primary) !important;
   font-weight: 650;
 }
 
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
-.trace-home { padding: 8px 20px 28px; }
+.trace-home { padding: 16px 20px 32px; }
 
 .product-visual {
   display: flex;
-  height: 176px;
+  height: 200px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  border: 1px solid #f1f5f9;
-  border-radius: 16px;
-  background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+  gap: 14px;
+  border: 1px solid #dbe7f5;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #f0f7ff, #e2edf9);
 }
 
-.product-visual--compact { height: 152px; }
+.product-visual--compact { height: 168px; }
+
+.product-visual--archive {
+  height: 224px;
+  gap: 8px;
+  background: #edf4fa;
+}
+
+.uniform-illustration {
+  width: 160px;
+  height: 140px;
+}
+
+.product-visual__note {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.trace-section-title {
+  margin: 0 0 12px;
+  color: #244766;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.trace-section-title--spaced {
+  margin-top: 26px;
+}
+
+.trace-section-title + .trace-actions {
+  margin-top: 0;
+}
 
 .product-visual__icon {
   display: grid;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: #eff6ff;
-  font-size: 24px;
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(30 58 95 / 8%);
+  font-size: 40px;
   place-items: center;
 }
 
 .product-visual__caption {
-  color: #94a3b8;
-  font-size: 11px;
+  color: #526985;
+  font-size: 12px;
+  letter-spacing: 2px;
 }
 
-.product-heading { padding: 16px 0 14px; }
+.product-heading { padding: 22px 0 20px; }
 
 .trace-badge {
   display: inline-flex;
   margin-bottom: 8px;
   padding: 4px 8px;
   border-radius: 8px;
-  color: #1d4ed8;
-  background: #dbeafe;
+  color: #0958d9;
+  background: var(--trace-primary-border);
   font-size: 10px;
   font-weight: 750;
 }
@@ -95,9 +132,11 @@ button:focus-visible {
 .product-heading h1,
 .school-heading h1 {
   margin: 0;
-  color: #0f172a;
-  font-size: 19px;
+  color: #1e3a5f;
+  font-size: 23px;
+  font-weight: 700;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .product-heading p,
@@ -110,17 +149,18 @@ button:focus-visible {
 .trace-facts {
   overflow: hidden;
   margin: 0;
-  border: 1px solid #f1f5f9;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgb(15 23 42 / 5%), 0 1px 2px rgb(15 23 42 / 5%);
+  border: 1px solid #e2eaf3;
+  border-radius: 18px;
+  background: #f8fafd;
 }
 
 .trace-facts div {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
   gap: 16px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f8fafc;
+  padding: 15px 16px;
+  border-bottom: 1px solid #e2eaf3;
+  line-height: 1.6;
 }
 
 .trace-facts div:last-child { border-bottom: 0; }
@@ -141,13 +181,13 @@ button:focus-visible {
 
 .trace-actions {
   display: grid;
-  gap: 10px;
-  margin-top: 16px;
+  gap: 12px;
+  margin-top: 22px;
 }
 
 .trace-footnote {
   margin: 24px 0 0;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 11px;
   text-align: center;
 }
