@@ -58,15 +58,17 @@ function reset() {
 }
 
 async function loadOptions() {
-  if (processOptions.value.length) return
-
+  processOptions.value = []
   optionsLoading.value = true
   try {
     const options = await getProductionOptions()
-    processOptions.value = options.processes.map((item) => ({
-      label: item.name,
-      value: item.id || CUSTOM_PROCESS_VALUE,
-    }))
+    processOptions.value = [
+      ...options.processes.map((item) => ({
+        label: item.name,
+        value: item.id,
+      })),
+      { label: '其他（自定义）', value: CUSTOM_PROCESS_VALUE },
+    ]
   } catch (error) {
     message.error(
       error instanceof Error ? error.message : '生产环节选项加载失败',

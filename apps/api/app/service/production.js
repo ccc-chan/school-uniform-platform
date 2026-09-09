@@ -320,7 +320,7 @@ class ProductionService extends Service {
 
   async options() {
     const model = this.app.model
-    const [products, employees, orders, batches] = await Promise.all([
+    const [products, employees, orders, batches, processes] = await Promise.all([
       model.Product.findAll({
         where: { status: 'enabled' },
         attributes: ['id', 'code', 'name'],
@@ -339,6 +339,11 @@ class ProductionService extends Service {
       model.ProductionBatch.findAll({
         attributes: ['id', 'batchNo', 'quantity'],
         order: [['id', 'DESC']],
+      }),
+      model.ProductionProcess.findAll({
+        where: { status: 'enabled' },
+        attributes: ['id', 'nodeName'],
+        order: [['nodeOrder', 'ASC'], ['id', 'ASC']],
       }),
     ])
     return {
@@ -363,13 +368,10 @@ class ProductionService extends Service {
         batchNo: item.batchNo,
         quantity: Number(item.quantity),
       })),
-      processes: [
-        { id: 1, name: '裁剪' },
-        { id: 2, name: '缝制' },
-        { id: 3, name: '质检' },
-        { id: 4, name: '包装入库' },
-        { id: 5, name: '其他（自定义）' },
-      ],
+      processes: processes.map((item) => ({
+        id: Number(item.id),
+        name: item.nodeName,
+      })),
     }
   }
 

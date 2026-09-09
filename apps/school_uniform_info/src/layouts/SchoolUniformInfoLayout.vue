@@ -35,7 +35,6 @@ const navigation = computed(() => [
           viewModel.info.value &&
           !viewModel.loading.value &&
           !viewModel.errorMessage.value &&
-          viewModel.qrCodeType.value === 'product' &&
           $route.name === 'school-uniform-info-home',
       }"
     >

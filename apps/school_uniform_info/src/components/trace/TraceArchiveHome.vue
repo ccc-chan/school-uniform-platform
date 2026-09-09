@@ -5,11 +5,52 @@ import { useSchoolUniformInfoViewModel } from '@/features/useSchoolUniformInfoVi
 
 const archiveRibbonUrl = `${import.meta.env.BASE_URL}images/archive-design-reference.png`
 
-const { info, displayValue } = useSchoolUniformInfoViewModel()
+const { info, qrCodeType, traceTypeLabel, displayValue } = useSchoolUniformInfoViewModel()
+
+const title = computed(() =>
+  qrCodeType.value === 'school'
+    ? info.value?.applicableSchools[0]?.trim() || '适用学校待补充'
+    : displayValue(info.value?.productName),
+)
+
+const subtitle = computed(() =>
+  qrCodeType.value === 'school'
+    ? `关联校服 ${displayValue(info.value?.productName)}`
+    : `款号 ${displayValue(info.value?.style || info.value?.productCode)}`,
+)
+
+const factsTitle = computed(() => {
+  if (qrCodeType.value === 'batch') return '批次信息'
+  if (qrCodeType.value === 'school') return '关联校服信息'
+  return '基本信息'
+})
+
+const entryLabel = computed(() => {
+  if (qrCodeType.value === 'batch') return '批次溯源入口'
+  if (qrCodeType.value === 'school') return '学校溯源入口'
+  return '产品溯源入口'
+})
 
 const facts = computed(() => {
   const item = info.value
   if (!item) return []
+  if (qrCodeType.value === 'batch') {
+    return [
+      ['生产批次', displayValue(item.productionBatch)],
+      ['产品编码', displayValue(item.productCode)],
+      ['执行标准', displayValue(item.executionStandard)],
+    ]
+  }
+  if (qrCodeType.value === 'school') {
+    return [
+      ['关联校服', displayValue(item.productName)],
+      ['产品编码', displayValue(item.productCode)],
+      ['生产批次', displayValue(item.productionBatch)],
+      ['款式', displayValue(item.style)],
+      ['适用季节', displayValue(item.season)],
+      ['执行标准', displayValue(item.executionStandard)],
+    ]
+  }
   return [
     ['面料', displayValue(item.fabricInfo)],
     ['尺码范围', item.sizes.length ? item.sizes.join(' / ') : '暂无'],
@@ -19,7 +60,7 @@ const facts = computed(() => {
 </script>
 
 <template>
-  <div v-if="info" class="trace-home trace-home--product">
+  <div v-if="info" class="trace-home trace-home--archive">
     <section class="product-visual product-visual--archive" aria-label="校服数字档案">
       <div
         class="archive-ribbon"
@@ -32,15 +73,15 @@ const facts = computed(() => {
       </div>
       <p class="archive-title">校服数字档案</p>
       <header class="product-heading">
-        <span class="trace-badge">一品一码</span>
-        <h1>{{ displayValue(info.productName) }}</h1>
-        <p>款号 {{ displayValue(info.style || info.productCode) }}</p>
+        <span class="trace-badge">{{ traceTypeLabel }}</span>
+        <h1>{{ title }}</h1>
+        <p>{{ subtitle }}</p>
       </header>
     </section>
 
     <div class="archive-content">
-    <h2 class="trace-section-title">基本信息</h2>
-    <dl class="trace-facts">
+    <h2 class="trace-section-title">{{ factsTitle }}</h2>
+    <dl class="trace-facts" :class="{ 'trace-facts--rows': qrCodeType !== 'product' }">
       <div v-for="[label, value] in facts" :key="label">
         <dt>{{ label }}</dt>
         <dd>{{ value }}</dd>
@@ -48,7 +89,7 @@ const facts = computed(() => {
     </dl>
 
     <h2 class="trace-section-title trace-section-title--spaced">溯源资料</h2>
-    <section class="trace-actions" aria-label="产品溯源入口">
+    <section class="trace-actions" :aria-label="entryLabel">
       <TraceEntryLink icon="quality" label="检测报告" :to="{ name: 'school-uniform-info-quality', params: { code: info.code } }" />
       <TraceEntryLink icon="production" label="生产流程" :to="{ name: 'school-uniform-info-production', params: { code: info.code } }" />
       <TraceEntryLink icon="verify" label="防伪验证" :to="{ name: 'school-uniform-info-verify', params: { code: info.code } }" />
@@ -60,7 +101,7 @@ const facts = computed(() => {
 </template>
 
 <style scoped>
-.trace-home--product {
+.trace-home--archive {
   padding: 0;
   background: var(--trace-primary);
 }
@@ -314,5 +355,27 @@ const facts = computed(() => {
   margin-top: calc(var(--archive-unit) * 100);
   font-size: calc(var(--archive-unit) * 24);
   line-height: 1.5;
+}
+.trace-facts--rows {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.trace-facts--rows div {
+  display: grid;
+  grid-template-columns: 5em minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 0;
+  border-right: 0;
+  border-bottom: 1px solid #e2eaf3;
+}
+
+.trace-facts--rows div:last-child {
+  border-bottom: 0;
+}
+
+.trace-facts--rows dd {
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
 }
 </style>
