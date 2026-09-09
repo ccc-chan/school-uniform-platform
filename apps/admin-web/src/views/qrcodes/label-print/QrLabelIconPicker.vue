@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
-import { Modal } from 'ant-design-vue'
+import Modal from 'ant-design-vue/es/modal'
 import {
   LABEL_ICON_CATEGORIES,
   type LabelIcon,

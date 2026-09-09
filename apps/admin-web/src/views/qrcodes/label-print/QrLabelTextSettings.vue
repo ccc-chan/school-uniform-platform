@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import type {
   CustomLabelLayer,
   LabelAlignment,

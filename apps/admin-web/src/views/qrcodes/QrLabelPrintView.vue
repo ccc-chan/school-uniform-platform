@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, shallowRef, useTemplateRef } from 'vue'
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import QrLabelArtwork from './label-print/QrLabelArtwork.vue'
 import QrLabelControls from './label-print/QrLabelControls.vue'
 import QrLabelPreview from './label-print/QrLabelPreview.vue'

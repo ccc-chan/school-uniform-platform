@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, shallowRef } from 'vue'
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import type { QrLabelBatch, QrLabelItem } from '@/api/qrcodes'
 import QrLabelArtwork from './QrLabelArtwork.vue'
 import {

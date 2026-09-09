@@ -18,8 +18,8 @@ function generationPayload(value = {}) {
 // 统一校验生成数量、产品 ID 和编号前缀。
 function generationError(value) {
   if (!Number.isInteger(value.productId) || value.productId < 1) return '请选择产品'
-  if (!Number.isInteger(value.quantity) || value.quantity < 1 || value.quantity > 100000) {
-    return '生成数量须为 1 至 100000 的整数'
+  if (!Number.isInteger(value.quantity) || value.quantity < 1 || value.quantity > 99999) {
+    return '生成数量须为 1 至 99999 的整数'
   }
   if (!prefixPattern.test(value.prefix)) {
     return '编号前缀须以字母开头，由 2 至 12 位大写字母、数字、下划线或短横线组成'
@@ -111,8 +111,8 @@ class QrcodesController extends Controller {
     if (!Number.isInteger(value.generationBatchId) || value.generationBatchId < 1) {
       return this.fail('请选择二维码生成批次')
     }
-    if (!Number.isInteger(value.quantity) || value.quantity < 1 || value.quantity > 100000) {
-      return this.fail('绑定数量须为 1 至 100000 的整数')
+    if (!Number.isInteger(value.quantity) || value.quantity < 1 || value.quantity > 99999) {
+      return this.fail('绑定数量须为 1 至 99999 的整数')
     }
     if (!value.productSku || value.productSku.length > 100) return this.fail('请填写有效的产品 SKU')
     if (!value.productionBatch || value.productionBatch.length > 100) {

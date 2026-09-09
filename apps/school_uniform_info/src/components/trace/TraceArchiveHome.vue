@@ -3,9 +3,10 @@ import { computed } from 'vue'
 import TraceEntryLink from './TraceEntryLink.vue'
 import { useSchoolUniformInfoViewModel } from '@/features/useSchoolUniformInfoViewModel'
 
-const archiveRibbonUrl = `${import.meta.env.BASE_URL}images/archive-design-reference.png`
+const archiveRibbonUrl = `${import.meta.env.BASE_URL}images/archive-ribbon.png`
 
-const { info, qrCodeType, traceTypeLabel, displayValue } = useSchoolUniformInfoViewModel()
+const { info, qrCodeType, traceTypeLabel, displayValue } =
+  useSchoolUniformInfoViewModel()
 
 const title = computed(() =>
   qrCodeType.value === 'school'
@@ -61,7 +62,10 @@ const facts = computed(() => {
 
 <template>
   <div v-if="info" class="trace-home trace-home--archive">
-    <section class="product-visual product-visual--archive" aria-label="校服数字档案">
+    <section
+      class="product-visual product-visual--archive"
+      aria-label="校服数字档案"
+    >
       <div
         class="archive-ribbon"
         :style="{ backgroundImage: `url(${archiveRibbonUrl})` }"
@@ -71,7 +75,6 @@ const facts = computed(() => {
         <strong>SU</strong>
         <span>守护成长的每一件</span>
       </div>
-      <p class="archive-title">校服数字档案</p>
       <header class="product-heading">
         <span class="trace-badge">{{ traceTypeLabel }}</span>
         <h1>{{ title }}</h1>
@@ -80,22 +83,46 @@ const facts = computed(() => {
     </section>
 
     <div class="archive-content">
-    <h2 class="trace-section-title">{{ factsTitle }}</h2>
-    <dl class="trace-facts" :class="{ 'trace-facts--rows': qrCodeType !== 'product' }">
-      <div v-for="[label, value] in facts" :key="label">
-        <dt>{{ label }}</dt>
-        <dd>{{ value }}</dd>
-      </div>
-    </dl>
+      <h2 class="trace-section-title">{{ factsTitle }}</h2>
+      <dl
+        class="trace-facts"
+        :class="{ 'trace-facts--rows': qrCodeType !== 'product' }"
+      >
+        <div v-for="[label, value] in facts" :key="label">
+          <dt>{{ label }}</dt>
+          <dd>{{ value }}</dd>
+        </div>
+      </dl>
 
-    <h2 class="trace-section-title trace-section-title--spaced">溯源资料</h2>
-    <section class="trace-actions" :aria-label="entryLabel">
-      <TraceEntryLink icon="quality" label="检测报告" :to="{ name: 'school-uniform-info-quality', params: { code: info.code } }" />
-      <TraceEntryLink icon="production" label="生产流程" :to="{ name: 'school-uniform-info-production', params: { code: info.code } }" />
-      <TraceEntryLink icon="verify" label="防伪验证" :to="{ name: 'school-uniform-info-verify', params: { code: info.code } }" />
-    </section>
+      <h2 class="trace-section-title trace-section-title--spaced">溯源资料</h2>
+      <section class="trace-actions" :aria-label="entryLabel">
+        <TraceEntryLink
+          icon="quality"
+          label="检测报告"
+          :to="{
+            name: 'school-uniform-info-quality',
+            params: { code: info.code },
+          }"
+        />
+        <TraceEntryLink
+          icon="production"
+          label="生产流程"
+          :to="{
+            name: 'school-uniform-info-production',
+            params: { code: info.code },
+          }"
+        />
+        <TraceEntryLink
+          icon="verify"
+          label="防伪验证"
+          :to="{
+            name: 'school-uniform-info-verify',
+            params: { code: info.code },
+          }"
+        />
+      </section>
 
-    <p class="trace-footnote">本次查询已记录，用于校服数字身份核验</p>
+      <p class="trace-footnote">本次查询已记录，用于校服数字身份核验</p>
     </div>
   </div>
 </template>
@@ -109,9 +136,10 @@ const facts = computed(() => {
 .product-visual--archive {
   display: block;
   height: auto;
-  min-height: calc(var(--archive-unit) * 620);
+  min-height: calc(var(--archive-unit) * 510);
   margin: 0;
-  padding: calc(var(--archive-unit) * 300) calc(var(--archive-unit) * 58) calc(var(--archive-unit) * 70);
+  padding: calc(var(--archive-unit) * 210) calc(var(--archive-unit) * 58)
+    calc(var(--archive-unit) * 42);
   border: 0;
   border-radius: 0;
   background: var(--trace-primary);
@@ -119,13 +147,12 @@ const facts = computed(() => {
 
 .product-heading {
   min-width: 0;
-  padding: 0;
 }
 
 .product-heading h1 {
   margin-top: calc(var(--archive-unit) * 22);
   color: #fff;
-  font-size: calc(var(--archive-unit) * 96);
+  font-size: calc(var(--archive-unit) * 60);
   line-height: 1.15;
 }
 
@@ -147,8 +174,10 @@ const facts = computed(() => {
 }
 
 .archive-content {
-  padding: calc(var(--archive-unit) * 66) calc(var(--archive-unit) * 58) calc(var(--archive-unit) * 60);
-  border-radius: calc(var(--archive-unit) * 42) calc(var(--archive-unit) * 42) 0 0;
+  padding: calc(var(--archive-unit) * 66) calc(var(--archive-unit) * 58)
+    calc(var(--archive-unit) * 60);
+  border-radius: calc(var(--archive-unit) * 42) calc(var(--archive-unit) * 42) 0
+    0;
   background: #fff;
 }
 
@@ -258,31 +287,18 @@ const facts = computed(() => {
 }
 
 .archive-brand::after {
-  content: "";
+  content: '';
   width: calc(var(--archive-unit) * 44);
   height: 1px;
   margin-top: calc(var(--archive-unit) * 6);
   background: #fff;
 }
 
-.archive-title {
-  position: absolute;
-  top: calc(var(--archive-unit) * 186);
-  left: calc(var(--archive-unit) * 236);
-  margin: 0;
-  color: #fff;
-  font-size: calc(var(--archive-unit) * 64);
-  font-weight: 750;
-  line-height: 1.25;
-  white-space: nowrap;
-}
-
 .archive-ribbon {
   position: absolute;
-  inset: 0 0 auto 76%;
-  height: calc(var(--archive-unit) * 578);
+  inset: 0 0 0 76%;
   z-index: -1;
-  background-size: calc(var(--archive-unit) * 853) auto;
+  background-size: 100% 100%;
   background-position: right top;
   background-repeat: no-repeat;
 }

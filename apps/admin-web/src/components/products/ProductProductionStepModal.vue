@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { DatePicker, message } from 'ant-design-vue'
+import DatePicker from 'ant-design-vue/es/date-picker'
+import message from 'ant-design-vue/es/message'
 import {
   type ProductProductionStepInput,
   type ProductProductionStepStatus,

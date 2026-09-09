@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import { getOperationLogs } from '@/api/system'
 import PageHeader from '@/components/common/PageHeader.vue'
 import type { OperationLog } from '@/types/system'

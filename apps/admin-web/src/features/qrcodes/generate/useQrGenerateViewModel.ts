@@ -1,4 +1,4 @@
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import type { QrGenerationResult } from '@/api/qrcodes'
 import { useQrOptions } from '@/composables/useQrOptions'
 

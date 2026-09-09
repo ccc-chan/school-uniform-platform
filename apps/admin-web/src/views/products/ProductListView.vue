@@ -8,11 +8,11 @@
  * 
 -->
 <script setup lang="ts">
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import type { Product, ProductQrCodeType } from '@/api/products'
 import { useProducts } from '@/composables/useProducts'
 import { useAuthStore } from '@/stores/auth'
-import { confirmAction } from '@/utils/modal'
+import { confirmAction, confirmDisable } from '@/utils/modal'
 const route = useRoute(),
   router = useRouter(),
   auth = useAuthStore()
@@ -96,6 +96,10 @@ watch(
 )
 const toggle = (p: Product) =>
   safe(async () => {
+    if (
+      p.status === 'enabled' &&
+      !(await confirmDisable(`产品“${p.name || p.code}”`))
+    ) return
     await toggleStatus(p)
     message.success('产品状态已更新')
   }, '状态更新失败')

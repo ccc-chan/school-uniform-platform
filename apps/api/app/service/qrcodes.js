@@ -95,7 +95,7 @@ class QrcodesService extends Service {
       for (let index = start; index <= end; index += 1) {
         codes.push({
           generationBatchId: batch.id,
-          code: `${value.prefix}${date}${batchPart}${String(index).padStart(6, '0')}`,
+          code: `${value.prefix}${date}${batchPart}${String(index).padStart(5, '0')}`,
           status: 'unbound',
           createdBy: this.ctx.state.user.id,
         })
@@ -170,7 +170,7 @@ class QrcodesService extends Service {
       const quantity =
         product.qrCodeType === 'product' ? productionQuantity : 1
 
-      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100000) {
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99999) {
         throw userError('当前生产批次数量无效，无法生成二维码')
       }
 

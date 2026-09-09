@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import type { ConfigFormField } from '@/components/common/types'
 
 const file = defineModel<File | null>('file', { required: true })

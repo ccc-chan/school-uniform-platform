@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import QrLabelIconPicker from './QrLabelIconPicker.vue'
 import QrLabelTextSettings from './QrLabelTextSettings.vue'
 import type { LabelIcon } from './labelIconCatalog'

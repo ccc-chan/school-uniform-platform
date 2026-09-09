@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import {
   generateQrCodes,
   type QrGenerationResult,
@@ -45,8 +45,8 @@ const steps = [
 ]
 
 function validateGeneration() {
-  if (!Number.isInteger(form.quantity) || form.quantity < 1 || form.quantity > 100000) {
-    message.warning('生成数量须为 1 至 100000 的整数')
+  if (!Number.isInteger(form.quantity) || form.quantity < 1 || form.quantity > 99999) {
+    message.warning('生成数量须为 1 至 99999 的整数')
     return false
   }
   form.prefix = form.prefix.trim().toUpperCase()
@@ -129,7 +129,7 @@ async function submit() {
           <a-input-number
             v-model:value="form.quantity"
             :min="1"
-            :max="100000"
+            :max="99999"
             :precision="0"
             class="w-full"
           />
@@ -163,7 +163,7 @@ async function submit() {
           </a-descriptions-item>
           <a-descriptions-item label="编号前缀">{{ form.prefix }}</a-descriptions-item>
           <a-descriptions-item label="编号规则">
-            前缀 + 生成日期 + 批次号 + 六位序号
+            前缀 + 生成日期 + 批次号 + 五位序号
           </a-descriptions-item>
           <a-descriptions-item label="备注">{{ form.notes || '-' }}</a-descriptions-item>
         </a-descriptions>

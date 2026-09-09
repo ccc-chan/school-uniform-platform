@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import QRCode from 'qrcode'
-import { Image as AntImage, message } from 'ant-design-vue'
+import AntImage from 'ant-design-vue/es/image'
+import message from 'ant-design-vue/es/message'
 import { getQrLabelBatch, type QrLabelBatchPage } from '@/api/qrcodes'
 import { buildQrTraceUrl } from '@/utils/qr-payload'
 

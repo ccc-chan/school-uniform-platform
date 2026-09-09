@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import type { ProductionInput, ProductionItem } from '@/api/production'
 import type { ConfigFormField } from '@/components/common/types'
 

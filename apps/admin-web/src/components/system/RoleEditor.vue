@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import type { ConfigFormField } from '@/components/common/types'
 import type { Role, RoleInput } from '@/types/system'
 

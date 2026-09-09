@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { message } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
 import {
   createRole,
   deleteRole,
@@ -11,7 +11,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import type { ConfigFormField } from '@/components/common/types'
 import { useAuthStore } from '@/stores/auth'
 import type { Role, RoleInput } from '@/types/system'
-import { confirmAction } from '@/utils/modal'
+import { confirmAction, confirmDisable } from '@/utils/modal'
 const authStore = useAuthStore()
 const canDelete = computed(() => authStore.profile.roleCode === 'SUPER_ADMIN')
 const items = shallowRef<Role[]>([]),
@@ -54,6 +54,16 @@ function openEditor(item: Role | null = null) {
   editorOpen.value = true
 }
 async function save(value: RoleInput) {
+  if (
+    value.status === 'disabled' &&
+    current.value?.status !== 'disabled'
+  ) {
+    if (current.value?.employeeCount) {
+      message.warning('该角色仍有关联员工，不能停用')
+      return
+    }
+    if (!(await confirmDisable(`角色“${value.name}”`))) return
+  }
   try {
     current.value
       ? await updateRole(current.value.id, value)
@@ -70,6 +80,10 @@ async function toggle(item: Role) {
     message.warning('该角色仍有关联员工，不能停用')
     return
   }
+  if (
+    item.status === 'enabled' &&
+    !(await confirmDisable(`角色“${item.name}”`))
+  ) return
   await updateRoleStatus(
     item.id,
     item.status === 'enabled' ? 'disabled' : 'enabled',

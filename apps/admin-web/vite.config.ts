@@ -140,7 +140,6 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: {
             'vue-vendor': ['vue', 'vue-router', 'pinia'],
-            'antd-vendor': ['ant-design-vue'],
             qrcode: ['qrcode'],
           },
         },

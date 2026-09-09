@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { message, Modal } from 'ant-design-vue'
+import message from 'ant-design-vue/es/message'
+import Modal from 'ant-design-vue/es/modal'
 import {
   createEmployee,
   deleteEmployee,
@@ -13,7 +14,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import type { ConfigFormField } from '@/components/common/types'
 import { useAuthStore } from '@/stores/auth'
 import type { Employee, EmployeeInput, Role } from '@/types/system'
-import { confirmAction } from '@/utils/modal'
+import { confirmAction, confirmDisable } from '@/utils/modal'
 
 const authStore = useAuthStore()
 const canDelete = computed(() => authStore.profile.roleCode === 'SUPER_ADMIN')
@@ -98,6 +99,11 @@ function openEditor(item: Employee | null = null) {
   editorOpen.value = true
 }
 async function save(value: EmployeeInput) {
+  if (
+    value.status === 'disabled' &&
+    current.value?.status !== 'disabled' &&
+    !(await confirmDisable(`员工账号“${value.name}”`))
+  ) return
   try {
     current.value
       ? await updateEmployee(current.value.id, value)
@@ -110,6 +116,10 @@ async function save(value: EmployeeInput) {
   }
 }
 async function toggle(item: Employee) {
+  if (
+    item.status === 'enabled' &&
+    !(await confirmDisable(`员工账号“${item.name}”`))
+  ) return
   await updateEmployeeStatus(
     item.id,
     item.status === 'enabled' ? 'disabled' : 'enabled',
