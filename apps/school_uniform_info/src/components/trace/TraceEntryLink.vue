@@ -11,6 +11,7 @@ const descriptions = {
 defineProps<{
   icon: 'product' | 'production' | 'quality' | 'verify'
   label: string
+  description?: string
   to: RouteLocationRaw
 }>()
 </script>
@@ -35,7 +36,7 @@ defineProps<{
     </span>
     <span class="trace-entry__content">
       <span class="trace-entry__label">{{ label }}</span>
-      <span class="trace-entry__description">{{ descriptions[icon] }}</span>
+      <span class="trace-entry__description">{{ description ?? descriptions[icon] }}</span>
     </span>
     <svg class="trace-entry__arrow" aria-hidden="true" fill="none" viewBox="0 0 24 24">
       <path d="m9 5 7 7-7 7" />

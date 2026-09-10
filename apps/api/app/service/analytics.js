@@ -287,6 +287,20 @@ class AnalyticsService extends Service {
     return createHmac('sha256', this.app.config.keys).update(source).digest('hex')
   }
 
+  async getPublicProductImage(code) {
+    const [item] = await this.app.model.query(
+      `SELECT p.image_id AS imageId
+       FROM qr_codes q
+       JOIN qr_generation_batches b ON b.id = q.generation_batch_id
+       JOIN prd_products p ON p.id = COALESCE(q.product_id, b.product_id)
+       WHERE q.code = :code AND q.status <> 'voided'
+       LIMIT 1`,
+      { replacements: { code }, type: QueryTypes.SELECT },
+    )
+    if (!item?.imageId) return null
+    return this.ctx.service.products.getImage(Number(item.imageId))
+  }
+
   async recordScan(code, value = {}) {
     // 已作废二维码不记录扫码，产品优先取二维码绑定值并回退到生成批次。
     const [item] = await this.app.model.query(
@@ -298,6 +312,7 @@ class AnalyticsService extends Service {
         pb.factory_name AS productionFactoryName,
         COALESCE(q.product_id, b.product_id) AS productId,
         p.code AS productCode, p.name AS productName,
+        p.image_id AS imageId,
         p.category, p.qr_code_type AS qrCodeType,
         p.season, p.style, p.color, p.sizes,
         p.applicable_schools AS applicableSchools,
@@ -376,6 +391,9 @@ class AnalyticsService extends Service {
         : 'product',
       productCode: item.productCode || '',
       productName: item.productName || '',
+      productImageUrl: item.imageId
+        ? `/api/v1/public/qrcodes/${encodeURIComponent(item.code)}/image`
+        : '',
       category: item.category || '',
       season: item.season || '',
       style: item.style || '',

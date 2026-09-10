@@ -29,6 +29,7 @@ export interface SchoolUniformInfo {
   qrCodeType: QrCodeType
   productCode: string | null
   productName: string | null
+  productImageUrl?: string | null
   category: string | null
   season: string | null
   style: string | null

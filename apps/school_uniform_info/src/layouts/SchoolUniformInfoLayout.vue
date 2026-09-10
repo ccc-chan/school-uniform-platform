@@ -43,7 +43,11 @@ const navigation = computed(() => [
       <span class="app-bar__more">溯源查询</span>
     </header>
 
-    <section v-if="viewModel.loading.value" class="state-panel" aria-live="polite">
+    <section
+      v-if="viewModel.loading.value"
+      class="state-panel"
+      aria-live="polite"
+    >
       <span class="state-panel__spinner" />
       <p>正在核验二维码信息…</p>
     </section>
@@ -79,17 +83,40 @@ const navigation = computed(() => [
           exact-active-class="nav-active"
           class="bottom-navigation__item"
         >
-          <svg v-if="item.icon === 'product'" aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path d="M20 7 12 3 4 7m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          <svg
+            v-if="item.icon === 'product'"
+            aria-hidden="true"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M20 7 12 3 4 7m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+            />
           </svg>
-          <svg v-else-if="item.icon === 'batch'" aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m-6 0a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" />
+          <svg
+            v-else-if="item.icon === 'batch'"
+            aria-hidden="true"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m-6 0a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"
+            />
           </svg>
-          <svg v-else-if="item.icon === 'school'" aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-1-14h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4" />
+          <svg
+            v-else-if="item.icon === 'school'"
+            aria-hidden="true"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-1-14h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4"
+            />
           </svg>
           <svg v-else aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z" />
+            <path
+              d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z"
+            />
             <path d="m8 12 3 3 5-5" />
           </svg>
           <span>{{ item.label }}</span>
@@ -138,7 +165,7 @@ const navigation = computed(() => [
   border-radius: 9px;
   color: #fff;
   background: var(--trace-primary);
-  font-family: "DIN Alternate", ui-monospace, monospace;
+  font-family: 'DIN Alternate', ui-monospace, monospace;
   font-size: 10px;
   font-weight: 800;
   place-items: center;
@@ -265,14 +292,15 @@ const navigation = computed(() => [
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (min-width: 520px) {
   .school-uniform-shell {
     min-height: calc(100vh - 32px);
     margin-top: 16px;
-    margin-bottom: 16px;
     overflow: hidden;
     border: 1px solid #e2e8f0;
     border-radius: 30px;

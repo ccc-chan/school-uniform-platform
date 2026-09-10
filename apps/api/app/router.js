@@ -88,6 +88,11 @@ module.exports = (app) => {
     publicScanRateLimit,
     controller.analytics.recordScan,
   )
+  router.get(
+    '/api/v1/public/qrcodes/:code/image',
+    publicScanRateLimit,
+    controller.analytics.productImage,
+  )
 
   // 管理端业务接口依次经过登录、菜单和具体操作权限校验。
   router.get(

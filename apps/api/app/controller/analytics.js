@@ -15,6 +15,18 @@ class AnalyticsController extends Controller {
     this.ctx.body = { code: status, message, data: null }
   }
 
+  async productImage() {
+    const code = String(this.ctx.params.code || '').trim()
+    if (!code || code.length > 40) return this.fail('二维码编号无效')
+
+    const result = await this.ctx.service.analytics.getPublicProductImage(code)
+    if (!result) return this.fail('产品图片不存在', 404)
+
+    this.ctx.set('Cache-Control', 'no-store')
+    this.ctx.type = result.item.mimeType
+    this.ctx.body = result.stream
+  }
+
   async recordScan() {
     // 公开接口先限制二维码编号长度，避免无效值进入查询和日志链路。
     const code = String(this.ctx.params.code || '').trim()
