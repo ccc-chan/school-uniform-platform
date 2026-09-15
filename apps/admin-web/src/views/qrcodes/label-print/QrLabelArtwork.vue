@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, shallowRef, useTemplateRef } from 'vue'
+import { computed, shallowRef, useTemplateRef, watch } from 'vue'
+import { useLabelSelection, type SelectableLabelItem } from './useLabelSelection'
 import type { CSSProperties } from 'vue'
 import type { QrLabelBatch, QrLabelItem } from '@/api/qrcodes'
 import {
@@ -37,22 +38,6 @@ type ResizeHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
 interface ResizeDirections {
   x: -1 | 0 | 1
   y: -1 | 0 | 1
-}
-
-interface DragState {
-  block: LabelBlockKey
-  pointerId: number
-  startClientX: number
-  startClientY: number
-  startPosition: { x: number; y: number }
-}
-
-interface CustomDragState {
-  layerId: string
-  pointerId: number
-  startClientX: number
-  startClientY: number
-  startPosition: { x: number; y: number }
 }
 
 interface CustomResizeState {
@@ -115,13 +100,56 @@ const resizeDirections: Record<ResizeHandle, ResizeDirections> = {
 }
 
 const artworkRef = useTemplateRef<HTMLElement>('artwork')
-const dragState = shallowRef<DragState | null>(null)
-const selectedBlock = shallowRef<LabelBlockKey | null>(null)
-const customDragState = shallowRef<CustomDragState | null>(null)
-const selectedCustomLayerId = shallowRef<string | null>(null)
 const customResizeState = shallowRef<CustomResizeState | null>(null)
 const qrResizeState = shallowRef<QrResizeState | null>(null)
 const codeResizeState = shallowRef<CodeResizeState | null>(null)
+
+const selection = useLabelSelection({
+  artwork: artworkRef,
+  editable: () => props.editable === true,
+  items: () => {
+    const blocks: LabelBlockKey[] = ['code']
+    if (shown('company')) blocks.push('company')
+    if (props.labelImageUrl) blocks.push('image')
+    if (hasIdentity.value) blocks.push('identity')
+    if (shown('qrcode')) blocks.push('qrcode')
+    return [
+      ...blocks.map((key) => ({ id: `block:${key}`, ...props.layout[key] })),
+      ...props.customLayers.map((layer) => ({
+        id: `custom:${layer.id}`, x: layer.x, y: layer.y,
+      })),
+    ]
+  },
+  update: updateSelectedPositions,
+})
+
+function updateSelectedPositions(items: SelectableLabelItem[]) {
+  const positions = new Map(items.map((item) => [item.id, item]))
+  const layout = { ...props.layout }
+  let layoutChanged = false
+  for (const key of Object.keys(layout) as LabelBlockKey[]) {
+    const position = positions.get(`block:${key}`)
+    if (!position) continue
+    layout[key] = { x: position.x, y: position.y }
+    layoutChanged = true
+  }
+  if (layoutChanged) emit('update:layout', layout)
+  if (props.customLayers.some((layer) => positions.has(`custom:${layer.id}`))) {
+    emit('update:customLayers', props.customLayers.map((layer) => {
+      const position = positions.get(`custom:${layer.id}`)
+      return position ? { ...layer, x: position.x, y: position.y } : layer
+    }))
+  }
+}
+
+watch(() => props.item.code, () => selection.clear())
+
+defineExpose({
+  selectionCount: selection.count,
+  selectAll: selection.selectAll,
+  clearSelection: selection.clear,
+  alignSelection: selection.align,
+})
 
 const artworkStyle = computed(() => {
   const scale = Math.max(
@@ -273,106 +301,6 @@ function resizeAxis(
   }
 }
 
-function updateBlockPosition(
-  block: LabelBlockKey,
-  element: HTMLElement,
-  x: number,
-  y: number,
-) {
-  const artworkRect = artworkRef.value?.getBoundingClientRect()
-  if (!artworkRect?.width || !artworkRect.height) return
-
-  const blockRect = element.getBoundingClientRect()
-  const horizontalInset = Math.min(
-    48,
-    (blockRect.width / 2 / artworkRect.width) * 100 + 2,
-  )
-  const verticalInset = Math.min(
-    48,
-    (blockRect.height / 2 / artworkRect.height) * 100 + 2,
-  )
-  const nextPosition = {
-    x: Number(clamp(x, horizontalInset, 100 - horizontalInset).toFixed(2)),
-    y: Number(clamp(y, verticalInset, 100 - verticalInset).toFixed(2)),
-  }
-
-  emit('update:layout', {
-    ...props.layout,
-    [block]: nextPosition,
-  })
-}
-
-function startDrag(event: PointerEvent, block: LabelBlockKey) {
-  if (!props.editable || event.button !== 0) return
-  const element = event.currentTarget as HTMLElement
-  event.preventDefault()
-  element.setPointerCapture(event.pointerId)
-  selectedBlock.value = block
-  selectedCustomLayerId.value = null
-  dragState.value = {
-    block,
-    pointerId: event.pointerId,
-    startClientX: event.clientX,
-    startClientY: event.clientY,
-    startPosition: { ...props.layout[block] },
-  }
-}
-
-function moveDrag(event: PointerEvent) {
-  const state = dragState.value
-  const artworkRect = artworkRef.value?.getBoundingClientRect()
-  if (
-    !props.editable ||
-    !state ||
-    state.pointerId !== event.pointerId ||
-    !artworkRect?.width ||
-    !artworkRect.height
-  )
-    return
-
-  const element = event.currentTarget as HTMLElement
-  const x =
-    state.startPosition.x +
-    ((event.clientX - state.startClientX) / artworkRect.width) * 100
-  const y =
-    state.startPosition.y +
-    ((event.clientY - state.startClientY) / artworkRect.height) * 100
-  updateBlockPosition(state.block, element, x, y)
-}
-
-function finishDrag(event: PointerEvent) {
-  const state = dragState.value
-  if (!state || state.pointerId !== event.pointerId) return
-  const element = event.currentTarget as HTMLElement
-  if (element.hasPointerCapture(event.pointerId)) {
-    element.releasePointerCapture(event.pointerId)
-  }
-  dragState.value = null
-}
-
-function moveWithKeyboard(event: KeyboardEvent, block: LabelBlockKey) {
-  if (!props.editable) return
-  const movement = event.shiftKey ? 5 : 1
-  const delta = {
-    ArrowLeft: { x: -movement, y: 0 },
-    ArrowRight: { x: movement, y: 0 },
-    ArrowUp: { x: 0, y: -movement },
-    ArrowDown: { x: 0, y: movement },
-  }[event.key]
-  if (!delta) return
-
-  event.preventDefault()
-  selectedBlock.value = block
-  selectedCustomLayerId.value = null
-  const current = props.layout[block]
-  updateBlockPosition(
-    block,
-    event.currentTarget as HTMLElement,
-    current.x + delta.x,
-    current.y + delta.y,
-  )
-}
-
 function customLayerStyle(layer: CustomLabelLayer): CSSProperties {
   const verticalAlignment = layer.verticalAlignment ?? 'middle'
   const layerHeight = layer.height ?? (layer.type === 'text' ? 4 : 8)
@@ -459,8 +387,7 @@ function updateCustomLayer(layerId: string, patch: Partial<CustomLabelLayer>) {
 }
 
 function selectCustomLayer(layerId: string) {
-  selectedCustomLayerId.value = layerId
-  selectedBlock.value = null
+  selection.selectOne(`custom:${layerId}`)
 }
 
 function startCustomResize(
@@ -473,7 +400,6 @@ function startCustomResize(
   event.preventDefault()
   element.setPointerCapture(event.pointerId)
   selectCustomLayer(layer.id)
-  customDragState.value = null
   customResizeState.value = {
     layerId: layer.id,
     layerType: layer.type,
@@ -563,9 +489,7 @@ function startQrResize(event: PointerEvent, handle: ResizeHandle) {
   event.preventDefault()
   block.focus({ preventScroll: true })
   element.setPointerCapture(event.pointerId)
-  selectedBlock.value = 'qrcode'
-  selectedCustomLayerId.value = null
-  dragState.value = null
+  selection.selectOne('block:qrcode')
   qrResizeState.value = {
     handle,
     pointerId: event.pointerId,
@@ -653,9 +577,7 @@ function startCodeResize(event: PointerEvent, handle: ResizeHandle) {
   event.preventDefault()
   block.focus({ preventScroll: true })
   element.setPointerCapture(event.pointerId)
-  selectedBlock.value = 'code'
-  selectedCustomLayerId.value = null
-  dragState.value = null
+  selection.selectOne('block:code')
   const blockRect = block.getBoundingClientRect()
   codeResizeState.value = {
     handle,
@@ -748,75 +670,6 @@ function finishCodeResize(event: PointerEvent) {
   codeResizeState.value = null
 }
 
-function startCustomDrag(event: PointerEvent, layer: CustomLabelLayer) {
-  if (!props.editable || event.button !== 0) return
-  const element = event.currentTarget as HTMLElement
-  event.preventDefault()
-  element.focus({ preventScroll: true })
-  element.setPointerCapture(event.pointerId)
-  selectCustomLayer(layer.id)
-  customDragState.value = {
-    layerId: layer.id,
-    pointerId: event.pointerId,
-    startClientX: event.clientX,
-    startClientY: event.clientY,
-    startPosition: { x: layer.x, y: layer.y },
-  }
-}
-
-function moveCustomDrag(event: PointerEvent) {
-  const state = customDragState.value
-  const artworkRect = artworkRef.value?.getBoundingClientRect()
-  if (
-    !props.editable ||
-    !state ||
-    state.pointerId !== event.pointerId ||
-    !artworkRect?.width ||
-    !artworkRect.height
-  )
-    return
-
-  const x =
-    state.startPosition.x +
-    ((event.clientX - state.startClientX) / artworkRect.width) * 100
-  const y =
-    state.startPosition.y +
-    ((event.clientY - state.startClientY) / artworkRect.height) * 100
-  updateCustomLayer(state.layerId, {
-    x: Number(clamp(x, 5, 95).toFixed(2)),
-    y: Number(clamp(y, 5, 95).toFixed(2)),
-  })
-}
-
-function finishCustomDrag(event: PointerEvent) {
-  const state = customDragState.value
-  if (!state || state.pointerId !== event.pointerId) return
-  const element = event.currentTarget as HTMLElement
-  if (element.hasPointerCapture(event.pointerId)) {
-    element.releasePointerCapture(event.pointerId)
-  }
-  customDragState.value = null
-}
-
-function moveCustomWithKeyboard(event: KeyboardEvent, layer: CustomLabelLayer) {
-  if (!props.editable) return
-  const movement = event.shiftKey ? 5 : 1
-  const delta = {
-    ArrowLeft: { x: -movement, y: 0 },
-    ArrowRight: { x: movement, y: 0 },
-    ArrowUp: { x: 0, y: -movement },
-    ArrowDown: { x: 0, y: movement },
-  }[event.key]
-  if (!delta) return
-
-  event.preventDefault()
-  selectedCustomLayerId.value = layer.id
-  updateCustomLayer(layer.id, {
-    x: clamp(layer.x + delta.x, 5, 95),
-    y: clamp(layer.y + delta.y, 5, 95),
-  })
-}
-
 function shown(field: LabelField) {
   return props.selectedFields.includes(field)
 }
@@ -828,32 +681,39 @@ function shown(field: LabelField) {
     class="qr-label-artwork"
     :class="[
       `qr-label-artwork--${labelStyle.presetKey}`,
-      { 'qr-label-artwork--editable': editable },
+      {
+        'qr-label-artwork--editable': editable,
+        'qr-label-artwork--multiple': selection.count.value > 1,
+      },
     ]"
     :style="artworkStyle"
+    :tabindex="editable ? 0 : undefined"
+    :aria-label="editable ? '标签画布，可多选元素并整体居中' : undefined"
+    @pointerdown.capture="selection.onPointerDown"
+    @pointermove.capture="selection.onPointerMove"
+    @pointerup.capture="selection.onPointerUp"
+    @pointercancel.capture="selection.onPointerUp"
+    @lostpointercapture="selection.onPointerUp"
+    @focusin="selection.onFocus"
+    @keydown.capture="selection.onKeydown"
   >
     <div class="qr-label-artwork__content">
       <div
         v-for="layer in customLayers"
         :key="layer.id"
+        :data-selection-id="`custom:${layer.id}`"
         class="qr-label-artwork__custom-layer"
         :class="[
           `qr-label-artwork__custom-layer--${layer.type}`,
           {
             'qr-label-artwork__custom-layer--selected':
-              selectedCustomLayerId === layer.id,
+              selection.isSelected(`custom:${layer.id}`),
           },
         ]"
         :style="customLayerStyle(layer)"
         :tabindex="editable ? 0 : undefined"
         :role="editable ? 'button' : undefined"
         :aria-label="`${layer.name}，可拖动或使用方向键调整位置`"
-        @focus="selectCustomLayer(layer.id)"
-        @pointerdown.stop="startCustomDrag($event, layer)"
-        @pointermove.stop="moveCustomDrag"
-        @pointerup.stop="finishCustomDrag"
-        @pointercancel.stop="finishCustomDrag"
-        @keydown="moveCustomWithKeyboard($event, layer)"
       >
         <div
           v-if="layer.type === 'text'"
@@ -912,17 +772,13 @@ function shown(field: LabelField) {
         v-if="shown('company')"
         class="qr-label-artwork__company qr-label-artwork__block"
         :class="{
-          'qr-label-artwork__block--selected': selectedBlock === 'company',
+          'qr-label-artwork__block--selected': selection.isSelected('block:company'),
         }"
+        data-selection-id="block:company"
         :style="blockStyles.company"
         :tabindex="editable ? 0 : undefined"
         :role="editable ? 'button' : undefined"
         aria-label="拖动文本调整位置"
-        @pointerdown="startDrag($event, 'company')"
-        @pointermove="moveDrag"
-        @pointerup="finishDrag"
-        @pointercancel="finishDrag"
-        @keydown="moveWithKeyboard($event, 'company')"
       >
         {{ companyName.trim() || '请输入内容' }}
       </header>
@@ -931,17 +787,13 @@ function shown(field: LabelField) {
         v-if="labelImageUrl"
         class="qr-label-artwork__image-block qr-label-artwork__block"
         :class="{
-          'qr-label-artwork__block--selected': selectedBlock === 'image',
+          'qr-label-artwork__block--selected': selection.isSelected('block:image'),
         }"
+        data-selection-id="block:image"
         :style="blockStyles.image"
         :tabindex="editable ? 0 : undefined"
         :role="editable ? 'button' : undefined"
         aria-label="拖动图片调整位置"
-        @pointerdown="startDrag($event, 'image')"
-        @pointermove="moveDrag"
-        @pointerup="finishDrag"
-        @pointercancel="finishDrag"
-        @keydown="moveWithKeyboard($event, 'image')"
       >
         <img
           class="qr-label-artwork__image"
@@ -954,17 +806,13 @@ function shown(field: LabelField) {
         v-if="hasIdentity"
         class="qr-label-artwork__identity qr-label-artwork__block"
         :class="{
-          'qr-label-artwork__block--selected': selectedBlock === 'identity',
+          'qr-label-artwork__block--selected': selection.isSelected('block:identity'),
         }"
+        data-selection-id="block:identity"
         :style="blockStyles.identity"
         :tabindex="editable ? 0 : undefined"
         :role="editable ? 'button' : undefined"
         aria-label="拖动产品信息调整位置"
-        @pointerdown="startDrag($event, 'identity')"
-        @pointermove="moveDrag"
-        @pointerup="finishDrag"
-        @pointercancel="finishDrag"
-        @keydown="moveWithKeyboard($event, 'identity')"
       >
         <strong v-if="shown('product')" class="qr-label-artwork__product">
           {{ batch.productName }}
@@ -984,17 +832,13 @@ function shown(field: LabelField) {
         v-if="shown('qrcode')"
         class="qr-label-artwork__qr-block qr-label-artwork__block"
         :class="{
-          'qr-label-artwork__block--selected': selectedBlock === 'qrcode',
+          'qr-label-artwork__block--selected': selection.isSelected('block:qrcode'),
         }"
+        data-selection-id="block:qrcode"
         :style="blockStyles.qrcode"
         :tabindex="editable ? 0 : undefined"
         :role="editable ? 'button' : undefined"
         aria-label="拖动二维码调整位置"
-        @pointerdown="startDrag($event, 'qrcode')"
-        @pointermove="moveDrag"
-        @pointerup="finishDrag"
-        @pointercancel="finishDrag"
-        @keydown="moveWithKeyboard($event, 'qrcode')"
       >
         <img
           v-if="qrDataUrl"
@@ -1019,17 +863,13 @@ function shown(field: LabelField) {
       <div
         class="qr-label-artwork__code qr-label-artwork__block"
         :class="{
-          'qr-label-artwork__block--selected': selectedBlock === 'code',
+          'qr-label-artwork__block--selected': selection.isSelected('block:code'),
         }"
+        data-selection-id="block:code"
         :style="codeBlockStyle"
         :tabindex="editable ? 0 : undefined"
         :role="editable ? 'button' : undefined"
         :aria-label="`二维码编号 ${item.code}，可拖动或使用方向键调整位置`"
-        @pointerdown="startDrag($event, 'code')"
-        @pointermove="moveDrag"
-        @pointerup="finishDrag"
-        @pointercancel="finishDrag"
-        @keydown="moveWithKeyboard($event, 'code')"
       >
         {{ item.code }}
         <span
@@ -1045,10 +885,33 @@ function shown(field: LabelField) {
         />
       </div>
     </div>
+    <div
+      v-if="editable && selection.marqueeStyle.value"
+      class="qr-label-artwork__marquee"
+      :style="selection.marqueeStyle.value"
+      aria-hidden="true"
+    />
   </article>
 </template>
 
 <style scoped>
+.qr-label-artwork--editable {
+  touch-action: none;
+}
+
+.qr-label-artwork__marquee {
+  position: absolute;
+  z-index: 10;
+  box-sizing: border-box;
+  border: 1px solid #1677ff;
+  background: rgb(22 119 255 / 12%);
+  pointer-events: none;
+}
+
+.qr-label-artwork--editable.qr-label-artwork--multiple .qr-label-artwork__resize-handle {
+  display: none;
+}
+
 .qr-label-artwork {
   --label-editor-color: #94a3b8;
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, shallowRef } from 'vue'
+import { computed, shallowRef, useTemplateRef } from 'vue'
 import type { QrLabelBatch, QrLabelItem } from '@/api/qrcodes'
 import QrLabelArtwork from './QrLabelArtwork.vue'
 import {
@@ -34,6 +34,8 @@ const labelStyle = defineModel<LabelStyleConfig>('labelStyle', {
 
 const millimeterToPixel = 3.7795275591
 const zoom = shallowRef(1)
+const artworkRef = useTemplateRef<InstanceType<typeof QrLabelArtwork>>('labelArtwork')
+const selectionCount = computed(() => artworkRef.value?.selectionCount ?? 0)
 
 const fitScale = computed(() => {
   const rawWidth = props.dimensions.width * millimeterToPixel
@@ -96,6 +98,22 @@ function resetLayout() {
       </div>
     </header>
 
+    <div class="label-preview__tools label-preview__selection-tools">
+      <button type="button" :disabled="!artworkRef" @click="artworkRef?.selectAll()">
+        全选
+      </button>
+      <button type="button" :disabled="!selectionCount" @click="artworkRef?.alignSelection('x')">
+        水平居中
+      </button>
+      <button type="button" :disabled="!selectionCount" @click="artworkRef?.alignSelection('y')">
+        垂直居中
+      </button>
+      <button type="button" :disabled="!selectionCount" @click="artworkRef?.clearSelection()">
+        取消选择
+      </button>
+      <span aria-live="polite">已选 {{ selectionCount }} 项</span>
+    </div>
+
     <div class="label-preview__stage">
       <a-spin v-if="loading" tip="正在生成预览…" />
       <a-empty
@@ -119,6 +137,7 @@ function resetLayout() {
         >
           <div :style="artworkWrapStyle">
             <QrLabelArtwork
+              ref="labelArtwork"
               :batch="batch"
               :item="item"
               :company-name="companyName"
@@ -140,7 +159,7 @@ function resetLayout() {
     </div>
 
     <footer class="label-preview__footer">
-      <span>辅助线不会打印 · 拖动方块缩放，方向键微调位置</span>
+      <span>Ctrl / ⌘ 点击多选 · 空白处拖动框选 · Ctrl / ⌘ + A 全选</span>
       <strong>{{ dimensions.width }} × {{ dimensions.height }} mm</strong>
     </footer>
   </section>
@@ -151,11 +170,27 @@ function resetLayout() {
   display: grid;
   min-width: 0;
   height: 100%;
-  grid-template-rows: 49px minmax(0, 1fr) 32px;
+  grid-template-rows: 49px auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid #e1e7ef;
   border-radius: 3px;
   background: #ffffff;
+}
+
+.label-preview__selection-tools {
+  flex-wrap: wrap;
+  padding: 8px 13px;
+  border-bottom: 1px solid #e5eaf1;
+}
+
+.label-preview__selection-tools > span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.label-preview__tools button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .label-preview__header {
@@ -280,7 +315,9 @@ function resetLayout() {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 14px;
+  min-height: 32px;
+  flex-wrap: wrap;
+  padding: 6px 14px;
   border-top: 1px solid #e5eaf1;
   color: #8a96a8;
   background: #fafbfc;
