@@ -282,6 +282,7 @@ class QrcodesService extends Service {
         ON pb.batch_no = q.production_batch
         AND pb.product_id = q.product_id
       WHERE q.status IN ('bound', 'activated')
+        AND q.disabled = 0
         AND q.production_batch IS NOT NULL
         AND q.production_batch <> ''
       GROUP BY
@@ -329,6 +330,7 @@ class QrcodesService extends Service {
           ON pb.batch_no = q.production_batch
           AND pb.product_id = q.product_id
         WHERE q.production_batch = :batchNo
+          AND q.disabled = 0
           AND q.status IN ('bound', 'activated')
         ORDER BY q.id ASC
         LIMIT 1`,
@@ -341,6 +343,7 @@ class QrcodesService extends Service {
           q.product_sku AS productSku
         FROM qr_codes q
         WHERE q.production_batch = :batchNo
+          AND q.disabled = 0
           AND q.status IN ('bound', 'activated')
           ${codeFilter}
         ORDER BY q.id ASC
@@ -354,6 +357,7 @@ class QrcodesService extends Service {
         `SELECT COUNT(q.id) AS total
         FROM qr_codes q
         WHERE q.production_batch = :batchNo
+          AND q.disabled = 0
           AND q.status IN ('bound', 'activated')
           ${codeFilter}`,
         { replacements: filterReplacements, type: QueryTypes.SELECT },

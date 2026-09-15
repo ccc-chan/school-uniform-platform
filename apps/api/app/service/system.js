@@ -13,6 +13,7 @@ const scopeValues = Object.fromEntries(Object.entries(scopeLabels).map(([key, va
 const editableMenuCodes = new Set([
   'shortcut_dashboard',
   'shortcut_products',
+  'shortcut_qr_management',
   'shortcut_label_print',
   'shortcut_system',
 ])

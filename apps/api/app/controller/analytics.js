@@ -37,7 +37,7 @@ class AnalyticsController extends Controller {
     )
     return item
       ? this.ok(item, '扫码记录成功')
-      : this.fail('二维码不存在或已作废', 404)
+      : this.fail('二维码不存在、已停用或已作废', 404)
   }
 }
 

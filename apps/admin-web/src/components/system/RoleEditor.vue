@@ -11,6 +11,7 @@ const emit = defineEmits<{
 const menuOptions = [
   { label: '仪表盘', value: 'shortcut_dashboard' },
   { label: '产品管理', value: 'shortcut_products' },
+  { label: '二维码管理', value: 'shortcut_qr_management' },
   { label: '标签打印', value: 'shortcut_label_print' },
   { label: '系统管理', value: 'shortcut_system' },
 ]

@@ -1,12 +1,13 @@
 import type { RouteRecordRaw, Router } from 'vue-router'
 
-// 当前导航只注册四个快捷入口及其必要的内部页面。
+// 根据已授权的菜单注册入口及其必要的内部页面。
 const DashboardView = () => import('@/views/DashboardView.vue')
 const ProductListView = () => import('@/views/products/ProductListView.vue')
 const ProductDetailView = () => import('@/views/products/ProductDetailView.vue')
 const QrGenerateView = () => import('@/views/qrcodes/QrGenerateView.vue')
 const QrBindView = () => import('@/views/qrcodes/QrBindView.vue')
 const QrLabelPrintView = () => import('@/views/qrcodes/QrLabelPrintView.vue')
+const QrManagementView = () => import('@/views/qrcodes/QrManagementView.vue')
 const QualityReportUploadView = () =>
   import('@/views/quality/QualityReportUploadView.vue')
 const EmployeeAccountsView = () =>
@@ -34,7 +35,7 @@ const definitions: Record<string, RouteRecordRaw[]> = {
       name: 'products',
       component: ProductListView,
       meta: {
-        title: '产品管理',
+        title: '产品列表',
         requiresAuth: true,
         menuCode: 'shortcut_products',
       },
@@ -71,6 +72,19 @@ const definitions: Record<string, RouteRecordRaw[]> = {
         requiresAuth: true,
         menuCode: 'shortcut_products',
         requiredPermission: 'quality.report.create',
+      },
+    },
+  ],
+  shortcut_qr_management: [
+    {
+      path: 'qrcodes/list',
+      name: 'qrcode-list',
+      component: QrManagementView,
+      meta: {
+        title: '二维码列表',
+        requiresAuth: true,
+        menuCode: 'shortcut_qr_management',
+        requiredPermission: 'view',
       },
     },
   ],
@@ -170,6 +184,7 @@ export function syncDynamicRoutes(router: Router, menuCodes: string[]) {
 export function getDefaultRoute(menuCodes: string[]) {
   if (menuCodes.includes('shortcut_dashboard')) return '/dashboard'
   if (menuCodes.includes('shortcut_products')) return '/products'
+  if (menuCodes.includes('shortcut_qr_management')) return '/qrcodes/list'
   if (menuCodes.includes('shortcut_label_print')) {
     return '/qrcodes/label-print'
   }

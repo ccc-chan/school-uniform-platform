@@ -293,7 +293,7 @@ class AnalyticsService extends Service {
        FROM qr_codes q
        JOIN qr_generation_batches b ON b.id = q.generation_batch_id
        JOIN prd_products p ON p.id = COALESCE(q.product_id, b.product_id)
-       WHERE q.code = :code AND q.status <> 'voided'
+       WHERE q.code = :code AND q.status <> 'voided' AND q.disabled = 0
        LIMIT 1`,
       { replacements: { code }, type: QueryTypes.SELECT },
     )
@@ -302,48 +302,57 @@ class AnalyticsService extends Service {
   }
 
   async recordScan(code, value = {}) {
-    // 已作废二维码不记录扫码，产品优先取二维码绑定值并回退到生成批次。
-    const [item] = await this.app.model.query(
-      `SELECT q.id AS qrCodeId, q.code, q.status,
-        q.product_sku AS productSku,
-        q.production_batch AS productionBatch,
-        pb.id AS productionBatchId,
-        pb.production_date AS productionDate,
-        pb.factory_name AS productionFactoryName,
-        COALESCE(q.product_id, b.product_id) AS productId,
-        p.code AS productCode, p.name AS productName,
-        p.image_id AS imageId,
-        p.category, p.qr_code_type AS qrCodeType,
-        p.season, p.style, p.color, p.sizes,
-        p.applicable_schools AS applicableSchools,
-        p.fabric_info AS fabricInfo,
-        p.execution_standard AS executionStandard,
-        p.washing_instructions AS washingInstructions
-      FROM qr_codes q
-      JOIN qr_generation_batches b ON b.id = q.generation_batch_id
-      LEFT JOIN prd_products p
-        ON p.id = COALESCE(q.product_id, b.product_id)
-      LEFT JOIN production_batches pb
-        ON pb.batch_no = q.production_batch
-      WHERE q.code = :code AND q.status <> 'voided' LIMIT 1`,
-      { replacements: { code }, type: QueryTypes.SELECT },
-    )
-    if (!item) return null
-    const deviceType = this.deviceType(value.deviceType, this.ctx.get('user-agent') || '')
-    const record = await this.app.model.ScanRecord.create({
-      qrCodeId: item.qrCodeId,
-      productId: item.productId,
-      visitorHash: this.visitorHash(value.visitorKey),
-      province: String(value.province || '').trim().slice(0, 50),
-      city: String(value.city || '').trim().slice(0, 50),
-      deviceType,
-      scannedAt: new Date(),
+    // 与管理端停用共用行锁，保证停用完成后不会再新增扫码记录。
+    const scanned = await this.app.model.transaction(async (transaction) => {
+      const qr = await this.app.model.QrCode.findOne({
+        where: { code }, transaction, lock: transaction.LOCK.UPDATE,
+      })
+      if (!qr || qr.disabled || qr.status === 'voided') return null
+      const [item] = await this.app.model.query(
+        `SELECT q.id AS qrCodeId, q.code, q.status,
+          q.product_sku AS productSku,
+          q.production_batch AS productionBatch,
+          pb.id AS productionBatchId,
+          pb.production_date AS productionDate,
+          pb.factory_name AS productionFactoryName,
+          COALESCE(q.product_id, b.product_id) AS productId,
+          p.code AS productCode, p.name AS productName,
+          p.image_id AS imageId,
+          p.category, p.qr_code_type AS qrCodeType,
+          p.season, p.style, p.color, p.sizes,
+          p.applicable_schools AS applicableSchools,
+          p.fabric_info AS fabricInfo,
+          p.execution_standard AS executionStandard,
+          p.washing_instructions AS washingInstructions
+        FROM qr_codes q
+        JOIN qr_generation_batches b ON b.id = q.generation_batch_id
+        LEFT JOIN prd_products p
+          ON p.id = COALESCE(q.product_id, b.product_id)
+        LEFT JOIN production_batches pb
+          ON pb.batch_no = q.production_batch
+        WHERE q.code = :code AND q.status <> 'voided' AND q.disabled = 0 LIMIT 1`,
+        { replacements: { code }, type: QueryTypes.SELECT, transaction },
+      )
+      if (!item) return null
+      const deviceType = this.deviceType(value.deviceType, this.ctx.get('user-agent') || '')
+      const record = await this.app.model.ScanRecord.create({
+        qrCodeId: item.qrCodeId,
+        productId: item.productId,
+        visitorHash: this.visitorHash(value.visitorKey),
+        province: String(value.province || '').trim().slice(0, 50),
+        city: String(value.city || '').trim().slice(0, 50),
+        deviceType,
+        scannedAt: new Date(),
+      }, { transaction })
+      // 首次扫描只把已绑定二维码推进为已激活，重复扫描不会回退其他状态。
+      await this.app.model.QrCode.update(
+        { status: 'activated' },
+        { where: { id: item.qrCodeId, status: 'bound', disabled: false }, transaction },
+      )
+      return { item, record }
     })
-    // 首次扫描只把已绑定二维码推进为已激活，重复扫描不会回退其他状态。
-    await this.app.model.QrCode.update(
-      { status: 'activated' },
-      { where: { id: item.qrCodeId, status: 'bound' } },
-    )
+    if (!scanned) return null
+    const { item, record } = scanned
     const [scanSummary] = await this.app.model.query(
       `SELECT COUNT(*) AS scanCount, MIN(scanned_at) AS firstScannedAt
       FROM qr_scan_records

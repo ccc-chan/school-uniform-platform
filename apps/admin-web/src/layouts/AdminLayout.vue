@@ -56,8 +56,10 @@ watch(
   () => route.path,
   (path) => {
     const parent = path.startsWith('/products')
-      ? 'products'
-      : path.startsWith('/qrcodes')
+      ? 'shortcut_products'
+      : path === '/qrcodes/list'
+        ? 'shortcut_qr_management'
+        : path.startsWith('/qrcodes')
         ? 'qrcodes'
         : path.startsWith('/production')
           ? 'production'
@@ -74,6 +76,8 @@ watch(
 )
 
 const rootSubmenuKeys = [
+  'shortcut_products',
+  'shortcut_qr_management',
   'products',
   'qrcodes',
   'production',
@@ -108,6 +112,7 @@ const menuPresentation: Record<string, { icon: string; implemented: boolean }> =
     system: { icon: '⚙', implemented: true },
     shortcut_dashboard: { icon: '⌂', implemented: true },
     shortcut_products: { icon: '▣', implemented: true },
+    shortcut_qr_management: { icon: '⌗', implemented: true },
     shortcut_label_print: { icon: '⌗', implemented: true },
     shortcut_employees: { icon: '⚙', implemented: true },
     shortcut_system: { icon: '⚙', implemented: true },
@@ -244,6 +249,16 @@ const shortcutSystemMenuChildren = [
 function buildShortcutMenuItem(menu: AuthMenu) {
   const presentation = menuPresentation[menu.code]
 
+  if (menu.code === 'shortcut_products' || menu.code === 'shortcut_qr_management') {
+    const product = menu.code === 'shortcut_products'
+    return {
+      key: menu.code,
+      label: menu.name,
+      icon: h('span', presentation?.icon ?? '•'),
+      children: [{ key: product ? '/products' : '/qrcodes/list', label: product ? '产品列表' : '二维码列表' }],
+    }
+  }
+
   if (menu.code === 'shortcut_system') {
     return {
       key: menu.code,
@@ -282,7 +297,7 @@ const shortcutPathByKey = computed(() => {
 const selectedKeys = computed(() => [
   route.path,
   ...shortcutMenus.value
-    .filter((menu) => menu.path === route.path)
+    .filter((menu) => menu.path === route.path && !['shortcut_products', 'shortcut_qr_management'].includes(menu.code))
     .map((menu) => menu.code),
   ...shortcutSystemMenuChildren
     .filter((item) => item.path === route.path)

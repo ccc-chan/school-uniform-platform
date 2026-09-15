@@ -18,6 +18,7 @@ module.exports = (app) => {
       },
       code: app.Sequelize.STRING,
       status: app.Sequelize.STRING,
+      disabled: { type: app.Sequelize.BOOLEAN, defaultValue: false },
       productId: { type: app.Sequelize.BIGINT.UNSIGNED, field: 'product_id' },
       productSku: { type: app.Sequelize.STRING, field: 'product_sku' },
       productionBatch: {

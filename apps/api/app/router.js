@@ -174,6 +174,19 @@ module.exports = (app) => {
     controller.qrcodes.generateProductionBatch,
   )
 
+  // 独立的二维码管理菜单；查询条件通过请求体传递，避免手机号进入 URL。
+  const qrManagementMenu = app.middleware.menuPermission({ code: 'shortcut_qr_management' })
+  router.post('/api/v1/qr-management/search', auth, qrManagementMenu,
+    qrcodePermission('view'), controller.qrManagement.list)
+  router.put('/api/v1/qr-management/:id/student', auth, qrManagementMenu,
+    qrcodePermission('view'), controller.qrManagement.save)
+  router.get('/api/v1/qr-management/:id/scans', auth, qrManagementMenu,
+    qrcodePermission('view'), controller.qrManagement.scans)
+  router.get('/api/v1/qr-management/:id', auth, qrManagementMenu,
+    qrcodePermission('view'), controller.qrManagement.detail)
+  router.patch('/api/v1/qr-management/:id/availability', auth, qrManagementMenu,
+    qrcodePermission('view'), qrcodePermission('edit'), controller.qrManagement.availability)
+
   // 二维码中心。
   router.get(
     '/api/v1/qrcodes/products',
