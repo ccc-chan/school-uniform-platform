@@ -15,6 +15,7 @@ const statusSql = `CASE WHEN q.status = 'voided' THEN 'voided'
 const itemFields = `q.id, q.code, q.status AS qrStatus, q.disabled,
   p.name AS productName, p.code AS productCode, q.product_sku AS productSku,
   q.production_batch AS productionBatch, p.sizes AS productSizes,
+  p.execution_standard AS executionStandard,
   p.washing_instructions AS washingInstructions,
   p.safety_category AS safetyCategory,
   p.production_unit_name AS productionUnitName,

@@ -80,6 +80,7 @@ function invalid(value, hasImage) {
     !value.code ||
     !value.category ||
     !value.qrCodeType ||
+    !value.executionStandard ||
     !value.washingInstructions ||
     !value.safetyCategory ||
     !value.productionUnitName ||
