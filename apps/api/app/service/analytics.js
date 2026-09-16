@@ -317,6 +317,8 @@ class AnalyticsService extends Service {
           pb.factory_name AS productionFactoryName,
           COALESCE(q.product_id, b.product_id) AS productId,
           p.code AS productCode, p.name AS productName,
+          (SELECT CASE WHEN COUNT(*) = 1 THEN MAX(name) ELSE NULL END
+           FROM brand_profiles) AS brandName,
           p.image_id AS imageId,
           p.category, p.qr_code_type AS qrCodeType,
           p.season, p.style, p.color, p.sizes,
@@ -400,6 +402,7 @@ class AnalyticsService extends Service {
         : 'product',
       productCode: item.productCode || '',
       productName: item.productName || '',
+      brandName: item.brandName || '',
       productImageUrl: item.imageId
         ? `/api/v1/public/qrcodes/${encodeURIComponent(item.code)}/image`
         : '',

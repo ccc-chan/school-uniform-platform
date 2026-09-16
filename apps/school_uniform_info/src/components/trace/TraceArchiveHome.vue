@@ -67,9 +67,14 @@ const facts = computed(() => {
     ]
   }
   return [
-    ['面料', displayValue(item.fabricInfo)],
-    ['尺码范围', item.sizes.length ? item.sizes.join(' / ') : '暂无'],
+    ['品牌', displayValue(item.brandName)],
+    ['学校', item.applicableSchools.length ? item.applicableSchools.join('、') : '暂无'],
+    ['款式', displayValue(item.style)],
+    ['尺码', item.sizes.length ? item.sizes.join(' / ') : '暂无'],
     ['颜色', displayValue(item.color)],
+    ['生产日期', displayValue(item.productionDate)],
+    ['生产厂家', displayValue(item.productionFactoryName)],
+    ['面料', displayValue(item.fabricInfo)],
   ]
 })
 </script>
@@ -103,8 +108,8 @@ const facts = computed(() => {
       <section class="passport-panel">
       <h2 class="trace-section-title">{{ factsTitle }}</h2>
       <dl
-        class="trace-facts"
-        :class="{ 'trace-facts--rows': qrCodeType !== 'product' }"
+        class="trace-facts trace-facts--rows"
+        :class="{ 'trace-facts--compact': qrCodeType === 'product' }"
       >
         <div v-for="[label, value] in facts" :key="label">
           <dt>{{ label }}</dt>
@@ -489,6 +494,23 @@ const facts = computed(() => {
 .passport-home .trace-facts dd { font-size: 14px; }
 .passport-home .trace-facts--rows div { grid-template-columns: 5em minmax(0, 1fr); padding: 14px 0; }
 .passport-home .trace-facts--rows dd { text-align: right; }
+.passport-home .trace-facts--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+.passport-home .trace-facts--compact div {
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 44px;
+  gap: 8px;
+  padding: 10px 0;
+}
+.passport-home .trace-facts--compact dt,
+.passport-home .trace-facts--compact dd {
+  font-size: 13px;
+}
+.passport-home .trace-facts--compact div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
 .passport-home .trace-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 0; }
 .passport-home .trace-actions :deep(.trace-entry) {
   min-width: 0; min-height: 68px; gap: 8px; padding: 12px 8px;
