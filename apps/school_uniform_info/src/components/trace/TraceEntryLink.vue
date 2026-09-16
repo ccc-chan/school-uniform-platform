@@ -6,10 +6,11 @@ const descriptions = {
   quality: '查看质量检测相关资料',
   production: '了解生产节点与加工记录',
   verify: '查询这件校服的身份信息',
+  student: '查询学生绑定信息',
 }
 
 defineProps<{
-  icon: 'product' | 'production' | 'quality' | 'verify'
+  icon: 'product' | 'production' | 'quality' | 'verify' | 'student'
   label: string
   description?: string
   to: RouteLocationRaw
@@ -28,6 +29,10 @@ defineProps<{
       </svg>
       <svg v-else-if="icon === 'quality'" aria-hidden="true" fill="none" viewBox="0 0 24 24">
         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.6L19 9.4V19a2 2 0 0 1-2 2Z" />
+      </svg>
+      <svg v-else-if="icon === 'student'" aria-hidden="true" fill="none" viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
       </svg>
       <svg v-else aria-hidden="true" fill="none" viewBox="0 0 24 24">
         <path d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z" />
@@ -85,6 +90,7 @@ defineProps<{
 .trace-entry__icon--product,
 .trace-entry__icon--quality,
 .trace-entry__icon--production,
+.trace-entry__icon--student,
 .trace-entry__icon--verify {
   color: var(--trace-primary);
   background: var(--trace-primary-soft);

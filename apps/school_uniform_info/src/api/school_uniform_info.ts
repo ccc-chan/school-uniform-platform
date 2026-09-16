@@ -6,6 +6,49 @@ interface ApiEnvelope<T> {
 
 export type QrCodeType = 'product' | 'batch' | 'school'
 
+export interface StudentBinding {
+  studentName: string
+  grade: string
+  className: string
+  parentName: string
+  phoneMasked: string
+  boundAt: string
+}
+
+export interface StudentBindingInput {
+  studentName: string
+  studentNo: string
+  grade: string
+  className: string
+  parentName: string
+  parentRelation: '爸爸' | '妈妈' | '其他监护人'
+  phone: string
+  parentAuthorized: boolean
+}
+
+export class StudentBindingError extends Error {
+  constructor(message: string, public status: number) {
+    super(message)
+  }
+}
+
+export async function requestStudentBinding(
+  code: string,
+  value?: StudentBindingInput,
+): Promise<StudentBinding | null> {
+  const response = await fetch(`/api/v1/public/qrcodes/${encodeURIComponent(code)}/student`, {
+    method: value ? 'POST' : 'GET',
+    headers: { Accept: 'application/json', ...(value ? { 'Content-Type': 'application/json' } : {}) },
+    cache: 'no-store',
+    ...(value ? { body: JSON.stringify(value) } : {}),
+  })
+  const body = await response.json().catch(() => null) as ApiEnvelope<StudentBinding | null> | null
+  if (!response.ok || !body || body.code !== 200) {
+    throw new StudentBindingError(body?.message || '学生信息请求失败，请重试', response.status)
+  }
+  return body.data
+}
+
 export type ProductionStepStatus =
   | 'pending'
   | 'in_progress'

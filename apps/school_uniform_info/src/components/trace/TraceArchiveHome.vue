@@ -3,8 +3,17 @@ import { computed, shallowRef, watch } from 'vue'
 import TraceEntryLink from './TraceEntryLink.vue'
 import { useSchoolUniformInfoViewModel } from '@/features/useSchoolUniformInfoViewModel'
 
-const { info, qrCodeType, traceTypeLabel, displayValue } =
+const { info, qrCodeType, traceTypeLabel, displayValue, studentBinding, bindingLoaded } =
   useSchoolUniformInfoViewModel()
+
+const studentEntryLabel = computed(() =>
+  studentBinding.value || !bindingLoaded.value ? '学生信息' : '绑定信息',
+)
+const studentEntryDescription = computed(() =>
+  studentBinding.value
+    ? '查看已绑定的学生信息'
+    : bindingLoaded.value ? '绑定学生与家长信息' : '查询学生绑定信息',
+)
 
 const imageFailed = shallowRef(false)
 const productImageUrl = computed(() => info.value?.productImageUrl || '')
@@ -106,12 +115,22 @@ const facts = computed(() => {
 
       <section class="passport-panel">
       <h2 class="trace-section-title">溯源服务</h2>
-      <section class="trace-actions" :aria-label="entryLabel">
+      <section class="trace-actions" :class="{ 'trace-actions--student': qrCodeType === 'product' }" :aria-label="entryLabel">
         <TraceEntryLink
           icon="quality"
           label="检测报告"
           :to="{
             name: 'school-uniform-info-quality',
+            params: { code: info.code },
+          }"
+        />
+        <TraceEntryLink
+          v-if="qrCodeType === 'product'"
+          icon="student"
+          :label="studentEntryLabel"
+          :description="studentEntryDescription"
+          :to="{
+            name: 'school-uniform-info-student',
             params: { code: info.code },
           }"
         />
@@ -478,6 +497,13 @@ const facts = computed(() => {
 .passport-home .trace-actions :deep(.trace-entry:first-child) {
   grid-column: 1 / -1; min-height: 72px; padding: 14px 12px;
   border-color: transparent; background: #f0f6ff;
+}
+.passport-home .trace-actions--student :deep(.trace-entry:first-child) {
+  grid-column: auto; min-height: 68px; padding: 12px 8px;
+}
+.passport-home .trace-actions--student :deep(.trace-entry:nth-child(2)) {
+  border-color: transparent;
+  background: #f0f6ff;
 }
 .passport-home .trace-actions :deep(.trace-entry__icon) {
   width: 30px; height: 34px; flex-basis: 30px; border-radius: 0; background: transparent;

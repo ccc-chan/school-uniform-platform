@@ -10,6 +10,11 @@ const router = createRouter({
       props: true,
       children: [
         {
+          path: 'student',
+          name: 'school-uniform-info-student',
+          component: () => import('@/views/StudentInfoView.vue'),
+        },
+        {
           path: '',
           name: 'school-uniform-info-home',
           component: () => import('@/views/SchoolUniformInfoHomeView.vue'),

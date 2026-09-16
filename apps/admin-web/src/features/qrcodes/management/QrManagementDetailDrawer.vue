@@ -229,7 +229,7 @@ const scanStats = [
               </p>
             </template>
           </section>
-          <a-space v-if="tab.key === 'uniform'" class="qr-detail__actions" wrap>
+          <!-- <a-space v-if="tab.key === 'uniform'" class="qr-detail__actions" wrap>
             <a-button
               type="primary"
               :loading="busy"
@@ -246,7 +246,7 @@ const scanStats = [
               @click="toggleAvailability"
               >{{ detail.disabled ? '恢复' : '停用' }}</a-button
             >
-          </a-space>
+          </a-space> -->
         </div>
       </a-tab-pane>
       <a-tab-pane key="records" tab="扫码记录">

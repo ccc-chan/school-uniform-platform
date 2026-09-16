@@ -11,6 +11,10 @@ import {
 } from 'vue'
 import {
   recordSchoolUniformInfoScan,
+  requestStudentBinding,
+  StudentBindingError,
+  type StudentBinding,
+  type StudentBindingInput,
   type QrCodeType,
   type SchoolUniformInfo,
 } from '@/api/school_uniform_info'
@@ -23,6 +27,57 @@ export function createSchoolUniformInfoViewModel(
   const errorMessage = shallowRef('')
   const code = computed(() => toValue(codeSource).trim())
   let requestId = 0
+  const studentBinding = shallowRef<StudentBinding | null>(null)
+  const bindingLoading = shallowRef(false)
+  const bindingLoaded = shallowRef(false)
+  const bindingError = shallowRef('')
+  const bindingSaving = shallowRef(false)
+  const bindingSubmitError = shallowRef('')
+  let bindingRequestId = 0
+
+  async function loadStudentBinding() {
+    if (!info.value || qrCodeType.value !== 'product') return
+    const currentId = ++bindingRequestId
+    const currentCode = code.value
+    bindingLoading.value = true
+    bindingError.value = ''
+    try {
+      const result = await requestStudentBinding(currentCode)
+      if (currentId !== bindingRequestId || currentCode !== code.value) return
+      studentBinding.value = result
+      bindingLoaded.value = true
+    } catch (error) {
+      if (currentId === bindingRequestId && currentCode === code.value) {
+        bindingError.value = error instanceof Error ? error.message : '学生信息加载失败'
+      }
+    } finally {
+      if (currentId === bindingRequestId) bindingLoading.value = false
+    }
+  }
+
+  async function bindStudent(value: StudentBindingInput): Promise<boolean> {
+    if (bindingSaving.value || !bindingLoaded.value || bindingError.value || studentBinding.value) return false
+    const currentCode = code.value
+    const currentId = ++bindingRequestId
+    bindingSaving.value = true
+    bindingSubmitError.value = ''
+    try {
+      const result = await requestStudentBinding(currentCode, value)
+      if (currentId !== bindingRequestId || currentCode !== code.value) return false
+      if (!result) throw new Error('绑定结果为空，请重新查询学生信息')
+      studentBinding.value = result
+      return true
+    } catch (error) {
+      if (currentId !== bindingRequestId || currentCode !== code.value) return false
+      bindingSubmitError.value = error instanceof Error ? error.message : '绑定失败，请重试'
+      if (error instanceof StudentBindingError && error.status === 409) {
+        await loadStudentBinding()
+      }
+      return false
+    } finally {
+      if (currentCode === code.value) bindingSaving.value = false
+    }
+  }
 
   const qrCodeType = computed<QrCodeType>(
     () => info.value?.qrCodeType || 'product',
@@ -49,6 +104,13 @@ export function createSchoolUniformInfoViewModel(
     const currentRequestId = ++requestId
     info.value = null
     errorMessage.value = ''
+    ++bindingRequestId
+    studentBinding.value = null
+    bindingLoaded.value = false
+    bindingLoading.value = false
+    bindingSaving.value = false
+    bindingError.value = ''
+    bindingSubmitError.value = ''
 
     if (!code.value) {
       errorMessage.value = '二维码编号不能为空'
@@ -59,7 +121,10 @@ export function createSchoolUniformInfoViewModel(
 
     try {
       const result = await recordSchoolUniformInfoScan(code.value)
-      if (currentRequestId === requestId) info.value = result
+      if (currentRequestId === requestId) {
+        info.value = result
+        void loadStudentBinding()
+      }
     } catch (error) {
       if (currentRequestId === requestId) {
         errorMessage.value =
@@ -81,6 +146,14 @@ export function createSchoolUniformInfoViewModel(
     traceTypeLabel,
     statusLabel,
     displayValue,
+    studentBinding: readonly(studentBinding),
+    bindingLoading: readonly(bindingLoading),
+    bindingLoaded: readonly(bindingLoaded),
+    bindingError: readonly(bindingError),
+    bindingSaving: readonly(bindingSaving),
+    bindingSubmitError: readonly(bindingSubmitError),
+    loadStudentBinding,
+    bindStudent,
     retry: load,
   }
 }

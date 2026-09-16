@@ -2,7 +2,7 @@
  * @Author: Chan
  * @Date: 2026-09-15 14:05:43
  * @LastEditors: chan
- * @LastEditTime: 2026-09-16 11:29:37
+ * @LastEditTime: 2026-09-16 14:32:12
  * @FilePath: /school-uniform-platform/apps/admin-web/src/features/qrcodes/management/QrManagementTable.vue
  * @Description: 
  * 
@@ -111,12 +111,12 @@ function inspect(item: QrManagementItem, activeTab: string) {
             @click="inspect(record as QrManagementItem, 'detail')"
             >详情</a-button
           >
-          <a-button
+          <!-- <a-button
             type="link"
             size="small"
             @click="inspect(record as QrManagementItem, 'records')"
             >记录</a-button
-          >
+          > -->
           <a-button
             v-if="
               record.qrStatus !== 'voided' &&
