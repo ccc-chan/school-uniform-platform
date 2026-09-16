@@ -93,6 +93,11 @@ module.exports = (app) => {
     publicScanRateLimit,
     controller.analytics.productImage,
   )
+  router.get('/api/v1/public/qrcodes/:code/student',
+    publicScanRateLimit, controller.studentBinding.show)
+  router.post('/api/v1/public/qrcodes/:code/student',
+    app.middleware.rateLimit({ keyPrefix: 'public-student-bind', windowMs: 60 * 1000, max: 10 }),
+    controller.studentBinding.create)
 
   // 管理端业务接口依次经过登录、菜单和具体操作权限校验。
   router.get(
