@@ -39,6 +39,11 @@ export interface SchoolUniformInfo {
   fabricInfo: string | null
   executionStandard: string | null
   washingInstructions: string | null
+  productionUnitName: string | null
+  productionUnitCreditCode: string | null
+  productionUnitAddress: string | null
+  productionUnitContact: string | null
+  productionUnitLicense: string | null
   productionBatch: string | null
   productionDate: string | null
   productionFactoryName: string | null

@@ -77,6 +77,12 @@ function createEmptyForm(): ProductInput {
     fabricInfo: '',
     executionStandard: '',
     washingInstructions: '',
+    safetyCategory: '',
+    productionUnitName: '',
+    productionUnitCreditCode: '',
+    productionUnitAddress: '',
+    productionUnitContact: '',
+    productionUnitLicense: '',
     image: null,
   }
 }
@@ -115,6 +121,12 @@ function fillForm(product: Product) {
     fabricInfo: product.fabricInfo ?? '',
     executionStandard: product.executionStandard ?? '',
     washingInstructions: product.washingInstructions ?? '',
+    safetyCategory: product.safetyCategory ?? '',
+    productionUnitName: product.productionUnitName ?? '',
+    productionUnitCreditCode: product.productionUnitCreditCode ?? '',
+    productionUnitAddress: product.productionUnitAddress ?? '',
+    productionUnitContact: product.productionUnitContact ?? '',
+    productionUnitLicense: product.productionUnitLicense ?? '',
     image: null,
   })
 
@@ -185,11 +197,22 @@ function requestClose() {
 }
 
 async function submit() {
-  if (
-    !form.name.trim() ||
-    (!form.image && !existingImageId.value)
-  ) {
+  if (!form.name.trim() || (!form.image && !existingImageId.value)) {
     message.warning('请填写产品名称并上传产品图片')
+    return
+  }
+
+  if (
+    !form.executionStandard.trim() ||
+    !form.washingInstructions.trim() ||
+    !form.safetyCategory.trim() ||
+    !form.productionUnitName.trim() ||
+    !form.productionUnitCreditCode.trim() ||
+    !form.productionUnitAddress.trim() ||
+    !form.productionUnitContact.trim() ||
+    !form.productionUnitLicense.trim()
+  ) {
+    message.warning('请完整填写生产单位信息')
     return
   }
 
@@ -325,6 +348,82 @@ onBeforeUnmount(clearPreview)
             <span>款号</span>
             <a-input :value="form.code" disabled />
           </label>
+
+          <label
+            class="product-create-drawer__field product-create-drawer__field--full"
+          >
+            <span>执行标准 <em>*</em></span>
+            <a-input
+              v-model:value="form.executionStandard"
+              placeholder="请输入执行标准，如 GB/T 31888-2015"
+            />
+          </label>
+
+          <label
+            class="product-create-drawer__field product-create-drawer__field--full"
+          >
+            <span>洗涤说明 <em>*</em></span>
+            <a-input
+              v-model:value="form.washingInstructions"
+              placeholder="请输入洗涤说明"
+            />
+          </label>
+
+          <label
+            class="product-create-drawer__field product-create-drawer__field--full"
+          >
+            <span>安全类别 <em>*</em></span>
+            <a-input
+              v-model:value="form.safetyCategory"
+              placeholder="请输入安全类别，如 GB 31701-2015"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section class="product-create-drawer__section">
+        <h3 class="product-create-drawer__section-title">
+          生产单位信息 <em>*</em>
+        </h3>
+
+        <div class="product-create-drawer__form-grid">
+          <label class="product-create-drawer__field">
+            <span>生产单位名称 <em>*</em></span>
+            <a-input
+              v-model:value="form.productionUnitName"
+              placeholder="请输入生产单位名称"
+            />
+          </label>
+          <label class="product-create-drawer__field">
+            <span>统一社会信用代码 <em>*</em></span>
+            <a-input
+              v-model:value="form.productionUnitCreditCode"
+              placeholder="请输入统一社会信用代码"
+            />
+          </label>
+          <label
+            class="product-create-drawer__field product-create-drawer__field--full"
+          >
+            <span>生产/注册地址 <em>*</em></span>
+            <a-input
+              v-model:value="form.productionUnitAddress"
+              placeholder="请输入生产/注册地址"
+            />
+          </label>
+          <label class="product-create-drawer__field">
+            <span>联系方式 <em>*</em></span>
+            <a-input
+              v-model:value="form.productionUnitContact"
+              placeholder="请输入联系方式"
+            />
+          </label>
+          <label class="product-create-drawer__field">
+            <span>营业执照 <em>*</em></span>
+            <a-input
+              v-model:value="form.productionUnitLicense"
+              placeholder="请输入营业执照信息"
+            />
+          </label>
         </div>
       </section>
 
@@ -350,9 +449,7 @@ onBeforeUnmount(clearPreview)
       </section>
 
       <section class="product-create-drawer__section">
-        <h3 class="product-create-drawer__section-title">
-          支持尺码
-        </h3>
+        <!-- <h3 class="product-create-drawer__section-title">支持尺码</h3>
 
         <div class="product-create-drawer__sizes">
           <button
@@ -369,7 +466,7 @@ onBeforeUnmount(clearPreview)
           >
             {{ option.label }}
           </button>
-        </div>
+        </div> -->
       </section>
 
       <section class="product-create-drawer__section">
@@ -519,6 +616,13 @@ onBeforeUnmount(clearPreview)
   font-size: 13px;
   font-style: normal;
   font-weight: 650;
+  line-height: 1.5;
+}
+
+.product-create-drawer__section-tip {
+  margin: -2px 0 10px;
+  color: #7b8da6;
+  font-size: 12px;
   line-height: 1.5;
 }
 

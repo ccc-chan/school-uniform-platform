@@ -45,6 +45,12 @@ export interface Product {
   fabricInfo?: string
   executionStandard?: string
   washingInstructions?: string
+  safetyCategory?: string
+  productionUnitName?: string
+  productionUnitCreditCode?: string
+  productionUnitAddress?: string
+  productionUnitContact?: string
+  productionUnitLicense?: string
   batchCount?: number
   totalQuantity?: number
 }
@@ -122,6 +128,12 @@ export interface ProductInput {
   fabricInfo: string
   executionStandard: string
   washingInstructions: string
+  safetyCategory: string
+  productionUnitName: string
+  productionUnitCreditCode: string
+  productionUnitAddress: string
+  productionUnitContact: string
+  productionUnitLicense: string
   image: File | null
 }
 export interface ProductFilters {

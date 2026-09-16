@@ -9,7 +9,7 @@ const emit = defineEmits<{ save: [value: QrStudentInput]; close: [] }>()
 const form = reactive<QrStudentInput>({
   schoolName: props.item.schoolName || '', className: props.item.className || '',
   studentName: props.item.studentName || '', parentName: props.item.parentName || '',
-  phone: '', version: props.item.version,
+  phone: '', version: props.item.version, parentAuthorized: false,
   studentGender: props.item.studentGender || '', grade: props.item.grade || '',
   studentNo: props.item.studentNo || '', parentRelation: props.item.parentRelation || '',
 })
@@ -19,6 +19,7 @@ const fields = [
 ] as const
 function submit() {
   if (props.saving) return
+  if (!form.parentAuthorized) return void message.warning('请确认已获得家长授权')
   const value = { ...form }
   for (const field of fields) {
     value[field.key] = value[field.key].trim()
@@ -36,7 +37,7 @@ function submit() {
 </script>
 
 <template>
-  <a-modal :open="true" :title="item.version ? '编辑学生绑定' : '绑定学生'" ok-text="保存" cancel-text="取消"
+  <a-modal :open="true" :title="item.version ? '编辑学生绑定' : '绑定学生'" ok-text="保存绑定" cancel-text="取消"
     :confirm-loading="saving" :closable="!saving" :mask-closable="false" :keyboard="!saving"
     :width="600"
     :cancel-button-props="{ disabled: saving }" @ok="submit" @cancel="emit('close')">
@@ -56,10 +57,15 @@ function submit() {
         <a-form-item label="学号"><a-input v-model:value="form.studentNo" aria-label="学号" placeholder="请输入学号" :maxlength="100" /></a-form-item>
         <a-form-item label="与学生关系"><a-input v-model:value="form.parentRelation" aria-label="与学生关系" placeholder="例如：母亲" :maxlength="50" /></a-form-item>
       </div>
-      <a-form-item label="手机号" :required="!item.version"
+      <a-form-item label="家长手机号" :required="!item.version"
         :help="item.version ? `当前号码：${item.phoneMasked || '—'}；留空保留原号码` : '用于家长联系方式，保存后脱敏展示'">
-        <a-input v-model:value="form.phone" aria-label="手机号" inputmode="tel" autocomplete="off" :maxlength="11"
+        <a-input v-model:value="form.phone" aria-label="家长手机号" inputmode="tel" autocomplete="off" :maxlength="11"
           :placeholder="item.version ? '输入新手机号，或留空保留' : '请输入11位手机号'" @press-enter="submit" />
+      </a-form-item>
+      <a-form-item>
+        <a-checkbox v-model:checked="form.parentAuthorized" :disabled="saving">
+          已获得家长授权
+        </a-checkbox>
       </a-form-item>
     </a-form>
   </a-modal>

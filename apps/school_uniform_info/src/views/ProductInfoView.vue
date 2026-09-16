@@ -19,6 +19,11 @@ const { info, displayValue } = useSchoolUniformInfoViewModel()
           ['适用季节', info.season],
           ['款式', info.style],
           ['颜色', info.color],
+          ['生产单位名称', info.productionUnitName],
+          ['统一社会信用代码', info.productionUnitCreditCode],
+          ['生产/注册地址', info.productionUnitAddress],
+          ['联系方式', info.productionUnitContact],
+          ['营业执照', info.productionUnitLicense],
         ]"
         :key="label"
         class="flex gap-5 border-b border-ink/8 py-4 last:border-b-0"

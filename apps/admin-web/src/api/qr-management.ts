@@ -1,15 +1,19 @@
 import { request } from '@/api/http'
 import type { PageData } from '@/types/common'
 
-export type QrManagementStatus = 'unbound' | 'bound' | 'activated' | 'voided' | 'disabled'
+export type QrManagementStatus = 'unbound' | 'bound'
 export interface QrManagementFilters {
   code: string
   studentName: string
   phone: string
   schoolName: string
+  province: string
+  city: string
+  district: string
   status: QrManagementStatus | ''
 }
 export interface QrStudentInput {
+  parentAuthorized: boolean
   schoolName: string
   className: string
   studentName: string
@@ -48,16 +52,32 @@ export interface QrManagementDetail extends QrManagementItem {
   brandName: string | null
   style: string | null
   color: string | null
+  executionStandard: string | null
+  washingInstructions: string | null
+  safetyCategory: string | null
   productionDate: string | null
   factoryName: string | null
+  productionUnitName: string | null
+  productionUnitCreditCode: string | null
+  productionUnitAddress: string | null
+  productionUnitContact: string | null
+  productionUnitLicense: string | null
   hasQualityReport: boolean
+  qualityReportId: number | null
+  qualityReportNo: string | null
+  qualityInspectionDate: string | null
   generatedAt: string | null
   studentBoundAt: string | null
   firstScannedAt: string | null
   lastScannedAt: string | null
 }
 export interface QrManagementData extends PageData<QrManagementItem> {
-  statistics: { total: number; bound: number; activated: number; todayScans: number }
+  statistics: {
+    total: number
+    bound: number
+    activated: number
+    todayScans: number
+  }
   schools: string[]
 }
 export interface QrScanSummary {
@@ -77,30 +97,46 @@ export interface QrScanData extends PageData<QrScanItem> {
   summary: QrScanSummary
 }
 export const qrManagementStatusMap = {
-  unbound: { label: '待绑定学生', color: 'default' },
-  bound: { label: '已绑定学生', color: 'green' },
-  activated: { label: '已激活', color: 'green' },
-  voided: { label: '已作废', color: 'red' },
-  disabled: { label: '已停用', color: 'orange' },
+  unbound: { label: '待绑定', color: 'default' },
+  bound: { label: '已绑定', color: 'green' },
 }
-export function searchQrManagement(filters: QrManagementFilters, page: number, pageSize: number, signal?: AbortSignal) {
+export function searchQrManagement(
+  filters: QrManagementFilters,
+  page: number,
+  pageSize: number,
+  signal?: AbortSignal,
+) {
   return request<QrManagementData>('/api/v1/qr-management/search', {
-    method: 'POST', body: JSON.stringify({ ...filters, page, pageSize }), signal,
+    method: 'POST',
+    body: JSON.stringify({ ...filters, page, pageSize }),
+    signal,
   })
 }
 export function saveQrStudent(id: number, value: QrStudentInput) {
   return request<{ id: number }>(`/api/v1/qr-management/${id}/student`, {
-    method: 'PUT', body: JSON.stringify(value),
+    method: 'PUT',
+    body: JSON.stringify(value),
   })
 }
 export function getQrScans(id: number, page: number, signal?: AbortSignal) {
-  return request<QrScanData>(`/api/v1/qr-management/${id}/scans?page=${page}&pageSize=10`, { signal })
+  return request<QrScanData>(
+    `/api/v1/qr-management/${id}/scans?page=${page}&pageSize=10`,
+    { signal },
+  )
 }
 export function getQrDetail(id: number, signal?: AbortSignal) {
   return request<QrManagementDetail>(`/api/v1/qr-management/${id}`, { signal })
 }
-export function setQrDisabled(id: number, disabled: boolean, expectedDisabled: boolean) {
-  return request<{ id: number; disabled: boolean }>(`/api/v1/qr-management/${id}/availability`, {
-    method: 'PATCH', body: JSON.stringify({ disabled, expectedDisabled }),
-  })
+export function setQrDisabled(
+  id: number,
+  disabled: boolean,
+  expectedDisabled: boolean,
+) {
+  return request<{ id: number; disabled: boolean }>(
+    `/api/v1/qr-management/${id}/availability`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ disabled, expectedDisabled }),
+    },
+  )
 }
