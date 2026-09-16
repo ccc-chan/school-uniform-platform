@@ -36,6 +36,12 @@ class ProductsService extends Service {
       fabricInfo: item.fabricInfo || '',
       executionStandard: item.executionStandard || '',
       washingInstructions: item.washingInstructions || '',
+      safetyCategory: item.safetyCategory || '',
+      productionUnitName: item.productionUnitName || '',
+      productionUnitCreditCode: item.productionUnitCreditCode || '',
+      productionUnitAddress: item.productionUnitAddress || '',
+      productionUnitContact: item.productionUnitContact || '',
+      productionUnitLicense: item.productionUnitLicense || '',
       status: item.status,
       createdAt: this.ctx.helper.formatDateTime(item.createdAt),
     }
@@ -76,8 +82,7 @@ class ProductsService extends Service {
     this.ctx.state.operationLogIds.push(Number(row.id))
   }
   async list(query, permissions) {
-    const { page, pageSize, offset } =
-      this.ctx.helper.pagination(query)
+    const { page, pageSize, offset } = this.ctx.helper.pagination(query)
     const where = {}
 
     if (query.keyword) {
@@ -93,21 +98,26 @@ class ProductsService extends Service {
     }
     if (query.status) where.status = query.status
 
-    const { rows, count } =
-      await this.app.model.Product.findAndCountAll({
-        where,
-        order: [['id', 'DESC']],
-        limit: pageSize,
-        offset,
-      })
+    const { rows, count } = await this.app.model.Product.findAndCountAll({
+      where,
+      order: [['id', 'DESC']],
+      limit: pageSize,
+      offset,
+    })
 
     const productIds = rows.map((item) => Number(item.id))
     const summaryRows = productIds.length
       ? await this.app.model.ProductionBatch.findAll({
           attributes: [
             'productId',
-            [this.app.Sequelize.fn('COUNT', this.app.Sequelize.col('id')), 'batchCount'],
-            [this.app.Sequelize.fn('SUM', this.app.Sequelize.col('quantity')), 'totalQuantity'],
+            [
+              this.app.Sequelize.fn('COUNT', this.app.Sequelize.col('id')),
+              'batchCount',
+            ],
+            [
+              this.app.Sequelize.fn('SUM', this.app.Sequelize.col('quantity')),
+              'totalQuantity',
+            ],
           ],
           where: { productId: { [Op.in]: productIds } },
           group: ['productId'],
@@ -154,9 +164,7 @@ class ProductsService extends Service {
 
     const hasPermission = (code) =>
       permissions.includes(code) ||
-      permissions.includes(
-        this.ctx.service.auth.genericPermissionCode(code),
-      )
+      permissions.includes(this.ctx.service.auth.genericPermissionCode(code))
 
     const canViewProduction = hasPermission('production.view')
     const canViewQr = hasPermission('qrcode.view')
@@ -167,9 +175,16 @@ class ProductsService extends Service {
         ? this.app.model.ProductionBatch.findAll({
             where: { productId: id },
             include: [
-              { model: this.app.model.Employee, as: 'responsibleEmployee', attributes: ['id', 'name'] },
+              {
+                model: this.app.model.Employee,
+                as: 'responsibleEmployee',
+                attributes: ['id', 'name'],
+              },
             ],
-            order: [['productionDate', 'DESC'], ['id', 'DESC']],
+            order: [
+              ['productionDate', 'DESC'],
+              ['id', 'DESC'],
+            ],
           })
         : [],
       canViewQuality
@@ -218,7 +233,11 @@ class ProductsService extends Service {
       ? await this.app.model.ProductionRecord.findAll({
           where: { batchId: { [Op.in]: batchIds } },
           include: [
-            { model: this.app.model.Employee, as: 'employee', attributes: ['id', 'name'] },
+            {
+              model: this.app.model.Employee,
+              as: 'employee',
+              attributes: ['id', 'name'],
+            },
             {
               model: this.app.model.ProductionProcess,
               as: 'process',
@@ -269,8 +288,8 @@ class ProductsService extends Service {
       groupedProductionSteps.set(Number(item.batchId), steps)
     }
     for (const steps of groupedProductionSteps.values()) {
-      steps.sort((left, right) =>
-        left.nodeOrder - right.nodeOrder || left.id - right.id,
+      steps.sort(
+        (left, right) => left.nodeOrder - right.nodeOrder || left.id - right.id,
       )
     }
 
@@ -412,8 +431,17 @@ class ProductsService extends Service {
     }
 
     // 兼容切换 MinIO 前已经保存在 storage/uploads 的历史图片。
-    const target = path.join(this.app.baseDir, 'storage', 'uploads', item.storedName)
-    try { await fsp.access(target) } catch { return null }
+    const target = path.join(
+      this.app.baseDir,
+      'storage',
+      'uploads',
+      item.storedName,
+    )
+    try {
+      await fsp.access(target)
+    } catch {
+      return null
+    }
     return { item, stream: fs.createReadStream(target) }
   }
 
@@ -426,7 +454,9 @@ class ProductsService extends Service {
       await this.ctx.service.storage.delete(item.storedName).catch(() => {})
     } else {
       await fsp
-        .unlink(path.join(this.app.baseDir, 'storage', 'uploads', item.storedName))
+        .unlink(
+          path.join(this.app.baseDir, 'storage', 'uploads', item.storedName),
+        )
         .catch(() => {})
     }
   }

@@ -44,6 +44,7 @@ class QrManagementController extends Controller {
   async save() {
     return this.run(() => {
       const body = this.ctx.request.body || {}
+      if (body.parentAuthorized !== true) this.ctx.throw(400, '请确认已获得家长授权')
       const value = { version: Number(body.version) }
       for (const key of ['schoolName', 'className', 'studentName', 'parentName']) {
         value[key] = text(body[key], 100, key)

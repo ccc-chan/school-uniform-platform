@@ -34,6 +34,12 @@ module.exports = (app) =>
       fabricInfo: { type: app.Sequelize.TEXT, field: 'fabric_info' },
       executionStandard: { type: app.Sequelize.STRING, field: 'execution_standard' },
       washingInstructions: { type: app.Sequelize.TEXT, field: 'washing_instructions' },
+      safetyCategory: { type: app.Sequelize.STRING, field: 'safety_category' },
+      productionUnitName: { type: app.Sequelize.STRING, field: 'production_unit_name' },
+      productionUnitCreditCode: { type: app.Sequelize.STRING, field: 'production_unit_credit_code' },
+      productionUnitAddress: { type: app.Sequelize.STRING, field: 'production_unit_address' },
+      productionUnitContact: { type: app.Sequelize.STRING, field: 'production_unit_contact' },
+      productionUnitLicense: { type: app.Sequelize.TEXT, field: 'production_unit_license' },
       imageId: { type: app.Sequelize.BIGINT.UNSIGNED, field: 'image_id' },
       createdBy: {
         type: app.Sequelize.BIGINT.UNSIGNED,

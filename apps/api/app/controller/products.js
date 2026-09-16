@@ -30,19 +30,28 @@ const productSizes = new Set([
 // 将多选字段统一转换为去除空白后的字符串数组。
 const array = (value) =>
   Array.isArray(value)
-    ? value.map(String).map((v) => v.trim()).filter(Boolean)
+    ? value
+        .map(String)
+        .map((v) => v.trim())
+        .filter(Boolean)
     : []
 
 // 同时兼容 multipart 的 payload 字段与普通 JSON 请求体。
 function payload(ctx) {
   let value = ctx.request.body || {}
   if (value.payload) {
-    try { value = JSON.parse(value.payload) } catch { value = {} }
+    try {
+      value = JSON.parse(value.payload)
+    } catch {
+      value = {}
+    }
   }
 
   return {
     name: String(value.name || '').trim(),
-    code: String(value.code || '').trim().toUpperCase(),
+    code: String(value.code || '')
+      .trim()
+      .toUpperCase(),
     category: String(value.category || ''),
     qrCodeType: String(value.qrCodeType || ''),
     applicableSchools: array(value.applicableSchools),
@@ -53,6 +62,14 @@ function payload(ctx) {
     fabricInfo: String(value.fabricInfo || '').trim(),
     executionStandard: String(value.executionStandard || '').trim(),
     washingInstructions: String(value.washingInstructions || '').trim(),
+    safetyCategory: String(value.safetyCategory || '').trim(),
+    productionUnitName: String(value.productionUnitName || '').trim(),
+    productionUnitCreditCode: String(
+      value.productionUnitCreditCode || '',
+    ).trim(),
+    productionUnitAddress: String(value.productionUnitAddress || '').trim(),
+    productionUnitContact: String(value.productionUnitContact || '').trim(),
+    productionUnitLicense: String(value.productionUnitLicense || '').trim(),
   }
 }
 
@@ -62,7 +79,14 @@ function invalid(value, hasImage) {
     !value.name ||
     !value.code ||
     !value.category ||
-    !value.qrCodeType
+    !value.qrCodeType ||
+    !value.washingInstructions ||
+    !value.safetyCategory ||
+    !value.productionUnitName ||
+    !value.productionUnitCreditCode ||
+    !value.productionUnitAddress ||
+    !value.productionUnitContact ||
+    !value.productionUnitLicense
   ) {
     return '请完整填写产品必填信息'
   }
@@ -100,15 +124,11 @@ class ProductsController extends Controller {
     const permissions = await this.ctx.service.auth.getPermissions(
       this.ctx.state.user.id,
     )
-    this.ok(
-      await this.ctx.service.products.list(this.ctx.query, permissions),
-    )
+    this.ok(await this.ctx.service.products.list(this.ctx.query, permissions))
   }
 
   async show() {
-    const item = await this.ctx.service.products.get(
-      Number(this.ctx.params.id),
-    )
+    const item = await this.ctx.service.products.get(Number(this.ctx.params.id))
     return item ? this.ok(item) : this.fail('产品不存在', 404)
   }
 
@@ -196,9 +216,7 @@ class ProductsController extends Controller {
   }
 
   async destroy() {
-    return (await this.ctx.service.products.destroy(
-      Number(this.ctx.params.id),
-    ))
+    return (await this.ctx.service.products.destroy(Number(this.ctx.params.id)))
       ? this.ok(null, '产品删除成功')
       : this.fail('产品不存在', 404)
   }
