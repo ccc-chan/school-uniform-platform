@@ -45,7 +45,7 @@ services:
 
   # MinIO 保存上传文件；API 和控制台端口均不映射到公网。
   minio:
-    image: minio/minio
+    image: quay.io/minio/minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -67,7 +67,7 @@ services:
 
   # 一次性创建对象存储 Bucket，成功退出属于正常状态。
   minio-init:
-    image: minio/mc
+    image: quay.io/minio/mc
     restart: "no"
     depends_on:
       minio:

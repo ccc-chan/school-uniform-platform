@@ -15,3 +15,6 @@ logs/
 .pnpm-store/
 .playwright-cli/
 .codefree
+
+# 本机部署记录，不提交仓库。
+docs/TEST_ENV_DEPLOYMENT.md
