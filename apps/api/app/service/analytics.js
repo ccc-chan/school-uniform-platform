@@ -317,8 +317,12 @@ class AnalyticsService extends Service {
           pb.factory_name AS productionFactoryName,
           COALESCE(q.product_id, b.product_id) AS productId,
           p.code AS productCode, p.name AS productName,
-          (SELECT CASE WHEN COUNT(*) = 1 THEN MAX(name) ELSE NULL END
-           FROM brand_profiles) AS brandName,
+          c.name AS brandName, c.name AS companyName,
+          c.english_name AS companyEnglishName,
+          c.credit_code AS companyCreditCode,
+          c.legal_representative AS companyLegalRepresentative,
+          c.industry AS companyIndustry, c.region AS companyRegion,
+          c.address AS companyAddress, c.contact_phone AS companyContactPhone,
           p.image_id AS imageId,
           p.category, p.qr_code_type AS qrCodeType,
           p.season, p.style, p.color, p.sizes,
@@ -330,6 +334,7 @@ class AnalyticsService extends Service {
         JOIN qr_generation_batches b ON b.id = q.generation_batch_id
         LEFT JOIN prd_products p
           ON p.id = COALESCE(q.product_id, b.product_id)
+        LEFT JOIN companies c ON c.id = p.company_id
         LEFT JOIN production_batches pb
           ON pb.batch_no = q.production_batch
         WHERE q.code = :code AND q.status <> 'voided' AND q.disabled = 0 LIMIT 1`,
@@ -415,6 +420,14 @@ class AnalyticsService extends Service {
       fabricInfo: item.fabricInfo || '',
       executionStandard: item.executionStandard || '',
       washingInstructions: item.washingInstructions || '',
+      companyName: item.companyName || '',
+      companyEnglishName: item.companyEnglishName || '',
+      companyCreditCode: item.companyCreditCode || '',
+      companyLegalRepresentative: item.companyLegalRepresentative || '',
+      companyIndustry: item.companyIndustry || '',
+      companyRegion: item.companyRegion || '',
+      companyAddress: item.companyAddress || '',
+      companyContactPhone: item.companyContactPhone || '',
       productionBatch: item.productionBatch || '',
       productionDate: item.productionDate || '',
       productionFactoryName: item.productionFactoryName || '',

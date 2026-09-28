@@ -7,6 +7,7 @@ const { QueryTypes } = require('sequelize')
 const joins = `FROM qr_codes q
   LEFT JOIN qr_generation_batches g ON g.id = q.generation_batch_id
   LEFT JOIN prd_products p ON p.id = COALESCE(q.product_id, g.product_id)
+  LEFT JOIN companies c ON c.id = p.company_id
   LEFT JOIN qr_student_bindings b ON b.qr_code_id = q.id`
 const statusSql = `CASE WHEN q.status = 'voided' THEN 'voided'
   WHEN q.disabled = 1 THEN 'disabled'
@@ -23,6 +24,11 @@ const itemFields = `q.id, q.code, q.status AS qrStatus, q.disabled,
   p.production_unit_address AS productionUnitAddress,
   p.production_unit_contact AS productionUnitContact,
   p.production_unit_license AS productionUnitLicense,
+  c.name AS companyName, c.english_name AS companyEnglishName,
+  c.credit_code AS companyCreditCode,
+  c.legal_representative AS companyLegalRepresentative,
+  c.industry AS companyIndustry, c.region AS companyRegion,
+  c.address AS companyAddress, c.contact_phone AS companyContactPhone,
   b.school_name AS schoolName, b.class_name AS className,
   b.student_name AS studentName, b.student_gender AS studentGender,
   b.grade, b.student_no AS studentNo, b.parent_name AS parentName,

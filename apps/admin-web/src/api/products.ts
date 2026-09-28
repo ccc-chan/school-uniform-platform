@@ -1,5 +1,6 @@
 import { request, requestBlob } from '@/api/http'
 import type { PageData } from '@/types/common'
+import type { Company } from '@/api/companies'
 // 产品档案、图片及关联生产批次/二维码数据接口。
 export type ProductStatus = 'enabled' | 'disabled'
 export type ProductCategory =
@@ -51,6 +52,8 @@ export interface Product {
   productionUnitAddress?: string
   productionUnitContact?: string
   productionUnitLicense?: string
+  companyId?: number | null
+  company?: Company | null
   batchCount?: number
   totalQuantity?: number
 }
@@ -129,11 +132,7 @@ export interface ProductInput {
   executionStandard: string
   washingInstructions: string
   safetyCategory: string
-  productionUnitName: string
-  productionUnitCreditCode: string
-  productionUnitAddress: string
-  productionUnitContact: string
-  productionUnitLicense: string
+  companyId: number | null
   image: File | null
 }
 export interface ProductFilters {

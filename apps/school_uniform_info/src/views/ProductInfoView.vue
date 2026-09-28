@@ -19,11 +19,6 @@ const { info, displayValue } = useSchoolUniformInfoViewModel()
           ['适用季节', info.season],
           ['款式', info.style],
           ['颜色', info.color],
-          ['生产单位名称', info.productionUnitName],
-          ['统一社会信用代码', info.productionUnitCreditCode],
-          ['生产/注册地址', info.productionUnitAddress],
-          ['联系方式', info.productionUnitContact],
-          ['营业执照', info.productionUnitLicense],
         ]"
         :key="label"
         class="flex gap-5 border-b border-ink/8 py-4 last:border-b-0"
@@ -32,6 +27,20 @@ const { info, displayValue } = useSchoolUniformInfoViewModel()
         <dd class="m-0 flex-1 text-right text-3.5 font-600">
           {{ displayValue(value) }}
         </dd>
+      </div>
+    </dl>
+
+    <p class="mb-0 mt-7 text-3 font-600 tracking-widest text-thread">公司信息</p>
+    <h2 class="mb-5 mt-2 text-6 font-700">产品管理公司</h2>
+    <dl class="m-0 overflow-hidden rounded-5 bg-white px-5 shadow-sm">
+      <div v-for="[label, value] in [
+        ['公司名称', info.companyName], ['英文名称', info.companyEnglishName],
+        ['统一社会信用代码', info.companyCreditCode], ['法人名称', info.companyLegalRepresentative],
+        ['所属行业', info.companyIndustry], ['所属地区', info.companyRegion],
+        ['详细地址', info.companyAddress], ['联系电话', info.companyContactPhone],
+      ]" :key="label" class="flex gap-5 border-b border-ink/8 py-4 last:border-b-0">
+        <dt class="w-22 shrink-0 text-3.5 text-muted">{{ label }}</dt>
+        <dd class="m-0 flex-1 text-right text-3.5 font-600">{{ displayValue(value) }}</dd>
       </div>
     </dl>
   </div>

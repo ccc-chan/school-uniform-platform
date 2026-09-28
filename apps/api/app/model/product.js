@@ -3,8 +3,8 @@
 /**
  * 校服产品档案；适用学校和尺码以 JSON 保存，imageId 指向产品图片元数据。
  */
-module.exports = (app) =>
-  app.model.define(
+module.exports = (app) => {
+  const Product = app.model.define(
     'Product',
     {
       id: {
@@ -40,6 +40,7 @@ module.exports = (app) =>
       productionUnitAddress: { type: app.Sequelize.STRING, field: 'production_unit_address' },
       productionUnitContact: { type: app.Sequelize.STRING, field: 'production_unit_contact' },
       productionUnitLicense: { type: app.Sequelize.TEXT, field: 'production_unit_license' },
+      companyId: { type: app.Sequelize.BIGINT.UNSIGNED, field: 'company_id' },
       imageId: { type: app.Sequelize.BIGINT.UNSIGNED, field: 'image_id' },
       createdBy: {
         type: app.Sequelize.BIGINT.UNSIGNED,
@@ -48,3 +49,8 @@ module.exports = (app) =>
     },
     { tableName: 'prd_products' },
   )
+  Product.associate = () => {
+    Product.belongsTo(app.model.Company, { as: 'company', foreignKey: 'companyId' })
+  }
+  return Product
+}

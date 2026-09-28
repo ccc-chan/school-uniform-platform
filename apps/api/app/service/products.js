@@ -42,6 +42,8 @@ class ProductsService extends Service {
       productionUnitAddress: item.productionUnitAddress || '',
       productionUnitContact: item.productionUnitContact || '',
       productionUnitLicense: item.productionUnitLicense || '',
+      companyId: item.companyId ? Number(item.companyId) : null,
+      company: item.company ? this.ctx.service.companies.json(item.company) : null,
       status: item.status,
       createdAt: this.ctx.helper.formatDateTime(item.createdAt),
     }
@@ -100,6 +102,7 @@ class ProductsService extends Service {
 
     const { rows, count } = await this.app.model.Product.findAndCountAll({
       where,
+      include: [{ model: this.app.model.Company, as: 'company' }],
       order: [['id', 'DESC']],
       limit: pageSize,
       offset,
@@ -154,12 +157,12 @@ class ProductsService extends Service {
     }
   }
   async get(id) {
-    const item = await this.app.model.Product.findByPk(id)
+    const item = await this.app.model.Product.findByPk(id, { include: [{ model: this.app.model.Company, as: 'company' }] })
     return item ? this.json(item) : null
   }
 
   async detail(id, permissions) {
-    const product = await this.app.model.Product.findByPk(id)
+    const product = await this.app.model.Product.findByPk(id, { include: [{ model: this.app.model.Company, as: 'company' }] })
     if (!product) return null
 
     const hasPermission = (code) =>
@@ -365,6 +368,8 @@ class ProductsService extends Service {
   }
 
   async create(value, file) {
+    const company = await this.app.model.Company.findOne({ where: { id: value.companyId, status: 'enabled' } })
+    if (!company) throw Object.assign(new Error('所选管理公司不存在或已停用'), { status: 400 })
     const image = await this.saveImage(file)
 
     try {
@@ -387,6 +392,8 @@ class ProductsService extends Service {
   }
 
   async update(id, value, file) {
+    const company = await this.app.model.Company.findOne({ where: { id: value.companyId, status: 'enabled' } })
+    if (!company) throw Object.assign(new Error('所选管理公司不存在或已停用'), { status: 400 })
     const item = await this.app.model.Product.findByPk(id)
     if (!item) return null
 

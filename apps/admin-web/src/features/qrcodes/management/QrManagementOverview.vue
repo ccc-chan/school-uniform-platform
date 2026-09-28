@@ -7,8 +7,11 @@ const props = defineProps<{ detail: QrManagementDetail }>()
 const fields = computed<Array<[string, string | null | undefined]>>(() => [
   ['品牌', props.detail.brandName],
   ['产品', props.detail.productName],
-  ['生产单位名称', props.detail.productionUnitName],
-  ['统一社会信用代码', props.detail.productionUnitCreditCode],
+  ['管理公司', props.detail.companyName],
+  ['统一社会信用代码', props.detail.companyCreditCode],
+  ['法人名称', props.detail.companyLegalRepresentative],
+  ['公司地址', props.detail.companyAddress],
+  ['联系电话', props.detail.companyContactPhone],
   ['学校', props.detail.schoolName],
   ['学生', props.detail.studentName],
   ['扫码次数', `${props.detail.scanCount} 次`],

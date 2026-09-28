@@ -57,6 +57,8 @@ watch(
   (path) => {
     const parent = path.startsWith('/products')
       ? 'shortcut_products'
+      : path.startsWith('/companies')
+        ? 'shortcut_companies'
       : path === '/qrcodes/list'
         ? 'shortcut_qr_management'
         : path.startsWith('/qrcodes')
@@ -77,6 +79,7 @@ watch(
 
 const rootSubmenuKeys = [
   'shortcut_products',
+  'shortcut_companies',
   'shortcut_qr_management',
   'products',
   'qrcodes',
@@ -112,6 +115,7 @@ const menuPresentation: Record<string, { icon: string; implemented: boolean }> =
     system: { icon: '⚙', implemented: true },
     shortcut_dashboard: { icon: '⌂', implemented: true },
     shortcut_products: { icon: '▣', implemented: true },
+    shortcut_companies: { icon: '企', implemented: true },
     shortcut_qr_management: { icon: '⌗', implemented: true },
     shortcut_label_print: { icon: '⌗', implemented: true },
     shortcut_employees: { icon: '⚙', implemented: true },
@@ -249,13 +253,14 @@ const shortcutSystemMenuChildren = [
 function buildShortcutMenuItem(menu: AuthMenu) {
   const presentation = menuPresentation[menu.code]
 
-  if (menu.code === 'shortcut_products' || menu.code === 'shortcut_qr_management') {
+  if (['shortcut_products', 'shortcut_companies', 'shortcut_qr_management'].includes(menu.code)) {
     const product = menu.code === 'shortcut_products'
+    const company = menu.code === 'shortcut_companies'
     return {
       key: menu.code,
       label: menu.name,
       icon: h('span', presentation?.icon ?? '•'),
-      children: [{ key: product ? '/products' : '/qrcodes/list', label: product ? '产品列表' : '二维码列表' }],
+      children: [{ key: product ? '/products' : company ? '/companies' : '/qrcodes/list', label: product ? '产品列表' : company ? '公司列表' : '二维码列表' }],
     }
   }
 
@@ -297,7 +302,7 @@ const shortcutPathByKey = computed(() => {
 const selectedKeys = computed(() => [
   route.path,
   ...shortcutMenus.value
-    .filter((menu) => menu.path === route.path && !['shortcut_products', 'shortcut_qr_management'].includes(menu.code))
+    .filter((menu) => menu.path === route.path && !['shortcut_products', 'shortcut_companies', 'shortcut_qr_management'].includes(menu.code))
     .map((menu) => menu.code),
   ...shortcutSystemMenuChildren
     .filter((item) => item.path === route.path)

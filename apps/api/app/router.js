@@ -44,6 +44,7 @@ module.exports = (app) => {
   })
   const productPermission = (code) =>
     app.middleware.operationPermission({ code })
+  const companyMenu = app.middleware.menuPermission({ code: 'shortcut_companies' })
   const qrcodeMenu = app.middleware.menuPermission({
     code: 'shortcut_label_print',
   })
@@ -114,6 +115,14 @@ module.exports = (app) => {
   )
 
   // 产品中心。
+  router.get('/api/v1/companies/options', auth, productMenu, controller.companies.options)
+  router.get('/api/v1/companies', auth, companyMenu, productPermission('view'), controller.companies.index)
+  router.post('/api/v1/companies', auth, companyMenu, productPermission('create'), controller.companies.create)
+  router.put('/api/v1/companies/:id', auth, companyMenu, productPermission('edit'), controller.companies.update)
+  router.patch('/api/v1/companies/:id/status', auth, companyMenu, productPermission('edit'), controller.companies.status)
+  router.delete('/api/v1/companies/:id', auth, companyMenu, productPermission('delete'), controller.companies.destroy)
+  router.get('/api/v1/companies/:id/license', auth, companyMenu, productPermission('view'), controller.companies.license)
+
   router.get(
     '/api/v1/products',
     auth,

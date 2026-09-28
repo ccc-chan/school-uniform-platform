@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { InboxOutlined } from '@ant-design/icons-vue'
 import message from 'ant-design-vue/es/message'
+import { getCompanyOptions, type Company } from '@/api/companies'
 import {
   createProduct,
   getProduct,
@@ -32,6 +33,7 @@ const previewUrl = shallowRef('')
 const existingImageId = shallowRef<number | null>(null)
 const fabricComposition = shallowRef('')
 const fabricRatio = shallowRef('')
+const companies = shallowRef<Company[]>([])
 const isEdit = computed(() => Boolean(props.productId))
 
 const qrDescriptions: Record<ProductQrCodeType, string> = {
@@ -78,11 +80,7 @@ function createEmptyForm(): ProductInput {
     executionStandard: '',
     washingInstructions: '',
     safetyCategory: '',
-    productionUnitName: '',
-    productionUnitCreditCode: '',
-    productionUnitAddress: '',
-    productionUnitContact: '',
-    productionUnitLicense: '',
+    companyId: null,
     image: null,
   }
 }
@@ -122,11 +120,7 @@ function fillForm(product: Product) {
     executionStandard: product.executionStandard ?? '',
     washingInstructions: product.washingInstructions ?? '',
     safetyCategory: product.safetyCategory ?? '',
-    productionUnitName: product.productionUnitName ?? '',
-    productionUnitCreditCode: product.productionUnitCreditCode ?? '',
-    productionUnitAddress: product.productionUnitAddress ?? '',
-    productionUnitContact: product.productionUnitContact ?? '',
-    productionUnitLicense: product.productionUnitLicense ?? '',
+    companyId: product.companyId ?? null,
     image: null,
   })
 
@@ -144,6 +138,13 @@ watch([() => props.open, () => props.productId], async ([open, productId]) => {
   if (!open) return
 
   resetForm()
+  try {
+    companies.value = await getCompanyOptions()
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '管理公司加载失败')
+    emit('close')
+    return
+  }
   if (!productId) return
 
   loading.value = true
@@ -206,13 +207,9 @@ async function submit() {
     !form.executionStandard.trim() ||
     !form.washingInstructions.trim() ||
     !form.safetyCategory.trim() ||
-    !form.productionUnitName.trim() ||
-    !form.productionUnitCreditCode.trim() ||
-    !form.productionUnitAddress.trim() ||
-    !form.productionUnitContact.trim() ||
-    !form.productionUnitLicense.trim()
+    !form.companyId
   ) {
-    message.warning('请完整填写生产单位信息')
+    message.warning('请完整填写产品信息并选择管理公司')
     return
   }
 
@@ -383,47 +380,28 @@ onBeforeUnmount(clearPreview)
 
       <section class="product-create-drawer__section">
         <h3 class="product-create-drawer__section-title">
-          生产单位信息 <em>*</em>
+          管理公司 <em>*</em>
         </h3>
 
         <div class="product-create-drawer__form-grid">
-          <label class="product-create-drawer__field">
-            <span>生产单位名称 <em>*</em></span>
-            <a-input
-              v-model:value="form.productionUnitName"
-              placeholder="请输入生产单位名称"
-            />
-          </label>
-          <label class="product-create-drawer__field">
-            <span>统一社会信用代码 <em>*</em></span>
-            <a-input
-              v-model:value="form.productionUnitCreditCode"
-              placeholder="请输入统一社会信用代码"
-            />
-          </label>
           <label
             class="product-create-drawer__field product-create-drawer__field--full"
           >
-            <span>生产/注册地址 <em>*</em></span>
-            <a-input
-              v-model:value="form.productionUnitAddress"
-              placeholder="请输入生产/注册地址"
+            <span>管理公司 <em>*</em></span>
+            <a-select
+              :value="form.companyId ?? undefined"
+              @update:value="form.companyId = Number($event)"
+              show-search
+              option-filter-prop="label"
+              placeholder="请选择管理公司"
+              :options="companies.map(item => ({ label: `${item.name} · ${item.creditCode}`, value: item.id }))"
             />
           </label>
-          <label class="product-create-drawer__field">
-            <span>联系方式 <em>*</em></span>
-            <a-input
-              v-model:value="form.productionUnitContact"
-              placeholder="请输入联系方式"
-            />
-          </label>
-          <label class="product-create-drawer__field">
-            <span>营业执照 <em>*</em></span>
-            <a-input
-              v-model:value="form.productionUnitLicense"
-              placeholder="请输入营业执照信息"
-            />
-          </label>
+          <div v-if="companies.find(item => item.id === form.companyId)" class="product-create-drawer__company product-create-drawer__field--full">
+            <span>法人：{{ companies.find(item => item.id === form.companyId)?.legalRepresentative || '—' }}</span>
+            <span>地址：{{ companies.find(item => item.id === form.companyId)?.address || '—' }}</span>
+            <span>联系电话：{{ companies.find(item => item.id === form.companyId)?.contactPhone || '—' }}</span>
+          </div>
         </div>
       </section>
 
@@ -823,6 +801,17 @@ onBeforeUnmount(clearPreview)
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.product-create-drawer__company {
+  display: flex;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #64748b;
+  background: #f8fafc;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
 }
 
 .product-create-drawer__footer .ant-btn {

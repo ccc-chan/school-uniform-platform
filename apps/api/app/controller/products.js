@@ -63,13 +63,7 @@ function payload(ctx) {
     executionStandard: String(value.executionStandard || '').trim(),
     washingInstructions: String(value.washingInstructions || '').trim(),
     safetyCategory: String(value.safetyCategory || '').trim(),
-    productionUnitName: String(value.productionUnitName || '').trim(),
-    productionUnitCreditCode: String(
-      value.productionUnitCreditCode || '',
-    ).trim(),
-    productionUnitAddress: String(value.productionUnitAddress || '').trim(),
-    productionUnitContact: String(value.productionUnitContact || '').trim(),
-    productionUnitLicense: String(value.productionUnitLicense || '').trim(),
+    companyId: Number(value.companyId),
   }
 }
 
@@ -83,11 +77,7 @@ function invalid(value, hasImage) {
     !value.executionStandard ||
     !value.washingInstructions ||
     !value.safetyCategory ||
-    !value.productionUnitName ||
-    !value.productionUnitCreditCode ||
-    !value.productionUnitAddress ||
-    !value.productionUnitContact ||
-    !value.productionUnitLicense
+    !Number.isSafeInteger(value.companyId) || value.companyId < 1
   ) {
     return '请完整填写产品必填信息'
   }
@@ -171,6 +161,7 @@ class ProductsController extends Controller {
       if (e.name === 'SequelizeUniqueConstraintError') {
         return this.fail('产品编号已存在')
       }
+      if (e.status === 400) return this.fail(e.message)
       throw e
     } finally {
       await this.ctx.cleanupRequestFiles()
@@ -197,6 +188,9 @@ class ProductsController extends Controller {
         file,
       )
       return item ? this.ok(item, '产品更新成功') : this.fail('产品不存在', 404)
+    } catch (e) {
+      if (e.status === 400) return this.fail(e.message)
+      throw e
     } finally {
       await this.ctx.cleanupRequestFiles()
     }

@@ -62,6 +62,14 @@ export interface QrManagementDetail extends QrManagementItem {
   productionUnitAddress: string | null
   productionUnitContact: string | null
   productionUnitLicense: string | null
+  companyName: string | null
+  companyEnglishName: string | null
+  companyCreditCode: string | null
+  companyLegalRepresentative: string | null
+  companyIndustry: string | null
+  companyRegion: string | null
+  companyAddress: string | null
+  companyContactPhone: string | null
   hasQualityReport: boolean
   qualityReportId: number | null
   qualityReportNo: string | null

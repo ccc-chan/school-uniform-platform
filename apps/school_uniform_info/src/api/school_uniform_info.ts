@@ -88,6 +88,14 @@ export interface SchoolUniformInfo {
   productionUnitAddress: string | null
   productionUnitContact: string | null
   productionUnitLicense: string | null
+  companyName: string | null
+  companyEnglishName: string | null
+  companyCreditCode: string | null
+  companyLegalRepresentative: string | null
+  companyIndustry: string | null
+  companyRegion: string | null
+  companyAddress: string | null
+  companyContactPhone: string | null
   productionBatch: string | null
   productionDate: string | null
   productionFactoryName: string | null

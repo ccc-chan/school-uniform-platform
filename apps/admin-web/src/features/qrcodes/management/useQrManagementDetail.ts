@@ -207,11 +207,13 @@ export function useQrManagementDetail(
       {
         title: '生产单位信息',
         fields: [
-          ['生产单位名称', item.productionUnitName],
-          ['统一社会信用代码', item.productionUnitCreditCode],
-          ['生产/注册地址', item.productionUnitAddress],
-          ['联系方式', item.productionUnitContact],
-          ['营业执照', item.productionUnitLicense],
+          ['管理公司', item.companyName],
+          ['统一社会信用代码', item.companyCreditCode],
+          ['法人名称', item.companyLegalRepresentative],
+          ['所属行业', item.companyIndustry],
+          ['所属地区', item.companyRegion],
+          ['公司地址', item.companyAddress],
+          ['联系电话', item.companyContactPhone],
         ],
       },
       {

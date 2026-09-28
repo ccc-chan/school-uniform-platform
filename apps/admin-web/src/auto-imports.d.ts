@@ -74,6 +74,7 @@ declare global {
   const useAppStore: typeof import('./stores/app').useAppStore
   const useAttrs: typeof import('vue').useAttrs
   const useAuthStore: typeof import('./stores/auth').useAuthStore
+  const useCompanies: typeof import('./composables/useCompanies').useCompanies
   const useCssModule: typeof import('vue').useCssModule
   const useCssVars: typeof import('vue').useCssVars
   const useId: typeof import('vue').useId
