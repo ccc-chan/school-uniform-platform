@@ -27,6 +27,7 @@ class StudentBindingController extends Controller {
       const value = {}
       for (const [key, label, required, max] of [
         ['studentName', '学生姓名', true, 100],
+        ['schoolName', '学校名称', true, 100],
         ['studentNo', '学生编号', true, 100],
         ['grade', '年级', false, 100],
         ['className', '班级', false, 100],

@@ -17,6 +17,7 @@ export interface StudentBinding {
 
 export interface StudentBindingInput {
   studentName: string
+  schoolName: string
   studentNo: string
   grade: string
   className: string

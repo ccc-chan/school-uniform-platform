@@ -5,7 +5,7 @@ import type { StudentBindingInput } from '@/api/school_uniform_info'
 const props = defineProps<{ saving: boolean; error: string }>()
 const emit = defineEmits<{ submit: [value: StudentBindingInput] }>()
 const form = reactive<StudentBindingInput>({
-  studentName: '', studentNo: '', grade: '', className: '',
+  studentName: '', schoolName: '', studentNo: '', grade: '', className: '',
   parentName: '', parentRelation: '爸爸', phone: '', parentAuthorized: false,
 })
 const gradeGroups = [
@@ -34,8 +34,11 @@ function selectGrade(grade: string) {
 function submit() {
   if (props.saving) return
   validationError.value = ''
-  if (![form.studentName, form.studentNo, form.parentName].every((value) => value.trim())) {
-    validationError.value = '请填写学生姓名、学生编号和家长姓名'
+  if (
+    ![form.studentName, form.schoolName, form.studentNo, form.parentName]
+      .every((value) => value.trim())
+  ) {
+    validationError.value = '请填写学生姓名、学校名称、学生编号和家长姓名'
     return
   }
   if (!/^1[3-9]\d{9}$/.test(form.phone.trim())) {
@@ -57,6 +60,9 @@ function submit() {
     <fieldset class="form-fields" :disabled="saving">
       <label class="field">学生姓名 <span class="required">*</span>
         <input v-model="form.studentName" required maxlength="100" placeholder="请输入学生姓名" autocomplete="off" />
+      </label>
+      <label class="field">学校名称 <span class="required">*</span>
+        <input v-model="form.schoolName" required maxlength="100" placeholder="请输入学校名称" autocomplete="organization" />
       </label>
       <label class="field">学生编号 <span class="required">*</span>
         <input v-model="form.studentNo" required maxlength="100" placeholder="请输入学校提供的学生编号" autocomplete="off" />

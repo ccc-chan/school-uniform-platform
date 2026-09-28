@@ -48,16 +48,12 @@ class StudentBindingService extends Service {
   async create(code, value) {
     return this.app.model.transaction(async (transaction) => {
       // 与管理端绑定、停用操作共用二维码行锁，首次绑定不可覆盖。
-      const { qr, product } = await this.resolve(code, transaction)
+      const { qr } = await this.resolve(code, transaction)
       const existing = await this.app.model.QrStudentBinding.findByPk(qr.id, { transaction })
       if (existing) fail('这件校服已绑定学生，请查看学生信息', 409)
-      let schools = product.applicableSchools
-      if (typeof schools === 'string') {
-        try { schools = JSON.parse(schools) } catch { schools = [] }
-      }
       const binding = await this.app.model.QrStudentBinding.create({
         qrCodeId: qr.id,
-        schoolName: Array.isArray(schools) && schools.length === 1 ? String(schools[0]).slice(0, 100) : '',
+        schoolName: value.schoolName,
         studentName: value.studentName,
         studentNo: value.studentNo,
         grade: value.grade,
