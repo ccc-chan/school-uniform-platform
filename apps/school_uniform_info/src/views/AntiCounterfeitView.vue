@@ -14,34 +14,32 @@ const scanSummary = computed(() =>
 
 <template>
   <div v-if="info" class="verify-page">
-    <header class="detail-title">
-      <span class="detail-title__mark">
-        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-          <path d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z" />
-          <path d="m8 12 3 3 5-5" />
-        </svg>
-      </span>
-      <div>
-        <h1>防伪验证</h1>
-        <p>校服数字身份核验</p>
+    <section class="verify-credential" :class="{ 'verify-credential--repeat': !isFirstScan }">
+      <header class="verify-credential__header">
+        <div>
+          <span class="verify-credential__eyebrow">AUTHENTICITY CHECK</span>
+          <h1>防伪验证</h1>
+        </div>
+        <span class="verify-credential__serial">数字身份凭证</span>
+      </header>
+
+      <div class="verify-credential__hero">
+        <span class="verify-result__icon">
+          <svg v-if="isFirstScan" aria-hidden="true" fill="none" viewBox="0 0 24 24">
+            <path d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z" />
+            <path d="m8 12 3 3 5-5" />
+          </svg>
+          <svg v-else aria-hidden="true" fill="none" viewBox="0 0 24 24">
+            <path d="M12 9v2m0 4h.01M5 19h14a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0l-7 12A2 2 0 0 0 5 19Z" />
+          </svg>
+        </span>
+        <p class="verify-result__status">{{ isFirstScan ? '首次验证通过' : '重复扫描提醒' }}</p>
+        <h2>{{ isFirstScan ? '产品身份真实有效' : '该产品已验证' }}</h2>
+        <p class="verify-result__summary">{{ scanSummary }}</p>
+        <p v-if="!isFirstScan" class="verify-result__first-time">
+          首次验证于 {{ displayValue(info.firstScannedAt) }}
+        </p>
       </div>
-    </header>
-
-    <section class="verify-result" :class="{ 'verify-result--repeat': !isFirstScan }">
-      <span class="verify-result__icon">
-        <svg v-if="isFirstScan" aria-hidden="true" fill="none" viewBox="0 0 24 24">
-          <path d="m9 12 2 2 4-4m5.6-4A12 12 0 0 1 12 3 12 12 0 0 1 3.4 6 12 12 0 0 0 3 9c0 5.6 3.8 10.3 9 11.6 5.2-1.3 9-6 9-11.6 0-1-.1-2-.4-3Z" />
-        </svg>
-        <svg v-else aria-hidden="true" fill="none" viewBox="0 0 24 24">
-          <path d="M12 9v2m0 4h.01M5 19h14a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0l-7 12A2 2 0 0 0 5 19Z" />
-        </svg>
-      </span>
-
-      <h2>{{ isFirstScan ? '产品验证通过' : '该产品已验证' }}</h2>
-      <p class="verify-result__summary">{{ scanSummary }}</p>
-      <p v-if="!isFirstScan" class="verify-result__first-time">
-        首次验证时间：{{ displayValue(info.firstScannedAt) }}
-      </p>
 
       <dl class="verify-details">
         <div><dt>产品</dt><dd>{{ displayValue(info.productName) }}</dd></div>
@@ -53,7 +51,7 @@ const scanSummary = computed(() =>
         class="details-button"
         :to="{ name: 'school-uniform-info-home', params: { code: info.code } }"
       >
-        <span>查看具体详情</span>
+        <span>查看完整溯源档案</span>
         <svg aria-hidden="true" fill="none" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg>
       </RouterLink>
     </section>
@@ -62,91 +60,115 @@ const scanSummary = computed(() =>
 
 <style scoped>
 .verify-page {
-  min-height: calc(100vh - 68px);
-  background: #fff;
+  min-height: 100vh;
+  padding: 18px 16px 32px;
+  background:
+    radial-gradient(circle at 100% 0, rgb(37 99 235 / 10%), transparent 34%),
+    linear-gradient(180deg, #f7faff 0%, #eef4fb 100%);
 }
 
-.detail-title {
-  position: sticky;
-  top: 42px;
-  z-index: 5;
+.verify-credential {
+  overflow: hidden;
+  border: 1px solid rgb(22 163 74 / 18%);
+  border-radius: 24px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 24px 60px rgb(30 64 175 / 12%);
+  animation: credential-in 420ms ease-out both;
+}
+
+.verify-credential--repeat {
+  border-color: rgb(217 119 6 / 22%);
+}
+
+.verify-credential__header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 0 20px;
-  border-bottom: 1px solid #f1f5f9;
-  background: rgb(255 255 255 / 96%);
-  backdrop-filter: blur(10px);
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e9eff7;
 }
 
-.detail-title__mark {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  border-radius: 10px;
-  color: #fff;
-  background: var(--trace-primary);
-  place-items: center;
+.verify-credential__eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: #7c91ad;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
 }
 
-.detail-title svg {
-  width: 21px;
-  height: 21px;
-  stroke: currentcolor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.detail-title h1 {
+.verify-credential__header h1 {
   margin: 0;
-  font-size: 16px;
+  color: #17304d;
+  font-size: 18px;
 }
 
-.detail-title p {
-  margin: 2px 0 0;
-  color: #8491a5;
+.verify-credential__serial {
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: #2266c5;
+  background: #edf5ff;
   font-size: 10px;
+  font-weight: 650;
 }
 
-.verify-result {
-  padding: 42px 20px 32px;
+.verify-credential__hero {
+  padding: 34px 20px 24px;
   text-align: center;
 }
 
 .verify-result__icon {
   display: grid;
-  width: 96px;
-  height: 96px;
-  margin: 0 auto 20px;
-  border-radius: 28px;
+  width: 82px;
+  height: 82px;
+  margin: 0 auto 18px;
+  border: 8px solid #f0fdf4;
+  border-radius: 50%;
   color: #16a34a;
-  background: linear-gradient(145deg, #f0fdf4, #dcfce7);
-  box-shadow: 0 12px 30px rgb(34 197 94 / 12%);
+  background: #dcfce7;
+  box-shadow: 0 0 0 1px #bbf7d0, 0 12px 30px rgb(34 197 94 / 14%);
   place-items: center;
 }
 
-.verify-result--repeat .verify-result__icon {
+.verify-credential--repeat .verify-result__icon {
+  border-color: #fffbeb;
   color: #d97706;
-  background: linear-gradient(145deg, #fffbeb, #fef3c7);
-  box-shadow: 0 12px 30px rgb(245 158 11 / 12%);
+  background: #fef3c7;
+  box-shadow: 0 0 0 1px #fde68a, 0 12px 30px rgb(245 158 11 / 14%);
 }
 
 .verify-result__icon svg {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   stroke: currentcolor;
   stroke-width: 2.25;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.verify-result h2 {
+.verify-result__status {
+  display: inline-flex;
+  margin: 0 0 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #15803d;
+  background: #f0fdf4;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.verify-credential--repeat .verify-result__status {
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.verify-credential__hero h2 {
   margin: 0;
-  color: #0f172a;
-  font-size: 22px;
+  color: #10243d;
+  font-size: 24px;
+  letter-spacing: -0.5px;
 }
 
 .verify-result__summary {
@@ -156,7 +178,7 @@ const scanSummary = computed(() =>
   font-weight: 650;
 }
 
-.verify-result--repeat .verify-result__summary {
+.verify-credential--repeat .verify-result__summary {
   color: #d97706;
 }
 
@@ -167,10 +189,11 @@ const scanSummary = computed(() =>
 }
 
 .verify-details {
-  margin: 26px 0 0;
-  padding: 6px 20px;
-  border: 1px solid #f1f5f9;
-  border-radius: 16px;
+  margin: 28px 20px 0;
+  padding: 4px 18px;
+  border: 1px solid #e4ebf4;
+  border-radius: 18px;
+  background: #f9fbfe;
   text-align: left;
   box-shadow: 0 1px 3px rgb(15 23 42 / 5%), 0 1px 2px rgb(15 23 42 / 5%);
 }
@@ -203,18 +226,27 @@ const scanSummary = computed(() =>
 
 .details-button {
   display: flex;
-  min-height: 48px;
-  margin-top: 18px;
-  border-radius: 12px;
+  min-height: 50px;
+  margin: 16px 20px 24px;
+  border-radius: 14px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   color: #fff;
-  background: var(--trace-primary);
-  box-shadow: 0 8px 20px rgb(22 119 255 / 18%);
+  background: linear-gradient(135deg, #1677ff, #2563eb);
+  box-shadow: 0 12px 24px rgb(37 99 235 / 22%);
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
+}
+
+@keyframes credential-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verify-credential { animation: none; }
 }
 
 .details-button svg {

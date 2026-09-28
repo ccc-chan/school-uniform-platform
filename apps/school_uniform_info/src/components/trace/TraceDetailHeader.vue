@@ -25,7 +25,7 @@ defineProps<{
 <style scoped>
 .detail-title {
   position: sticky;
-  top: 42px;
+  top: 0;
   z-index: 5;
   display: flex;
   min-height: 48px;

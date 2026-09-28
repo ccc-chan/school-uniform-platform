@@ -15,21 +15,6 @@ provideSchoolUniformInfoViewModel(viewModel)
 
 <template>
   <main class="school-uniform-shell">
-    <header
-      class="app-bar"
-      :class="{
-        'app-bar--cover':
-          viewModel.info.value &&
-          !viewModel.loading.value &&
-          !viewModel.errorMessage.value &&
-          $route.name === 'school-uniform-info-home',
-      }"
-    >
-      <span class="app-bar__mark">SU</span>
-      <strong>校服数字档案</strong>
-      <span class="app-bar__more">溯源查询</span>
-    </header>
-
     <section
       v-if="viewModel.loading.value"
       class="state-panel"
@@ -74,58 +59,6 @@ provideSchoolUniformInfoViewModel(viewModel)
   color: #0f172a;
   background: #fff;
   box-shadow: 0 20px 60px rgb(15 23 42 / 12%);
-}
-
-.app-bar {
-  position: sticky;
-  top: 0;
-  z-index: 12;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  min-height: 56px;
-  padding: 12px 20px;
-  color: #64748b;
-  background: rgb(255 255 255 / 96%);
-  backdrop-filter: blur(10px);
-}
-
-.app-bar strong {
-  color: var(--trace-primary);
-  font-size: 15px;
-  font-weight: 650;
-}
-
-.app-bar__mark {
-  display: grid;
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
-  color: #fff;
-  background: var(--trace-primary);
-  font-family: 'DIN Alternate', ui-monospace, monospace;
-  font-size: 10px;
-  font-weight: 800;
-  place-items: center;
-}
-
-.app-bar__more {
-  justify-self: end;
-  color: #64748b;
-  font-size: 11px;
-}
-
-.app-bar--cover {
-  display: none;
-}
-
-.app-bar--cover strong,
-.app-bar--cover .app-bar__more {
-  color: #fff;
-}
-
-.app-bar--cover .app-bar__mark {
-  background: rgb(255 255 255 / 18%);
 }
 
 .state-panel {
