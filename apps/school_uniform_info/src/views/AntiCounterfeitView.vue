@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 import { useSchoolUniformInfoViewModel } from '@/features/useSchoolUniformInfoViewModel'
 
 const { info, displayValue } = useSchoolUniformInfoViewModel()
@@ -10,6 +10,19 @@ const scanSummary = computed(() =>
     ? '此码为首次扫描'
     : `此码已被扫描 ${info.value?.scanCount || 0} 次`,
 )
+
+const productImageFailed = shallowRef(false)
+const productImageUrl = computed(() => info.value?.productImageUrl?.trim() || '')
+const productDescription = computed(() =>
+  [info.value?.category, info.value?.season, info.value?.style]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join(' · ') || '产品信息待补充',
+)
+
+watch(productImageUrl, () => {
+  productImageFailed.value = false
+})
 </script>
 
 <template>
@@ -34,12 +47,37 @@ const scanSummary = computed(() =>
           </svg>
         </span>
         <p class="verify-result__status">{{ isFirstScan ? '首次验证通过' : '重复扫描提醒' }}</p>
-        <h2>{{ isFirstScan ? '产品身份真实有效' : '该产品已验证' }}</h2>
         <p class="verify-result__summary">{{ scanSummary }}</p>
         <p v-if="!isFirstScan" class="verify-result__first-time">
           首次验证于 {{ displayValue(info.firstScannedAt) }}
         </p>
       </div>
+
+      <section class="verified-product" aria-label="已验证产品">
+        <figure class="verified-product__image">
+          <img
+            v-if="productImageUrl && !productImageFailed"
+            :src="productImageUrl"
+            :alt="`${displayValue(info.productName)}产品图片`"
+            @error="productImageFailed = true"
+          />
+          <span v-else>{{ productImageFailed ? '图片加载失败' : '暂无产品图片' }}</span>
+        </figure>
+        <div class="verified-product__content">
+          <h3>{{ displayValue(info.productName) }}</h3>
+          <p>{{ productDescription }}</p>
+          <div class="verified-product__tags"><span>一物一码</span><span>追溯可查</span></div>
+          <small>校服实物图仅用于产品识别，具体规格以产品档案为准。</small>
+        </div>
+        <RouterLink
+          class="details-button"
+          :to="{ name: 'school-uniform-info-home', params: { code: info.code } }"
+        >
+          <span>点击查看具体详情</span>
+          <svg aria-hidden="true" fill="none" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg>
+        </RouterLink>
+        <p class="verified-product__source">以下信息由校服溯源平台提供，可用于真伪核验与生产追踪。</p>
+      </section>
 
       <dl class="verify-details">
         <div><dt>产品</dt><dd>{{ displayValue(info.productName) }}</dd></div>
@@ -47,13 +85,6 @@ const scanSummary = computed(() =>
         <div><dt>追溯编码</dt><dd>{{ info.code }}</dd></div>
         <div><dt>本次验证</dt><dd>{{ displayValue(info.scannedAt) }}</dd></div>
       </dl>
-      <RouterLink
-        class="details-button"
-        :to="{ name: 'school-uniform-info-home', params: { code: info.code } }"
-      >
-        <span>查看完整溯源档案</span>
-        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg>
-      </RouterLink>
     </section>
   </div>
 </template>
@@ -164,13 +195,6 @@ const scanSummary = computed(() =>
   background: #fffbeb;
 }
 
-.verify-credential__hero h2 {
-  margin: 0;
-  color: #10243d;
-  font-size: 24px;
-  letter-spacing: -0.5px;
-}
-
 .verify-result__summary {
   margin: 8px 0 0;
   color: #16a34a;
@@ -186,6 +210,104 @@ const scanSummary = computed(() =>
   margin: 6px 0 0;
   color: #64748b;
   font-size: 12px;
+}
+
+.verified-product {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 14px;
+  margin: 0 20px;
+  padding: 16px;
+  border: 1px solid #dfe8f3;
+  border-radius: 18px;
+  background: #fff;
+  text-align: left;
+}
+
+.verified-product__image {
+  overflow: hidden;
+  width: 92px;
+  height: 112px;
+  margin: 0;
+  border-radius: 12px;
+  background: #f0f4f8;
+}
+
+.verified-product__image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.verified-product__image span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  place-items: center;
+  color: #8a97aa;
+  font-size: 11px;
+  text-align: center;
+}
+
+.verified-product__content {
+  min-width: 0;
+}
+
+.verified-product__content h3 {
+  margin: 2px 0 0;
+  color: #17304d;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.verified-product__content p {
+  margin: 6px 0 0;
+  color: #78879b;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.verified-product__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.verified-product__tags span {
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #2563a9;
+  background: #edf5ff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.verified-product__content small {
+  display: block;
+  margin-top: 10px;
+  color: #8a97aa;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.verified-product .details-button {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  background: #16a34a;
+  box-shadow: 0 10px 22px rgb(22 163 74 / 18%);
+}
+
+.verified-product__source {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  color: #7d8999;
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .verify-details {
