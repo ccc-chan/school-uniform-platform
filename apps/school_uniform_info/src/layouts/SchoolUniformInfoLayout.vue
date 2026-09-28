@@ -13,16 +13,8 @@ const viewModel = createSchoolUniformInfoViewModel(() => props.code)
 provideSchoolUniformInfoViewModel(viewModel)
 
 const navigation = computed(() => [
-  {
-    label: viewModel.traceTypeLabel.value,
-    name: 'school-uniform-info-home',
-    icon: viewModel.qrCodeType.value,
-  },
-  {
-    label: '防伪验证',
-    name: 'school-uniform-info-verify',
-    icon: 'verify',
-  },
+  { label: viewModel.traceTypeLabel.value, name: 'school-uniform-info-home', icon: viewModel.qrCodeType.value },
+  { label: '防伪验证', name: 'school-uniform-info-verify', icon: 'verify' },
 ])
 </script>
 
@@ -75,50 +67,13 @@ const navigation = computed(() => [
       </RouterView>
 
       <nav class="bottom-navigation safe-bottom" aria-label="校服信息导航">
-        <RouterLink
-          v-for="item in navigation"
-          :key="item.name"
+        <RouterLink v-for="item in navigation" :key="item.name"
           :to="{ name: item.name, params: { code: viewModel.code.value } }"
-          active-class=""
-          exact-active-class="nav-active"
-          class="bottom-navigation__item"
-        >
-          <svg
-            v-if="item.icon === 'product'"
-            aria-hidden="true"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M20 7 12 3 4 7m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-            />
-          </svg>
-          <svg
-            v-else-if="item.icon === 'batch'"
-            aria-hidden="true"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m-6 0a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"
-            />
-          </svg>
-          <svg
-            v-else-if="item.icon === 'school'"
-            aria-hidden="true"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-1-14h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4"
-            />
-          </svg>
-          <svg v-else aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path
-              d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z"
-            />
-            <path d="m8 12 3 3 5-5" />
-          </svg>
+          active-class="" exact-active-class="nav-active" class="bottom-navigation__item">
+          <svg v-if="item.icon === 'product'" aria-hidden="true" fill="none" viewBox="0 0 24 24"><path d="M20 7 12 3 4 7m16 0-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+          <svg v-else-if="item.icon === 'batch'" aria-hidden="true" fill="none" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m-6 0a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" /></svg>
+          <svg v-else-if="item.icon === 'school'" aria-hidden="true" fill="none" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-1-14h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4" /></svg>
+          <svg v-else aria-hidden="true" fill="none" viewBox="0 0 24 24"><path d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z" /><path d="m8 12 3 3 5-5" /></svg>
           <span>{{ item.label }}</span>
         </RouterLink>
       </nav>
@@ -248,48 +203,10 @@ const navigation = computed(() => [
   font-weight: 650;
 }
 
-.bottom-navigation {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 15;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: min(100%, 480px);
-  margin: 0 auto;
-  border-top: 1px solid #f1f5f9;
-  background: rgb(255 255 255 / 96%);
-  box-shadow: none;
-  backdrop-filter: blur(14px);
-}
-
-.bottom-navigation__item {
-  display: flex;
-  min-height: calc(var(--archive-unit) * 150);
-  margin: 0;
-  border-radius: 14px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: calc(var(--archive-unit) * 10);
-  color: #64748b;
-  font-size: calc(var(--archive-unit) * 28);
-  text-decoration: none;
-}
-
-.bottom-navigation__item.nav-active {
-  background: transparent;
-}
-
-.bottom-navigation__item svg {
-  width: calc(var(--archive-unit) * 52);
-  height: calc(var(--archive-unit) * 52);
-  stroke: currentcolor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
+.bottom-navigation { position: fixed; right: 0; bottom: 0; left: 0; z-index: 15; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 480px); margin: 0 auto; border-top: 1px solid #edf1f6; background: rgb(255 255 255 / 96%); box-shadow: 0 -6px 20px rgb(31 60 96 / 5%); backdrop-filter: blur(14px); }
+.bottom-navigation__item { display: flex; min-height: calc(var(--archive-unit) * 150); margin: 0; border-radius: 14px; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--archive-unit) * 10); color: #64748b; font-size: calc(var(--archive-unit) * 28); text-decoration: none; }
+.bottom-navigation__item.nav-active { color: var(--trace-primary); background: #f5f9ff; }
+.bottom-navigation__item svg { width: calc(var(--archive-unit) * 52); height: calc(var(--archive-unit) * 52); stroke: currentcolor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 @keyframes spin {
   to {
