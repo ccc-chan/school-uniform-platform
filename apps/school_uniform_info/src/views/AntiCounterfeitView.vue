@@ -15,15 +15,16 @@ const scanSummary = computed(() =>
 <template>
   <div v-if="info" class="verify-page">
     <header class="detail-title">
-      <RouterLink
-        :to="{ name: 'school-uniform-info-home', params: { code: info.code } }"
-        aria-label="返回溯源首页"
-      >
+      <span class="detail-title__mark">
         <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-          <path d="m15 19-7-7 7-7" />
+          <path d="M12 3c-3 2-5 3-9 3v6c0 5 5 8 9 10 4-2 9-5 9-10V6c-4 0-6-1-9-3Z" />
+          <path d="m8 12 3 3 5-5" />
         </svg>
-      </RouterLink>
-      <h1>防伪验证</h1>
+      </span>
+      <div>
+        <h1>防伪验证</h1>
+        <p>校服数字身份核验</p>
+      </div>
     </header>
 
     <section class="verify-result" :class="{ 'verify-result--repeat': !isFirstScan }">
@@ -48,6 +49,13 @@ const scanSummary = computed(() =>
         <div><dt>追溯编码</dt><dd>{{ info.code }}</dd></div>
         <div><dt>本次验证</dt><dd>{{ displayValue(info.scannedAt) }}</dd></div>
       </dl>
+      <RouterLink
+        class="details-button"
+        :to="{ name: 'school-uniform-info-home', params: { code: info.code } }"
+      >
+        <span>查看具体详情</span>
+        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg>
+      </RouterLink>
     </section>
   </div>
 </template>
@@ -72,11 +80,14 @@ const scanSummary = computed(() =>
   backdrop-filter: blur(10px);
 }
 
-.detail-title a {
+.detail-title__mark {
   display: grid;
-  width: 28px;
-  height: 28px;
-  color: #2563eb;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 10px;
+  color: #fff;
+  background: var(--trace-primary);
   place-items: center;
 }
 
@@ -92,6 +103,12 @@ const scanSummary = computed(() =>
 .detail-title h1 {
   margin: 0;
   font-size: 16px;
+}
+
+.detail-title p {
+  margin: 2px 0 0;
+  color: #8491a5;
+  font-size: 10px;
 }
 
 .verify-result {
@@ -182,5 +199,30 @@ const scanSummary = computed(() =>
   font-size: 13px;
   font-weight: 650;
   text-align: right;
+}
+
+.details-button {
+  display: flex;
+  min-height: 48px;
+  margin-top: 18px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff;
+  background: var(--trace-primary);
+  box-shadow: 0 8px 20px rgb(22 119 255 / 18%);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.details-button svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 </style>

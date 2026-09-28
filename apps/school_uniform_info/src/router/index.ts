@@ -16,8 +16,10 @@ const router = createRouter({
         },
         {
           path: '',
-          name: 'school-uniform-info-home',
-          component: () => import('@/views/SchoolUniformInfoHomeView.vue'),
+          redirect: (to) => ({
+            name: 'school-uniform-info-verify',
+            params: { code: to.params.code },
+          }),
         },
         {
           path: 'product',
@@ -38,6 +40,11 @@ const router = createRouter({
           path: 'verify',
           name: 'school-uniform-info-verify',
           component: () => import('@/views/AntiCounterfeitView.vue'),
+        },
+        {
+          path: 'details',
+          name: 'school-uniform-info-home',
+          component: () => import('@/views/SchoolUniformInfoHomeView.vue'),
         },
       ],
     },

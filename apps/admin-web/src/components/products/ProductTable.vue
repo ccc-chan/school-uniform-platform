@@ -133,6 +133,13 @@ const createdDate = (value?: string) => value?.slice(0, 10) || '-'
           </span>
           <span v-else />
 
+          <span
+            class="product-card__company"
+            :title="product.company?.name || '未绑定公司'"
+          >
+            {{ product.company?.name || '未绑定公司' }}
+          </span>
+
           <div class="product-card__actions">
             <a-button
               class="product-card__action product-card__action--detail"
@@ -311,6 +318,17 @@ const createdDate = (value?: string) => value?.slice(0, 10) || '-'
   white-space: nowrap;
 }
 
+.product-card__company {
+  min-width: 0;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
 .product-card__actions {
   display: flex;
   align-items: center;
@@ -370,6 +388,11 @@ const createdDate = (value?: string) => value?.slice(0, 10) || '-'
   .product-card__actions {
     width: 100%;
     justify-content: flex-end;
+  }
+
+  .product-card__company {
+    width: 100%;
+    text-align: left;
   }
 }
 
