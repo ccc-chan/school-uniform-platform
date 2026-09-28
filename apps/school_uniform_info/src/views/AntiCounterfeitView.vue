@@ -46,10 +46,10 @@ watch(productImageUrl, () => {
             <path d="M12 9v2m0 4h.01M5 19h14a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0l-7 12A2 2 0 0 0 5 19Z" />
           </svg>
         </span>
-        <p class="verify-result__status">{{ isFirstScan ? '首次验证通过' : '重复扫描提醒' }}</p>
+        <p class="verify-result__status">该产品验证通过</p>
         <p class="verify-result__summary">{{ scanSummary }}</p>
-        <p v-if="!isFirstScan" class="verify-result__first-time">
-          首次验证于 {{ displayValue(info.firstScannedAt) }}
+        <p class="verify-result__first-time">
+          首次扫码时间：{{ displayValue(info.firstScannedAt || info.scannedAt) }}
         </p>
       </div>
 
@@ -100,7 +100,7 @@ watch(productImageUrl, () => {
 
 .verify-credential {
   overflow: hidden;
-  border: 1px solid rgb(22 163 74 / 18%);
+  border: 1px solid rgb(37 99 169 / 18%);
   border-radius: 24px;
   background: rgb(255 255 255 / 94%);
   box-shadow: 0 24px 60px rgb(30 64 175 / 12%);
@@ -108,7 +108,7 @@ watch(productImageUrl, () => {
 }
 
 .verify-credential--repeat {
-  border-color: rgb(217 119 6 / 22%);
+  border-color: rgb(37 99 169 / 18%);
 }
 
 .verify-credential__header {
@@ -155,19 +155,19 @@ watch(productImageUrl, () => {
   width: 82px;
   height: 82px;
   margin: 0 auto 18px;
-  border: 8px solid #f0fdf4;
+  border: 8px solid var(--trace-primary-soft);
   border-radius: 50%;
-  color: #16a34a;
-  background: #dcfce7;
-  box-shadow: 0 0 0 1px #bbf7d0, 0 12px 30px rgb(34 197 94 / 14%);
+  color: var(--trace-primary);
+  background: #dceaf8;
+  box-shadow: 0 0 0 1px var(--trace-primary-border), 0 12px 30px rgb(37 99 169 / 14%);
   place-items: center;
 }
 
 .verify-credential--repeat .verify-result__icon {
-  border-color: #fffbeb;
-  color: #d97706;
-  background: #fef3c7;
-  box-shadow: 0 0 0 1px #fde68a, 0 12px 30px rgb(245 158 11 / 14%);
+  border-color: var(--trace-primary-soft);
+  color: var(--trace-primary);
+  background: #dceaf8;
+  box-shadow: 0 0 0 1px var(--trace-primary-border), 0 12px 30px rgb(37 99 169 / 14%);
 }
 
 .verify-result__icon svg {
@@ -180,30 +180,26 @@ watch(productImageUrl, () => {
 }
 
 .verify-result__status {
-  display: inline-flex;
-  margin: 0 0 10px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  color: #15803d;
-  background: #f0fdf4;
-  font-size: 11px;
-  font-weight: 700;
+  margin: 0;
+  color: #17233b;
+  font-size: 26px;
+  font-weight: 750;
+  line-height: 1.3;
 }
 
 .verify-credential--repeat .verify-result__status {
-  color: #b45309;
-  background: #fffbeb;
+  color: #17233b;
 }
 
 .verify-result__summary {
-  margin: 8px 0 0;
-  color: #16a34a;
-  font-size: 14px;
-  font-weight: 650;
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .verify-credential--repeat .verify-result__summary {
-  color: #d97706;
+  color: #64748b;
 }
 
 .verify-result__first-time {
@@ -297,8 +293,8 @@ watch(productImageUrl, () => {
 .verified-product .details-button {
   grid-column: 1 / -1;
   margin: 4px 0 0;
-  background: #16a34a;
-  box-shadow: 0 10px 22px rgb(22 163 74 / 18%);
+  background: var(--trace-primary);
+  box-shadow: 0 10px 22px rgb(37 99 169 / 18%);
 }
 
 .verified-product__source {
@@ -355,8 +351,8 @@ watch(productImageUrl, () => {
   justify-content: center;
   gap: 8px;
   color: #fff;
-  background: linear-gradient(135deg, #1677ff, #2563eb);
-  box-shadow: 0 12px 24px rgb(37 99 235 / 22%);
+  background: var(--trace-primary);
+  box-shadow: 0 12px 24px rgb(37 99 169 / 22%);
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;

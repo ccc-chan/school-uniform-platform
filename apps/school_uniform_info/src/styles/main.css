@@ -1,7 +1,7 @@
 :root {
-  --trace-primary: #1677ff;
-  --trace-primary-soft: #f0f6ff;
-  --trace-primary-border: #d6e7ff;
+  --trace-primary: #2563a9;
+  --trace-primary-soft: #eef5fc;
+  --trace-primary-border: #cfdef0;
   color: #0f172a;
   background: #f1f5f9;
   font-family:
@@ -35,7 +35,7 @@ button { cursor: pointer; }
 
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid rgb(22 119 255 / 40%);
+  outline: 3px solid rgb(37 99 169 / 40%);
   outline-offset: 2px;
 }
 

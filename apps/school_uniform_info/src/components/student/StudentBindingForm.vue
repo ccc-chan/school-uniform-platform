@@ -8,8 +8,28 @@ const form = reactive<StudentBindingInput>({
   studentName: '', studentNo: '', grade: '', className: '',
   parentName: '', parentRelation: '爸爸', phone: '', parentAuthorized: false,
 })
+const gradeGroups = [
+  {
+    label: '小学',
+    options: ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'],
+  },
+  {
+    label: '初中',
+    options: ['初一级', '初二级', '初三级'],
+  },
+  {
+    label: '高中',
+    options: ['高一级', '高二级', '高三级'],
+  },
+] as const
 const relations = ['爸爸', '妈妈', '其他监护人'] as const
 const validationError = shallowRef('')
+const gradeMenuOpen = shallowRef(false)
+
+function selectGrade(grade: string) {
+  form.grade = grade
+  gradeMenuOpen.value = false
+}
 
 function submit() {
   if (props.saving) return
@@ -42,9 +62,36 @@ function submit() {
         <input v-model="form.studentNo" required maxlength="100" placeholder="请输入学校提供的学生编号" autocomplete="off" />
       </label>
       <div class="class-fields">
-        <label class="field">年级
-          <input v-model="form.grade" maxlength="100" placeholder="请输入年级" />
-        </label>
+        <div class="field grade-field">
+          <span>年级</span>
+          <button
+            class="grade-trigger"
+            :class="{ 'grade-trigger--placeholder': !form.grade }"
+            type="button"
+            :aria-expanded="gradeMenuOpen"
+            @click="gradeMenuOpen = !gradeMenuOpen"
+            @keydown.esc="gradeMenuOpen = false"
+          >
+            <span>{{ form.grade || '请选择年级' }}</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" /></svg>
+          </button>
+          <div v-if="gradeMenuOpen" class="grade-menu">
+            <section v-for="group in gradeGroups" :key="group.label">
+              <h3>{{ group.label }}</h3>
+              <div class="grade-options">
+                <button
+                  v-for="grade in group.options"
+                  :key="grade"
+                  type="button"
+                  :class="{ selected: form.grade === grade }"
+                  @click="selectGrade(grade)"
+                >
+                  {{ grade }}
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
         <label class="field">班级
           <input v-model="form.className" maxlength="100" placeholder="请输入班级" />
         </label>
@@ -85,8 +132,20 @@ function submit() {
 .required { color: #e64949; }
 .field input { display: block; box-sizing: border-box; width: 100%; min-width: 0; height: 46px; margin-top: 8px; padding: 0 13px; border: 1px solid #d5deeb; border-radius: 11px; background: #fff; color: #172236; font-size: 14px; font-weight: 400; }
 .field input::placeholder { color: #96a2b5; }
-.field input:focus { outline: 2px solid #b8d6ff; outline-offset: 1px; border-color: #2275e9; }
+.field input:focus { outline: 2px solid #b8d6ff; outline-offset: 1px; border-color: #2563a9; }
 .class-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.grade-field { position: relative; min-width: 0; }
+.grade-trigger { display: flex; box-sizing: border-box; width: 100%; min-width: 0; height: 46px; margin-top: 8px; padding: 0 12px 0 13px; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid #d5deeb; border-radius: 11px; background: #fff; color: #172236; font-size: 14px; font-weight: 400; text-align: left; }
+.grade-trigger--placeholder { color: #96a2b5; }
+.grade-trigger:focus-visible { outline: 2px solid #b8d6ff; outline-offset: 1px; border-color: #2563a9; }
+.grade-trigger svg { flex: 0 0 auto; width: 18px; height: 18px; fill: none; stroke: currentcolor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.grade-menu { position: absolute; z-index: 10; top: calc(100% + 8px); left: 0; box-sizing: border-box; width: calc(200% + 10px); padding: 14px; border: 1px solid #cfdef0; border-radius: 14px; background: #fff; box-shadow: 0 16px 40px rgb(30 64 110 / 18%); }
+.grade-menu section + section { margin-top: 14px; }
+.grade-menu h3 { margin: 0 0 8px; color: #66758d; font-size: 12px; font-weight: 700; }
+.grade-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.grade-options button { min-width: 0; min-height: 40px; padding: 7px 4px; border: 1px solid #d5deeb; border-radius: 9px; background: #fff; color: #33445f; font-size: 13px; line-height: 1.25; }
+.grade-options button.selected { border-color: #2563a9; color: #2563a9; background: #eef5fc; font-weight: 700; }
+.grade-options button:focus-visible { outline: 2px solid #b8d6ff; outline-offset: 1px; }
 .relation-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .relation-option { position: relative; display: grid; min-height: 40px; border: 1px solid #d5deeb; border-radius: 9px; color: #64748b; font-size: 13px; place-items: center; cursor: pointer; }
 .relation-option.selected { border-color: #2275e9; color: #2563a9; background: #f0f6ff; }
