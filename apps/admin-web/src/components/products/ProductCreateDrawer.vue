@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { InboxOutlined } from '@ant-design/icons-vue'
+import {
+  InboxOutlined,
+} from '@ant-design/icons-vue'
 import message from 'ant-design-vue/es/message'
 import { getCompanyOptions, type Company } from '@/api/companies'
 import {
@@ -247,21 +249,24 @@ onBeforeUnmount(clearPreview)
 <template>
   <a-drawer
     :open="open"
-    width="min(520px, 100vw)"
+    width="min(720px, 100vw)"
     :closable="false"
     root-class-name="product-create-drawer"
     @close="requestClose"
   >
     <template #title>
       <div class="product-create-drawer__heading">
-        <strong>{{ isEdit ? '编辑产品' : '新建产品' }}</strong>
-        <span>
-          {{
-            isEdit
-              ? '修改产品基本信息与溯源设置'
-              : '填写产品基本信息，款号已自动生成'
-          }}
-        </span>
+        <span class="product-create-drawer__title-mark" aria-hidden="true">产</span>
+        <div>
+          <strong>{{ isEdit ? '编辑产品档案' : '新增产品档案' }}</strong>
+          <span>
+            {{
+              isEdit
+                ? '更新产品资料、管理公司与溯源设置'
+                : '录入产品资料、管理公司与溯源设置'
+            }}
+          </span>
+        </div>
       </div>
     </template>
 
@@ -279,9 +284,15 @@ onBeforeUnmount(clearPreview)
 
     <div class="product-create-drawer__content">
       <section class="product-create-drawer__section">
-        <h3 class="product-create-drawer__section-title">
-          溯源模式 <em>*</em>
-        </h3>
+        <div class="product-create-drawer__section-heading">
+          <div>
+            <h3 class="product-create-drawer__section-title">
+              溯源模式 <em>*</em>
+            </h3>
+            <p>设置二维码与产品之间的绑定方式</p>
+          </div>
+          <span>二维码规则</span>
+        </div>
 
         <div class="product-create-drawer__qr-grid">
           <button
@@ -303,7 +314,13 @@ onBeforeUnmount(clearPreview)
       </section>
 
       <section class="product-create-drawer__section">
-        <h3 class="product-create-drawer__section-title">基本信息</h3>
+        <div class="product-create-drawer__section-heading">
+          <div>
+            <h3 class="product-create-drawer__section-title">基本信息</h3>
+            <p>填写产品名称、分类及执行标准</p>
+          </div>
+          <span>产品资料</span>
+        </div>
 
         <div class="product-create-drawer__form-grid">
           <label
@@ -379,9 +396,15 @@ onBeforeUnmount(clearPreview)
       </section>
 
       <section class="product-create-drawer__section">
-        <h3 class="product-create-drawer__section-title">
-          管理公司 <em>*</em>
-        </h3>
+        <div class="product-create-drawer__section-heading">
+          <div>
+            <h3 class="product-create-drawer__section-title">
+              管理公司 <em>*</em>
+            </h3>
+            <p>选择负责该产品的企业主体</p>
+          </div>
+          <span>企业归属</span>
+        </div>
 
         <div class="product-create-drawer__form-grid">
           <label
@@ -406,7 +429,13 @@ onBeforeUnmount(clearPreview)
       </section>
 
       <section class="product-create-drawer__section">
-        <h3 class="product-create-drawer__section-title">面料信息</h3>
+        <div class="product-create-drawer__section-heading">
+          <div>
+            <h3 class="product-create-drawer__section-title">面料信息</h3>
+            <p>补充产品面料成分与配比</p>
+          </div>
+          <span>材质说明</span>
+        </div>
 
         <div class="product-create-drawer__form-grid">
           <label class="product-create-drawer__field">
@@ -427,30 +456,15 @@ onBeforeUnmount(clearPreview)
       </section>
 
       <section class="product-create-drawer__section">
-        <!-- <h3 class="product-create-drawer__section-title">支持尺码</h3>
-
-        <div class="product-create-drawer__sizes">
-          <button
-            v-for="option in numericSizeOptions"
-            :key="option.value"
-            type="button"
-            :class="{
-              'product-create-drawer__size--active': form.sizes.includes(
-                option.value,
-              ),
-            }"
-            :aria-pressed="form.sizes.includes(option.value)"
-            @click="toggleSize(option.value)"
-          >
-            {{ option.label }}
-          </button>
-        </div> -->
-      </section>
-
-      <section class="product-create-drawer__section">
-        <h3 class="product-create-drawer__section-title">
-          产品图片 <em>*</em>
-        </h3>
+        <div class="product-create-drawer__section-heading">
+          <div>
+            <h3 class="product-create-drawer__section-title">
+              产品图片 <em>*</em>
+            </h3>
+            <p>上传清晰完整的产品展示图片</p>
+          </div>
+          <span>JPG / PNG</span>
+        </div>
 
         <div v-if="previewUrl" class="product-create-drawer__preview">
           <img :src="previewUrl" alt="产品图片预览" />
@@ -489,15 +503,18 @@ onBeforeUnmount(clearPreview)
 
     <template #footer>
       <div class="product-create-drawer__footer">
-        <a-button :disabled="saving" @click="requestClose">取消</a-button>
-        <a-button
-          type="primary"
-          :disabled="loading"
-          :loading="saving"
-          @click="submit"
-        >
-          {{ isEdit ? '保存修改' : '提交创建' }}
-        </a-button>
+        <span><em>*</em> 为必填信息</span>
+        <div>
+          <a-button :disabled="saving" @click="requestClose">取消</a-button>
+          <a-button
+            type="primary"
+            :disabled="loading"
+            :loading="saving"
+            @click="submit"
+          >
+            {{ isEdit ? '保存修改' : '创建产品' }}
+          </a-button>
+        </div>
       </div>
     </template>
   </a-drawer>
@@ -516,7 +533,7 @@ onBeforeUnmount(clearPreview)
 
 .product-create-drawer .ant-drawer-body {
   padding: 0;
-  background: #fff;
+  background: #f4f7fb;
 }
 
 .product-create-drawer .ant-drawer-footer {
@@ -528,8 +545,33 @@ onBeforeUnmount(clearPreview)
 .product-create-drawer__heading {
   display: flex;
   min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.product-create-drawer__title-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  place-items: center;
+  border-radius: 11px;
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 8px 18px rgb(37 99 235 / 22%);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.product-create-drawer__heading .product-create-drawer__title-mark {
+  color: #fff;
+}
+
+.product-create-drawer__heading > div {
+  display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
 }
 
 .product-create-drawer__heading strong {
@@ -579,22 +621,52 @@ onBeforeUnmount(clearPreview)
 
 .product-create-drawer__content {
   display: flex;
-  padding: 18px 22px 30px;
+  padding: 24px;
   flex-direction: column;
-  gap: 22px;
+  gap: 16px;
 }
 
 .product-create-drawer__section {
   min-width: 0;
+  padding: 20px;
+  border: 1px solid #e5eaf2;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(15 23 42 / 4%);
+}
+
+.product-create-drawer__section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-left: 11px;
+  border-left: 3px solid #2563eb;
+}
+
+.product-create-drawer__section-heading p {
+  margin: 3px 0 0;
+  color: #8a96a8;
+  font-size: 12px;
+}
+
+.product-create-drawer__section-heading > span {
+  flex: none;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #55708f;
+  background: #f0f5fb;
+  font-size: 11px;
 }
 
 .product-create-drawer__section-title {
-  margin: 0 0 10px;
-  color: #26364c;
-  font-size: 13px;
+  margin: 0;
+  color: #172033;
+  font-size: 15px;
   font-style: normal;
-  font-weight: 650;
-  line-height: 1.5;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .product-create-drawer__section-tip {
@@ -656,7 +728,7 @@ onBeforeUnmount(clearPreview)
 .product-create-drawer__form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 12px;
+  gap: 18px 16px;
 }
 
 .product-create-drawer__field {
@@ -679,8 +751,9 @@ onBeforeUnmount(clearPreview)
 
 .product-create-drawer__field .ant-input,
 .product-create-drawer__field .ant-select-selector {
-  min-height: 42px;
-  border-radius: 10px !important;
+  min-height: 38px;
+  border-color: #dfe5ee;
+  border-radius: 8px !important;
 }
 
 .product-create-drawer__field .ant-select-selector {
@@ -718,12 +791,13 @@ onBeforeUnmount(clearPreview)
 .product-create-drawer .ant-upload-wrapper .ant-upload-drag {
   min-height: 148px;
   border-color: #cfdaea;
-  border-radius: 14px;
-  background: #fff;
+  border-radius: 11px;
+  background: #f8faff;
 }
 
 .product-create-drawer .ant-upload-wrapper .ant-upload-drag:hover {
-  border-color: #6692ee;
+  border-color: #2563eb;
+  background: #f2f7ff;
 }
 
 .product-create-drawer
@@ -799,7 +873,23 @@ onBeforeUnmount(clearPreview)
 
 .product-create-drawer__footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.product-create-drawer__footer > span {
+  color: #8a96a8;
+  font-size: 12px;
+}
+
+.product-create-drawer__footer > span em {
+  color: #ef4444;
+  font-style: normal;
+}
+
+.product-create-drawer__footer > div {
+  display: flex;
   gap: 10px;
 }
 
@@ -815,9 +905,9 @@ onBeforeUnmount(clearPreview)
 }
 
 .product-create-drawer__footer .ant-btn {
-  min-width: 76px;
-  height: 40px;
-  border-radius: 10px;
+  min-width: 92px;
+  height: 38px;
+  border-radius: 8px;
   font-weight: 600;
 }
 
@@ -833,7 +923,11 @@ onBeforeUnmount(clearPreview)
   }
 
   .product-create-drawer__content {
-    padding-inline: 16px;
+    padding: 16px;
+  }
+
+  .product-create-drawer__section {
+    padding: 16px;
   }
 
   .product-create-drawer__qr-grid,
@@ -843,6 +937,15 @@ onBeforeUnmount(clearPreview)
 
   .product-create-drawer__field--full {
     grid-column: auto;
+  }
+
+  .product-create-drawer__section-heading > span,
+  .product-create-drawer__footer > span {
+    display: none;
+  }
+
+  .product-create-drawer__footer {
+    justify-content: flex-end;
   }
 }
 
