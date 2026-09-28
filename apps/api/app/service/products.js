@@ -138,8 +138,14 @@ class ProductsService extends Service {
       ]),
     )
 
-    const canViewProduction = permissions.includes('production.view')
-    const canViewQuantity = permissions.includes('production.field.quantity')
+    const hasPermission = (code) =>
+      permissions.includes(code) ||
+      permissions.includes(
+        this.ctx.service.auth.genericPermissionCode(code),
+      )
+
+    const canViewProduction = hasPermission('production.view')
+    const canViewQuantity = hasPermission('production.field.quantity')
 
     return {
       items: rows.map((item) => {
