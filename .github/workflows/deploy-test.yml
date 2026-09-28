@@ -238,7 +238,7 @@ jobs:
           push: true
           no-cache: ${{ inputs.no_cache || false }}
           build-args: |
-            VITE_QR_PUBLIC_BASE_URL=https://www.ft1996.cn
+            VITE_QR_PUBLIC_BASE_URL=http://111.228.47.54:18080
             VITE_QR_ALLOW_HTTP_IN_TEST=true
           tags: |
             ghcr.io/${{ github.repository }}-web:test-latest
