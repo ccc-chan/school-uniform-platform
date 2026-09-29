@@ -42,6 +42,7 @@ module.exports = (app) => {
       productionUnitLicense: { type: app.Sequelize.TEXT, field: 'production_unit_license' },
       companyId: { type: app.Sequelize.BIGINT.UNSIGNED, field: 'company_id' },
       imageId: { type: app.Sequelize.BIGINT.UNSIGNED, field: 'image_id' },
+      imageIds: { type: app.Sequelize.JSON, field: 'image_ids' },
       createdBy: {
         type: app.Sequelize.BIGINT.UNSIGNED,
         field: 'created_by',
@@ -51,6 +52,13 @@ module.exports = (app) => {
   )
   Product.associate = () => {
     Product.belongsTo(app.model.Company, { as: 'company', foreignKey: 'companyId' })
+    Product.belongsToMany(app.model.School, {
+      as: 'schools',
+      through: 'product_schools',
+      foreignKey: 'product_id',
+      otherKey: 'school_id',
+      timestamps: true,
+    })
   }
   return Product
 }

@@ -36,6 +36,14 @@ export function getFilterFields(
       componentProps: { allowClear: true, maxlength: 100, onPressEnter: onSearch },
     },
     {
+      key: 'productionBatch',
+      label: '生产批次',
+      type: 'input',
+      placeholder: '输入生产批次号，支持模糊查询',
+      itemClass: 'qr-filters__text',
+      componentProps: { allowClear: true, maxlength: 100, onPressEnter: onSearch },
+    },
+    {
       key: 'studentName',
       label: '学生姓名',
       type: 'input',
@@ -102,6 +110,7 @@ export function getFilterFields(
 
 export const tableColumns = [
   { title: '二维码ID', key: 'code', dataIndex: 'code', width: 200 },
+  { title: '生产批次', key: 'productionBatch', dataIndex: 'productionBatch', width: 180 },
   { title: '校服产品', key: 'product', dataIndex: 'product', width: 150 },
   { title: '学校', key: 'schoolName', dataIndex: 'schoolName', width: 130 },
   { title: '学生', key: 'student', dataIndex: 'student', width: 110 },

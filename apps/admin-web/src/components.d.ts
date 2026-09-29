@@ -110,6 +110,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ScanAnalysisPanel: typeof import('./components/analytics/ScanAnalysisPanel.vue')['default']
+    SchoolSelect: typeof import('./components/common/SchoolSelect.vue')['default']
     StatusTag: typeof import('./components/common/StatusTag.vue')['default']
   }
 }

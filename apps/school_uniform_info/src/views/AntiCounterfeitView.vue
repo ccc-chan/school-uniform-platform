@@ -100,7 +100,7 @@ watch(productImageUrl, () => {
 
 .verify-credential {
   overflow: hidden;
-  border: 1px solid rgb(37 99 169 / 18%);
+  border: 1px solid rgb(22 119 255 / 18%);
   border-radius: 24px;
   background: rgb(255 255 255 / 94%);
   box-shadow: 0 24px 60px rgb(30 64 175 / 12%);
@@ -108,7 +108,7 @@ watch(productImageUrl, () => {
 }
 
 .verify-credential--repeat {
-  border-color: rgb(37 99 169 / 18%);
+  border-color: rgb(22 119 255 / 18%);
 }
 
 .verify-credential__header {
@@ -159,7 +159,7 @@ watch(productImageUrl, () => {
   border-radius: 50%;
   color: var(--trace-primary);
   background: #dceaf8;
-  box-shadow: 0 0 0 1px var(--trace-primary-border), 0 12px 30px rgb(37 99 169 / 14%);
+  box-shadow: 0 0 0 1px var(--trace-primary-border), 0 12px 30px rgb(22 119 255 / 14%);
   place-items: center;
 }
 
@@ -167,7 +167,7 @@ watch(productImageUrl, () => {
   border-color: var(--trace-primary-soft);
   color: var(--trace-primary);
   background: #dceaf8;
-  box-shadow: 0 0 0 1px var(--trace-primary-border), 0 12px 30px rgb(37 99 169 / 14%);
+  box-shadow: 0 0 0 1px var(--trace-primary-border), 0 12px 30px rgb(22 119 255 / 14%);
 }
 
 .verify-result__icon svg {
@@ -276,7 +276,7 @@ watch(productImageUrl, () => {
 .verified-product__tags span {
   padding: 5px 10px;
   border-radius: 999px;
-  color: #2563a9;
+  color: #1677ff;
   background: #edf5ff;
   font-size: 10px;
   font-weight: 700;
@@ -294,7 +294,7 @@ watch(productImageUrl, () => {
   grid-column: 1 / -1;
   margin: 4px 0 0;
   background: var(--trace-primary);
-  box-shadow: 0 10px 22px rgb(37 99 169 / 18%);
+  box-shadow: 0 10px 22px rgb(22 119 255 / 18%);
 }
 
 .verified-product__source {
@@ -352,7 +352,7 @@ watch(productImageUrl, () => {
   gap: 8px;
   color: #fff;
   background: var(--trace-primary);
-  box-shadow: 0 12px 24px rgb(37 99 169 / 22%);
+  box-shadow: 0 12px 24px rgb(22 119 255 / 22%);
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;

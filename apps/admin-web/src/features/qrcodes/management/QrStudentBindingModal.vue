@@ -2,24 +2,30 @@
 import { reactive } from 'vue'
 import message from 'ant-design-vue/es/message'
 import type { QrManagementItem, QrStudentInput } from '@/api/qr-management'
+import SchoolSelect from '@/components/common/SchoolSelect.vue'
+import type { SchoolOption } from '@/api/schools'
 
 const props = defineProps<{ item: QrManagementItem; saving: boolean }>()
 const emit = defineEmits<{ save: [value: QrStudentInput]; close: [] }>()
 // 弹窗按二维码重新挂载。手机号不回填脱敏字符串，留空表示保留原号码。
 const form = reactive<QrStudentInput>({
-  schoolName: props.item.schoolName || '', className: props.item.className || '',
+  schoolId: props.item.schoolId || 0, className: props.item.className || '',
   studentName: props.item.studentName || '', parentName: props.item.parentName || '',
   phone: '', version: props.item.version, parentAuthorized: false,
   studentGender: props.item.studentGender || '', grade: props.item.grade || '',
   studentNo: props.item.studentNo || '', parentRelation: props.item.parentRelation || '',
 })
 const fields = [
-  { key: 'schoolName', label: '学校' }, { key: 'className', label: '班级' },
+  { key: 'className', label: '班级' },
   { key: 'studentName', label: '学生姓名' }, { key: 'parentName', label: '家长姓名' },
 ] as const
+const initialSchools: SchoolOption[] = props.item.schoolId && props.item.schoolName
+  ? [{ id: props.item.schoolId, name: props.item.schoolName, code: '', schoolType: '', address: '' }]
+  : []
 function submit() {
   if (props.saving) return
   if (!form.parentAuthorized) return void message.warning('请确认已获得家长授权')
+  if (!form.schoolId) return void message.warning('请选择学校')
   const value = { ...form }
   for (const field of fields) {
     value[field.key] = value[field.key].trim()
@@ -43,6 +49,13 @@ function submit() {
     :cancel-button-props="{ disabled: saving }" @ok="submit" @cancel="emit('close')">
     <p class="binding-code">二维码ID：{{ item.code }}</p>
     <a-form layout="vertical" :disabled="saving" @submit.prevent="submit">
+      <a-form-item label="学校" required>
+        <SchoolSelect
+          v-model="form.schoolId"
+          :initial-options="initialSchools"
+          :disabled="saving"
+        />
+      </a-form-item>
       <a-form-item v-for="field in fields" :key="field.key" :label="field.label" required>
         <a-input v-model:value="form[field.key]" :aria-label="field.label" :maxlength="100" :placeholder="`请输入${field.label}`" />
       </a-form-item>

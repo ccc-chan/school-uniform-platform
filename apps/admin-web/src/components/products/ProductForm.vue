@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import message from 'ant-design-vue/es/message'
+import SchoolSelect from '@/components/common/SchoolSelect.vue'
 import {
   productCategoryOptions,
+  productExecutionStandardOptions,
   productQrCodeTypeOptions,
+  productSafetyCategoryOptions,
   productSeasonOptions,
   productSizeOptions,
   type ProductInput,
@@ -10,35 +13,14 @@ import {
 import type { ConfigFormField } from '@/components/common/types'
 
 const model = defineModel<ProductInput>({ required: true })
-defineProps<{ saving: boolean; existingImageId?: number | null }>()
+defineProps<{ saving: boolean }>()
 const emit = defineEmits<{ submit: []; cancel: [] }>()
-const preview = shallowRef('')
-const applicableSchoolsText = shallowRef('')
-
-function parseApplicableSchools(value: string) {
-  return value
-    .split(/[，,、]/)
-    .map((school) => school.trim())
-    .filter(Boolean)
-}
-
-watch(
-  () => model.value.applicableSchools,
-  (schools) => {
-    applicableSchoolsText.value = schools.join('、')
-  },
-  { immediate: true },
+const previews = shallowRef<string[]>([])
+const imageCount = computed(
+  () => model.value.retainedImageIds.length + model.value.images.length,
 )
 
-function commitApplicableSchools() {
-  model.value = {
-    ...model.value,
-    applicableSchools: parseApplicableSchools(applicableSchoolsText.value),
-  }
-}
-
 function handleSubmit() {
-  commitApplicableSchools()
   emit('submit')
 }
 
@@ -71,10 +53,10 @@ const fields: ConfigFormField[] = [
     },
   },
   {
-    key: 'applicableSchools',
+    key: 'schoolIds',
     label: '适用学校',
     type: 'input',
-    placeholder: '请输入学校名称，多个学校用逗号或顿号分隔',
+    placeholder: '输入学校名称或学校代码搜索',
   },
   {
     key: 'season',
@@ -104,7 +86,23 @@ const fields: ConfigFormField[] = [
     type: 'textarea',
     componentProps: { rows: 3 },
   },
-  { key: 'executionStandard', label: '执行标准', type: 'input' },
+  {
+    key: 'executionStandard',
+    label: '执行标准',
+    type: 'select',
+    required: true,
+    options: productExecutionStandardOptions,
+    placeholder: '请选择执行标准',
+  },
+  {
+    key: 'safetyCategory',
+    label: '安全类别',
+    type: 'select',
+    required: true,
+    span: 2,
+    options: productSafetyCategoryOptions,
+    placeholder: '请选择安全类别',
+  },
   {
     key: 'washingInstructions',
     label: '洗涤说明',
@@ -113,7 +111,7 @@ const fields: ConfigFormField[] = [
     componentProps: { rows: 3 },
   },
   {
-    key: 'image',
+    key: 'images',
     label: '产品图片',
     type: 'input',
     required: true,
@@ -121,22 +119,38 @@ const fields: ConfigFormField[] = [
   },
 ]
 
-function beforeUpload(file: File) {
-  if (
-    !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
-    file.size > 5 * 1024 * 1024
-  ) {
-    message.error('仅支持 5MB 以内的 JPG、PNG、WEBP 图片')
-    return false
+function selectImage(file: File) {
+  if (imageCount.value >= 3) {
+    message.warning('产品图片最多上传 3 张')
+    return
   }
-  if (preview.value) URL.revokeObjectURL(preview.value)
-  preview.value = URL.createObjectURL(file)
-  model.value = { ...model.value, image: file }
-  return false
+  previews.value = [...previews.value, URL.createObjectURL(file)]
+  model.value = { ...model.value, images: [...model.value.images, file] }
+}
+
+function removeExistingImage(imageId: number) {
+  model.value = {
+    ...model.value,
+    retainedImageIds: model.value.retainedImageIds.filter(
+      (id) => id !== imageId,
+    ),
+  }
+}
+
+function removePendingImage(index: number) {
+  const preview = previews.value[index]
+  if (preview) URL.revokeObjectURL(preview)
+  previews.value = previews.value.filter(
+    (_, itemIndex) => itemIndex !== index,
+  )
+  model.value = {
+    ...model.value,
+    images: model.value.images.filter((_, itemIndex) => itemIndex !== index),
+  }
 }
 
 onBeforeUnmount(() => {
-  if (preview.value) URL.revokeObjectURL(preview.value)
+  previews.value.forEach((preview) => URL.revokeObjectURL(preview))
 })
 </script>
 
@@ -149,31 +163,49 @@ onBeforeUnmount(() => {
       />
     </template>
 
-    <template #field-applicableSchools>
-      <a-input
-        :value="applicableSchoolsText"
-        placeholder="请输入学校名称，多个学校用逗号或顿号分隔"
-        @update:value="applicableSchoolsText = String($event)"
-        @blur="commitApplicableSchools"
-      />
+    <template #field-schoolIds>
+      <SchoolSelect v-model="model.schoolIds" multiple />
     </template>
 
-    <template #field-image>
-      <div class="flex items-center gap-4">
-        <img
-          v-if="preview"
-          :src="preview"
-          alt="产品图片预览"
-          class="h-28 w-28 rounded-2 object-cover"
-        />
-        <ProductImage v-else-if="existingImageId" :file-id="existingImageId" />
-        <a-upload
-          :before-upload="beforeUpload"
-          :show-upload-list="false"
-          accept="image/jpeg,image/png,image/webp"
+    <template #field-images>
+      <div class="flex flex-wrap items-center gap-4">
+        <div
+          v-for="imageId in model.retainedImageIds"
+          :key="`existing-${imageId}`"
+          class="flex flex-col gap-2"
         >
-          <a-button>选择图片</a-button>
-        </a-upload>
+          <ProductImage :file-id="imageId" />
+          <a-button size="small" danger @click="removeExistingImage(imageId)">
+            删除
+          </a-button>
+        </div>
+        <div
+          v-for="(preview, index) in previews"
+          :key="preview"
+          class="flex flex-col gap-2"
+        >
+          <img
+            :src="preview"
+            alt="产品图片预览"
+            class="h-28 w-28 rounded-2 object-cover"
+          />
+          <a-button size="small" danger @click="removePendingImage(index)">
+            删除
+          </a-button>
+        </div>
+        <FileUpload
+          v-if="imageCount < 3"
+          mode="custom"
+          multiple
+          :auto-upload="false"
+          accept="image/jpeg,image/png,image/webp"
+          :allowed-types="['image/jpeg', 'image/png', 'image/webp']"
+          :max-size-mb="5"
+          invalid-type-message="仅支持 JPG、PNG、WEBP 图片"
+          @select="selectImage"
+        >
+          <a-button>选择图片（{{ imageCount }}/3）</a-button>
+        </FileUpload>
       </div>
     </template>
 

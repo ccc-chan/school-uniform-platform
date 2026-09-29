@@ -11,6 +11,7 @@ import { usePagedList } from '@/composables/usePagedList'
 
 const emptyFilters = (): QrManagementFilters => ({
   code: '',
+  productionBatch: '',
   studentName: '',
   phone: '',
   schoolName: '',

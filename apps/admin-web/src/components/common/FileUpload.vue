@@ -3,7 +3,9 @@ import message from 'ant-design-vue/es/message'
 import { uploadFile } from '@/api/common'
 import type { ManagedFile } from '@/types/system'
 
-type UploadMode = 'button' | 'card'
+type UploadMode = 'button' | 'card' | 'custom'
+
+const fileModel = defineModel<File | null>('file', { default: null })
 
 const props = withDefaults(defineProps<{
   mode?: UploadMode
@@ -11,6 +13,10 @@ const props = withDefaults(defineProps<{
   allowedTypes?: string[]
   maxSizeMb?: number
   disabled?: boolean
+  autoUpload?: boolean
+  dragger?: boolean
+  multiple?: boolean
+  invalidTypeMessage?: string
 }>(), {
   mode: 'button',
   accept: 'image/jpeg,image/png,image/webp,image/gif,application/pdf',
@@ -23,11 +29,16 @@ const props = withDefaults(defineProps<{
   ],
   maxSizeMb: 20,
   disabled: false,
+  autoUpload: true,
+  dragger: false,
+  multiple: false,
+  invalidTypeMessage: '仅支持 JPG、PNG、WEBP、GIF 图片或 PDF 文件',
 })
 
 const emit = defineEmits<{
   success: [file: ManagedFile]
   error: [error: unknown]
+  select: [file: File]
 }>()
 
 const uploading = shallowRef(false)
@@ -36,7 +47,7 @@ const uploadDisabled = computed(() => props.disabled || uploading.value)
 
 function validate(file: File) {
   if (!props.allowedTypes.includes(file.type)) {
-    message.error('仅支持 JPG、PNG、WEBP、GIF 图片或 PDF 文件')
+    message.error(props.invalidTypeMessage)
     return false
   }
 
@@ -50,6 +61,12 @@ function validate(file: File) {
 
 async function beforeUpload(file: File) {
   if (!validate(file)) return false
+
+  if (!props.autoUpload) {
+    fileModel.value = file
+    emit('select', file)
+    return false
+  }
 
   uploading.value = true
   try {
@@ -68,14 +85,43 @@ async function beforeUpload(file: File) {
 </script>
 
 <template>
-  <a-upload
+  <a-upload-dragger
+    v-if="dragger"
     :accept="accept"
     :before-upload="beforeUpload"
     :disabled="uploadDisabled"
+    :multiple="multiple"
     :show-upload-list="false"
   >
+    <slot v-if="mode === 'custom'" :file="fileModel" :uploading="uploading" />
+
+    <template v-else>
+      <div class="upload-card" :class="{ 'upload-card-disabled': uploadDisabled }">
+        <div class="upload-card-icon">＋</div>
+        <div class="upload-card-title">
+          {{ uploading ? '上传中...' : '点击上传' }}
+        </div>
+        <div class="upload-card-description">
+          <slot name="description">
+            支持图片或 PDF，文件大小不超过 {{ maxSizeMb }}MB
+          </slot>
+        </div>
+      </div>
+    </template>
+  </a-upload-dragger>
+
+  <a-upload
+    v-else
+    :accept="accept"
+    :before-upload="beforeUpload"
+    :disabled="uploadDisabled"
+    :multiple="multiple"
+    :show-upload-list="false"
+  >
+    <slot v-if="mode === 'custom'" :file="fileModel" :uploading="uploading" />
+
     <a-button
-      v-if="mode === 'button'"
+      v-else-if="mode === 'button'"
       type="primary"
       :loading="uploading"
     >
@@ -83,7 +129,7 @@ async function beforeUpload(file: File) {
     </a-button>
 
     <div
-      v-else
+      v-else-if="mode === 'card'"
       class="upload-card"
       :class="{ 'upload-card-disabled': uploadDisabled }"
     >

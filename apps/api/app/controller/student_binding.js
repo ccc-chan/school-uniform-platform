@@ -24,10 +24,12 @@ class StudentBindingController extends Controller {
     return this.run((code) => {
       const body = this.ctx.request.body || {}
       if (body.parentAuthorized !== true) this.ctx.throw(400, '请确认信息真实并同意绑定')
-      const value = {}
+      const value = { schoolId: Number(body.schoolId) }
+      if (!Number.isSafeInteger(value.schoolId) || value.schoolId < 1) {
+        this.ctx.throw(400, '请选择学校')
+      }
       for (const [key, label, required, max] of [
         ['studentName', '学生姓名', true, 100],
-        ['schoolName', '学校名称', true, 100],
         ['studentNo', '学生编号', true, 100],
         ['grade', '年级', false, 100],
         ['className', '班级', false, 100],

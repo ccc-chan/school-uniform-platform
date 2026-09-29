@@ -51,9 +51,14 @@ class StudentBindingService extends Service {
       const { qr } = await this.resolve(code, transaction)
       const existing = await this.app.model.QrStudentBinding.findByPk(qr.id, { transaction })
       if (existing) fail('这件校服已绑定学生，请查看学生信息', 409)
+      const [school] = await this.ctx.service.schools.enabled(
+        [value.schoolId],
+        transaction,
+      )
       const binding = await this.app.model.QrStudentBinding.create({
         qrCodeId: qr.id,
-        schoolName: value.schoolName,
+        schoolId: school.id,
+        schoolName: school.name,
         studentName: value.studentName,
         studentNo: value.studentNo,
         grade: value.grade,

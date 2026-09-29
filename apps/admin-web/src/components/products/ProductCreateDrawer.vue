@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import {
-  InboxOutlined,
-} from '@ant-design/icons-vue'
 import message from 'ant-design-vue/es/message'
 import { getCompanyOptions, type Company } from '@/api/companies'
+import type { SchoolOption } from '@/api/schools'
 import {
   createProduct,
   getProduct,
   productCategoryOptions,
+  productExecutionStandardOptions,
   productQrCodeTypeOptions,
+  productSafetyCategoryOptions,
   productSeasonOptions,
   productSizeOptions,
   updateProduct,
@@ -31,12 +31,21 @@ const emit = defineEmits<{
 
 const loading = shallowRef(false)
 const saving = shallowRef(false)
-const previewUrl = shallowRef('')
-const existingImageId = shallowRef<number | null>(null)
+interface PendingProductImage {
+  file: File
+  previewUrl: string
+}
+
+const pendingImages = shallowRef<PendingProductImage[]>([])
+const existingImageIds = shallowRef<number[]>([])
 const fabricComposition = shallowRef('')
 const fabricRatio = shallowRef('')
 const companies = shallowRef<Company[]>([])
+const selectedSchools = shallowRef<SchoolOption[]>([])
 const isEdit = computed(() => Boolean(props.productId))
+const imageCount = computed(
+  () => existingImageIds.value.length + pendingImages.value.length,
+)
 
 const qrDescriptions: Record<ProductQrCodeType, string> = {
   product: '每件独立码',
@@ -71,9 +80,9 @@ function createEmptyForm(): ProductInput {
   return {
     name: '',
     code: createProductCode(),
-    category: 'sports_set',
+    category: 'set',
     qrCodeType: 'product',
-    applicableSchools: [],
+    schoolIds: [],
     season: 'spring',
     style: '',
     color: '',
@@ -83,23 +92,27 @@ function createEmptyForm(): ProductInput {
     washingInstructions: '',
     safetyCategory: '',
     companyId: null,
-    image: null,
+    images: [],
+    retainedImageIds: [],
   }
 }
 
 const form = reactive<ProductInput>(createEmptyForm())
 
-function clearPreview() {
-  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
-  previewUrl.value = ''
+function clearPreviews() {
+  pendingImages.value.forEach(({ previewUrl }) =>
+    URL.revokeObjectURL(previewUrl),
+  )
+  pendingImages.value = []
 }
 
 function resetForm() {
-  clearPreview()
+  clearPreviews()
   Object.assign(form, createEmptyForm())
-  existingImageId.value = null
+  existingImageIds.value = []
   fabricComposition.value = ''
   fabricRatio.value = ''
+  selectedSchools.value = []
 }
 
 function fillForm(product: Product) {
@@ -113,7 +126,7 @@ function fillForm(product: Product) {
     code: product.code ?? defaults.code,
     category: product.category ?? defaults.category,
     qrCodeType: product.qrCodeType ?? defaults.qrCodeType,
-    applicableSchools: [...(product.applicableSchools ?? [])],
+    schoolIds: [...(product.schoolIds ?? [])],
     season: product.season ?? defaults.season,
     style: product.style ?? '',
     color: product.color ?? '',
@@ -123,10 +136,14 @@ function fillForm(product: Product) {
     washingInstructions: product.washingInstructions ?? '',
     safetyCategory: product.safetyCategory ?? '',
     companyId: product.companyId ?? null,
-    image: null,
+    images: [],
+    retainedImageIds: [
+      ...(product.imageIds ?? (product.imageId ? [product.imageId] : [])),
+    ],
   })
 
-  existingImageId.value = product.imageId ?? null
+  existingImageIds.value = [...form.retainedImageIds]
+  selectedSchools.value = [...(product.schools ?? [])]
   fabricComposition.value = composition
   fabricRatio.value = ratioParts.join(' · ')
 }
@@ -173,26 +190,33 @@ function toggleSize(value: ProductSize) {
     : [...form.sizes, value]
 }
 
-function beforeUpload(file: File) {
-  if (!['image/jpeg', 'image/png'].includes(file.type)) {
-    message.error('仅支持 JPG、PNG 图片')
-    return false
+function selectImage(file: File) {
+  if (imageCount.value >= 3) {
+    message.warning('产品图片最多上传 3 张')
+    return
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    message.error('图片大小不能超过 5MB')
-    return false
-  }
-
-  clearPreview()
-  previewUrl.value = URL.createObjectURL(file)
-  form.image = file
-  return false
+  pendingImages.value = [
+    ...pendingImages.value,
+    { file, previewUrl: URL.createObjectURL(file) },
+  ]
+  form.images = pendingImages.value.map((item) => item.file)
 }
 
-function removeImage() {
-  clearPreview()
-  form.image = null
+function removeExistingImage(id: number) {
+  existingImageIds.value = existingImageIds.value.filter(
+    (imageId) => imageId !== id,
+  )
+  form.retainedImageIds = [...existingImageIds.value]
+}
+
+function removePendingImage(index: number) {
+  const target = pendingImages.value[index]
+  if (target) URL.revokeObjectURL(target.previewUrl)
+  pendingImages.value = pendingImages.value.filter(
+    (_, itemIndex) => itemIndex !== index,
+  )
+  form.images = pendingImages.value.map((item) => item.file)
 }
 
 function requestClose() {
@@ -200,7 +224,7 @@ function requestClose() {
 }
 
 async function submit() {
-  if (!form.name.trim() || (!form.image && !existingImageId.value)) {
+  if (!form.name.trim() || imageCount.value === 0) {
     message.warning('请填写产品名称并上传产品图片')
     return
   }
@@ -243,7 +267,7 @@ async function submit() {
   }
 }
 
-onBeforeUnmount(clearPreview)
+onBeforeUnmount(clearPreviews)
 </script>
 
 <template>
@@ -316,6 +340,22 @@ onBeforeUnmount(clearPreview)
       <section class="product-create-drawer__section">
         <div class="product-create-drawer__section-heading">
           <div>
+            <h3 class="product-create-drawer__section-title">适用学校</h3>
+            <p>按学校名称或学校代码搜索，可选择多所学校</p>
+          </div>
+          <span>学校范围</span>
+        </div>
+
+        <SchoolSelect
+          v-model="form.schoolIds"
+          multiple
+          :initial-options="selectedSchools"
+        />
+      </section>
+
+      <section class="product-create-drawer__section">
+        <div class="product-create-drawer__section-heading">
+          <div>
             <h3 class="product-create-drawer__section-title">基本信息</h3>
             <p>填写产品名称、分类及执行标准</p>
           </div>
@@ -367,9 +407,10 @@ onBeforeUnmount(clearPreview)
             class="product-create-drawer__field product-create-drawer__field--full"
           >
             <span>执行标准 <em>*</em></span>
-            <a-input
+            <a-select
               v-model:value="form.executionStandard"
-              placeholder="请输入执行标准，如 GB/T 31888-2015"
+              :options="productExecutionStandardOptions"
+              placeholder="请选择执行标准"
             />
           </label>
 
@@ -387,9 +428,10 @@ onBeforeUnmount(clearPreview)
             class="product-create-drawer__field product-create-drawer__field--full"
           >
             <span>安全类别 <em>*</em></span>
-            <a-input
+            <a-select
               v-model:value="form.safetyCategory"
-              placeholder="请输入安全类别，如 GB 31701-2015"
+              :options="productSafetyCategoryOptions"
+              placeholder="请选择安全类别"
             />
           </label>
         </div>
@@ -417,7 +459,7 @@ onBeforeUnmount(clearPreview)
               show-search
               option-filter-prop="label"
               placeholder="请选择管理公司"
-              :options="companies.map(item => ({ label: `${item.name} · ${item.creditCode}`, value: item.id }))"
+              :options="companies.map(item => ({ label: item.name, value: item.id }))"
             />
           </label>
           <div v-if="companies.find(item => item.id === form.companyId)" class="product-create-drawer__company product-create-drawer__field--full">
@@ -461,43 +503,49 @@ onBeforeUnmount(clearPreview)
             <h3 class="product-create-drawer__section-title">
               产品图片 <em>*</em>
             </h3>
-            <p>上传清晰完整的产品展示图片</p>
+            <p>上传清晰完整的产品展示图片，第一张将作为封面</p>
           </div>
-          <span>JPG / PNG</span>
+          <span>{{ imageCount }}/3</span>
         </div>
 
-        <div v-if="previewUrl" class="product-create-drawer__preview">
-          <img :src="previewUrl" alt="产品图片预览" />
-          <button type="button" @click="removeImage">撤销更换</button>
-        </div>
-
-        <div v-else-if="existingImageId" class="product-create-drawer__preview">
-          <ProductImage :file-id="existingImageId" variant="card" />
-          <a-upload
-            :before-upload="beforeUpload"
-            :show-upload-list="false"
-            accept="image/jpeg,image/png"
+        <div v-if="imageCount" class="product-create-drawer__image-grid">
+          <div
+            v-for="imageId in existingImageIds"
+            :key="`existing-${imageId}`"
+            class="product-create-drawer__preview"
           >
-            <button type="button">重新上传</button>
-          </a-upload>
+            <ProductImage :file-id="imageId" variant="card" />
+            <button type="button" @click="removeExistingImage(imageId)">删除</button>
+          </div>
+          <div
+            v-for="(image, index) in pendingImages"
+            :key="image.previewUrl"
+            class="product-create-drawer__preview"
+          >
+            <img :src="image.previewUrl" alt="产品图片预览" />
+            <button type="button" @click="removePendingImage(index)">删除</button>
+          </div>
         </div>
 
-        <a-upload-dragger
-          v-else
-          :before-upload="beforeUpload"
-          :show-upload-list="false"
+        <FileUpload
+          v-if="imageCount < 3"
+          mode="custom"
+          dragger
+          multiple
+          :auto-upload="false"
           accept="image/jpeg,image/png"
+          :allowed-types="['image/jpeg', 'image/png']"
+          :max-size-mb="5"
+          invalid-type-message="仅支持 JPG、PNG 图片"
+          @select="selectImage"
         >
           <div class="flex flex-col items-center">
-            <p class="ant-upload-drag-icon">
-              <inboxOutlined></inboxOutlined>
-            </p>
             <div class="flex flex-col items-center text-center">
-              <strong>点击上传或拖拽图片</strong>
-              <span>支持 JPG、PNG，建议 800×800px</span>
+              <strong>{{ imageCount ? '继续添加图片' : '点击上传或拖拽图片' }}</strong>
+              <span>支持 JPG、PNG，最多 3 张，单张不超过 5MB</span>
             </div>
           </div>
-        </a-upload-dragger>
+        </FileUpload>
       </section>
     </div>
 
@@ -838,11 +886,18 @@ onBeforeUnmount(clearPreview)
 
 .product-create-drawer__preview {
   position: relative;
-  height: 190px;
+  height: 150px;
   overflow: hidden;
   border: 1px solid #dce5f1;
   border-radius: 14px;
   background: #f8fafc;
+}
+
+.product-create-drawer__image-grid {
+  display: grid;
+  margin-bottom: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .product-create-drawer__preview img {

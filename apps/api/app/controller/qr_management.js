@@ -32,7 +32,14 @@ class QrManagementController extends Controller {
     return this.run(() => {
       const body = this.ctx.request.body || {}
       const query = { page: body.page, pageSize: body.pageSize }
-      for (const key of ['code', 'studentName', 'schoolName', 'phone', 'status']) {
+      for (const key of [
+        'code',
+        'productionBatch',
+        'studentName',
+        'schoolName',
+        'phone',
+        'status',
+      ]) {
         query[key] = text(body[key], key === 'phone' ? 11 : 100, key)
       }
       if (query.phone && !/^\d+$/.test(query.phone)) this.ctx.throw(400, '手机号查询请输入数字片段')
@@ -45,10 +52,13 @@ class QrManagementController extends Controller {
     return this.run(() => {
       const body = this.ctx.request.body || {}
       if (body.parentAuthorized !== true) this.ctx.throw(400, '请确认已获得家长授权')
-      const value = { version: Number(body.version) }
-      for (const key of ['schoolName', 'className', 'studentName', 'parentName']) {
+      const value = { version: Number(body.version), schoolId: Number(body.schoolId) }
+      if (!Number.isSafeInteger(value.schoolId) || value.schoolId < 1) {
+        this.ctx.throw(400, '请选择学校')
+      }
+      for (const key of ['className', 'studentName', 'parentName']) {
         value[key] = text(body[key], 100, key)
-        if (!value[key]) this.ctx.throw(400, '学校、班级、学生姓名和家长姓名不能为空')
+        if (!value[key]) this.ctx.throw(400, '班级、学生姓名和家长姓名不能为空')
       }
       value.phone = text(body.phone, 11, '手机号')
       value.studentGender = text(body.studentGender, 10, '性别')

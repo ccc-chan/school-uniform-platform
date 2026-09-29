@@ -18,8 +18,14 @@ class AnalyticsController extends Controller {
   async productImage() {
     const code = String(this.ctx.params.code || '').trim()
     if (!code || code.length > 40) return this.fail('二维码编号无效')
+    const index = this.ctx.params.index === undefined
+      ? 0
+      : Number(this.ctx.params.index)
+    if (!Number.isInteger(index) || index < 0 || index > 2) {
+      return this.fail('产品图片序号无效')
+    }
 
-    const result = await this.ctx.service.analytics.getPublicProductImage(code)
+    const result = await this.ctx.service.analytics.getPublicProductImage(code, index)
     if (!result) return this.fail('产品图片不存在', 404)
 
     this.ctx.set('Cache-Control', 'no-store')

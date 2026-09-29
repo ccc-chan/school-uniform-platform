@@ -1,13 +1,14 @@
 import { request, requestBlob } from '@/api/http'
 import type { PageData } from '@/types/common'
 import type { Company } from '@/api/companies'
+import type { SchoolOption } from '@/api/schools'
 // 产品档案、图片及关联生产批次/二维码数据接口。
 export type ProductStatus = 'enabled' | 'disabled'
 export type ProductCategory =
-  | 'sports_set'
-  | 'formal_set'
-  | 'outerwear'
-  | 'single_item'
+  | 'single_top'
+  | 'single_pants'
+  | 'single_outerwear'
+  | 'set'
   | 'accessory'
 export type ProductQrCodeType = 'product' | 'batch' | 'school'
 export type ProductSeason =
@@ -32,6 +33,7 @@ export type ProductSize =
 export interface Product {
   id: number
   imageId?: number | null
+  imageIds?: readonly number[]
   code?: string
   name?: string
   category?: ProductCategory
@@ -40,6 +42,8 @@ export interface Product {
   status?: ProductStatus
   createdAt?: string
   applicableSchools?: readonly string[]
+  schoolIds?: readonly number[]
+  schools?: readonly SchoolOption[]
   style?: string
   color?: string
   sizes?: readonly ProductSize[]
@@ -123,7 +127,7 @@ export interface ProductInput {
   code: string
   category: ProductCategory
   qrCodeType: ProductQrCodeType
-  applicableSchools: string[]
+  schoolIds: number[]
   season: ProductSeason | ''
   style: string
   color: string
@@ -133,7 +137,8 @@ export interface ProductInput {
   washingInstructions: string
   safetyCategory: string
   companyId: number | null
-  image: File | null
+  images: File[]
+  retainedImageIds: number[]
 }
 export interface ProductFilters {
   keyword: string
@@ -142,14 +147,30 @@ export interface ProductFilters {
   status: ProductStatus | ''
 }
 export const productCategoryOptions = [
-  { label: '运动套装', value: 'sports_set' },
-  { label: '礼服套装', value: 'formal_set' },
-  { label: '外套', value: 'outerwear' },
-  { label: '校服单品', value: 'single_item' },
-  { label: '配饰', value: 'accessory' },
+  { label: '单上衣', value: 'single_top' },
+  { label: '单裤子', value: 'single_pants' },
+  { label: '单外套', value: 'single_outerwear' },
+  { label: '套装', value: 'set' },
+  { label: '饰品', value: 'accessory' },
 ] satisfies Array<{ label: string; value: ProductCategory }>
+export const productExecutionStandardOptions = [
+  {
+    label: 'GBT 31888-2015《中小学生校服》',
+    value: '0',
+  },
+]
+export const productSafetyCategoryOptions = [
+  {
+    label: 'GB 18401-2010《国家纺织产品基本安全技术规范》B类（14 周岁以上高中生适用）',
+    value: '0',
+  },
+  {
+    label: 'GB 31701-2015《婴幼儿及儿童纺织产品安全技术规范》B类（14 周岁及以下中小学生校服强制适用）',
+    value: '1',
+  },
+]
 export const productQrCodeTypeOptions = [
-  { label: '一品一码', value: 'product' },
+  { label: '一物一码', value: 'product' },
   { label: '一批一码', value: 'batch' },
   { label: '一校一码', value: 'school' },
 ] satisfies Array<{ label: string; value: ProductQrCodeType }>
@@ -206,9 +227,9 @@ export const deleteProductBatchStep = (batchId: number, stepId: number) =>
 // 产品结构化字段序列化到 payload，图片作为 multipart 文件提交。
 function body(data: ProductInput) {
   const form = new FormData()
-  const { image, ...payload } = data
+  const { images, ...payload } = data
   form.append('payload', JSON.stringify(payload))
-  if (image) form.append('image', image)
+  images.forEach((image) => form.append('images', image))
   return form
 }
 export const createProduct = (data: ProductInput) =>

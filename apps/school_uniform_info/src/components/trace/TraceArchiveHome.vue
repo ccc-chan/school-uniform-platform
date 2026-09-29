@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, shallowRef, watch } from 'vue'
+import { computed, shallowRef } from 'vue'
 import ArchiveModuleNav, { type ArchiveModule } from './ArchiveModuleNav.vue'
+import ProductImageCarousel from './ProductImageCarousel.vue'
 import ProductionTimeline from './ProductionTimeline.vue'
 import StudentBindingResult from '@/components/student/StudentBindingResult.vue'
 import StudentBindingSheet from '@/components/student/StudentBindingSheet.vue'
@@ -21,13 +22,14 @@ const {
   bindStudent,
 } = useSchoolUniformInfoViewModel()
 const activeModule = shallowRef<ArchiveModule>('product')
-const imageFailed = shallowRef(false)
 const licensePreviewOpen = shallowRef(false)
 const bindingSheetOpen = shallowRef(false)
 const justBound = shallowRef(false)
-const productImageUrl = computed(() => info.value?.productImageUrl || '')
-watch(productImageUrl, () => {
-  imageFailed.value = false
+const productImageUrls = computed(() => {
+  const item = info.value
+  if (!item) return []
+  if (item.productImageUrls?.length) return item.productImageUrls
+  return item.productImageUrl ? [item.productImageUrl] : []
 })
 const title = computed(() =>
   qrCodeType.value === 'school'
@@ -82,17 +84,11 @@ async function submitBinding(value: StudentBindingInput) {
       <strong>SU</strong><span>守护成长的每一件</span>
     </header>
     <section class="passport-product" aria-label="校服数字档案">
-      <figure class="passport-photo">
-        <img
-          v-if="productImageUrl && !imageFailed"
-          :src="productImageUrl"
-          :alt="`${displayValue(info.productName)}产品图片`"
-          @error="imageFailed = true"
-        />
-        <span v-else class="passport-photo-empty">{{
-          imageFailed ? '图片加载失败' : '暂无产品图片'
-        }}</span>
-      </figure>
+      <ProductImageCarousel
+        :images="productImageUrls"
+        :alt="`${displayValue(info.productName)}产品图片`"
+        :interval="5000"
+      />
       <header class="product-heading">
         <span class="trace-badge">{{ traceTypeLabel }}</span>
         <h1>{{ title }}</h1>
@@ -269,32 +265,6 @@ async function submitBinding(value: StudentBindingInput) {
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 8px 24px rgb(25 65 110/5%);
-}
-.passport-photo {
-  position: relative;
-  overflow: hidden;
-  min-width: 0;
-  align-self: center;
-  margin: 0;
-  border-radius: 12px;
-  background: #e9f3ff;
-}
-.passport-photo img {
-  display: block;
-  width: 100%;
-  min-height: 148px;
-  max-height: 168px;
-  aspect-ratio: 4/5;
-  object-fit: cover;
-}
-.passport-photo-empty {
-  display: grid;
-  min-height: 148px;
-  padding: 16px;
-  place-items: center;
-  color: #64748b;
-  font-size: 12px;
-  text-align: center;
 }
 .product-heading {
   min-width: 0;

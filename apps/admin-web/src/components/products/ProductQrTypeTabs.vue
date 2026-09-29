@@ -17,7 +17,7 @@ const options: Array<{
   value: ProductQrCodeTypeFilter
 }> = [
   { label: '全部', value: '' },
-  { label: '一品一码', value: 'product' },
+  { label: '一物一码', value: 'product' },
   { label: '一批一码', value: 'batch' },
   { label: '一校一码', value: 'school' },
 ]

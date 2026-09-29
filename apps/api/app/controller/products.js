@@ -3,15 +3,17 @@ const { Controller } = require('egg')
 
 // 控制器使用固定集合校验枚举值，避免任意分类、季节或尺码写入数据库。
 const categories = new Set([
-  'sports_set',
-  'formal_set',
-  'outerwear',
-  'single_item',
+  'single_top',
+  'single_pants',
+  'single_outerwear',
+  'set',
   'accessory',
 ])
 
 const seasons = new Set(['spring', 'summer', 'autumn', 'winter', 'all_season'])
 const qrCodeTypes = new Set(['product', 'batch', 'school'])
+const executionStandards = new Set(['0'])
+const safetyCategories = new Set(['0', '1'])
 const productSizes = new Set([
   'xs',
   's',
@@ -36,6 +38,13 @@ const array = (value) =>
         .filter(Boolean)
     : []
 
+const ids = (value) =>
+  Array.isArray(value)
+    ? [...new Set(value.map(Number))].filter(
+        (id) => Number.isSafeInteger(id) && id > 0,
+      )
+    : []
+
 // 同时兼容 multipart 的 payload 字段与普通 JSON 请求体。
 function payload(ctx) {
   let value = ctx.request.body || {}
@@ -54,7 +63,7 @@ function payload(ctx) {
       .toUpperCase(),
     category: String(value.category || ''),
     qrCodeType: String(value.qrCodeType || ''),
-    applicableSchools: array(value.applicableSchools),
+    schoolIds: ids(value.schoolIds),
     season: String(value.season || ''),
     style: String(value.style || '').trim(),
     color: String(value.color || '').trim(),
@@ -64,11 +73,12 @@ function payload(ctx) {
     washingInstructions: String(value.washingInstructions || '').trim(),
     safetyCategory: String(value.safetyCategory || '').trim(),
     companyId: Number(value.companyId),
+    retainedImageIds: ids(value.retainedImageIds),
   }
 }
 
 // 集中校验必填项、产品编号格式、枚举范围以及图片要求。
-function invalid(value, hasImage) {
+function invalid(value, imageCount) {
   if (
     !value.name ||
     !value.code ||
@@ -87,14 +97,17 @@ function invalid(value, hasImage) {
   if (
     !categories.has(value.category) ||
     (value.season && !seasons.has(value.season)) ||
-    !qrCodeTypes.has(value.qrCodeType)
+    !qrCodeTypes.has(value.qrCodeType) ||
+    !executionStandards.has(value.executionStandard) ||
+    !safetyCategories.has(value.safetyCategory)
   ) {
-    return '产品分类、二维码类型或季节无效'
+    return '产品分类、溯源模式、季节、执行标准或安全类别无效'
   }
   if (value.sizes.some((size) => !productSizes.has(size))) {
     return '产品尺码无效'
   }
-  if (!hasImage) return '请上传产品图片'
+  if (imageCount < 1) return '请上传产品图片'
+  if (imageCount > 3) return '产品图片最多上传 3 张'
   return ''
 }
 
@@ -144,8 +157,8 @@ class ProductsController extends Controller {
   }
   async create() {
     const value = payload(this.ctx)
-    const file = this.ctx.request.files?.[0]
-    const error = invalid(value, Boolean(file))
+    const files = this.ctx.request.files || []
+    const error = invalid(value, files.length)
 
     if (error) {
       await this.ctx.cleanupRequestFiles()
@@ -154,7 +167,7 @@ class ProductsController extends Controller {
 
     try {
       this.ok(
-        await this.ctx.service.products.create(value, file),
+        await this.ctx.service.products.create(value, files),
         '产品创建成功',
       )
     } catch (e) {
@@ -173,8 +186,13 @@ class ProductsController extends Controller {
     const current = await this.ctx.service.products.get(
       Number(this.ctx.params.id),
     )
-    const file = this.ctx.request.files?.[0]
-    const error = invalid(value, Boolean(file || current?.imageId))
+    const files = this.ctx.request.files || []
+    const currentImageIds =
+      current?.imageIds || (current?.imageId ? [current.imageId] : [])
+    const retainedImageIds = value.retainedImageIds.filter((id) =>
+      currentImageIds.includes(id),
+    )
+    const error = invalid(value, retainedImageIds.length + files.length)
 
     if (error) {
       await this.ctx.cleanupRequestFiles()
@@ -184,8 +202,8 @@ class ProductsController extends Controller {
     try {
       const item = await this.ctx.service.products.update(
         Number(this.ctx.params.id),
-        value,
-        file,
+        { ...value, retainedImageIds },
+        files,
       )
       return item ? this.ok(item, '产品更新成功') : this.fail('产品不存在', 404)
     } catch (e) {

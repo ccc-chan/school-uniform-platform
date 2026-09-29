@@ -47,5 +47,5 @@ async function submit(value: StudentBindingInput) {
 .student-state { padding: 48px 12px; text-align: center; }
 .student-state h1 { font-size: 22px; }
 .student-state p { margin: 16px 0; color: #64748b; line-height: 1.7; }
-.retry-button { padding: 12px 24px; border: 0; border-radius: 12px; background: #2563a9; color: #fff; cursor: pointer; }
+.retry-button { padding: 12px 24px; border: 0; border-radius: 12px; background: #1677ff; color: #fff; cursor: pointer; }
 </style>

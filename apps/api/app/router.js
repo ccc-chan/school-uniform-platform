@@ -94,11 +94,19 @@ module.exports = (app) => {
     publicScanRateLimit,
     controller.analytics.productImage,
   )
+  router.get(
+    '/api/v1/public/qrcodes/:code/images/:index',
+    publicScanRateLimit,
+    controller.analytics.productImage,
+  )
   router.get('/api/v1/public/qrcodes/:code/student',
     publicScanRateLimit, controller.studentBinding.show)
   router.post('/api/v1/public/qrcodes/:code/student',
     app.middleware.rateLimit({ keyPrefix: 'public-student-bind', windowMs: 60 * 1000, max: 10 }),
     controller.studentBinding.create)
+  router.get('/api/v1/public/schools',
+    app.middleware.rateLimit({ keyPrefix: 'public-schools', windowMs: 60 * 1000, max: 120 }),
+    controller.schools.index)
 
   // 管理端业务接口依次经过登录、菜单和具体操作权限校验。
   router.get(
@@ -115,13 +123,16 @@ module.exports = (app) => {
   )
 
   // 产品中心。
+  router.get('/api/v1/schools', auth, productMenu, controller.schools.index)
   router.get('/api/v1/companies/options', auth, productMenu, controller.companies.options)
+  router.get('/api/v1/companies/code-availability', auth, companyMenu, controller.companies.codeAvailability)
   router.get('/api/v1/companies', auth, companyMenu, productPermission('view'), controller.companies.index)
   router.post('/api/v1/companies', auth, companyMenu, productPermission('create'), controller.companies.create)
   router.put('/api/v1/companies/:id', auth, companyMenu, productPermission('edit'), controller.companies.update)
   router.patch('/api/v1/companies/:id/status', auth, companyMenu, productPermission('edit'), controller.companies.status)
   router.delete('/api/v1/companies/:id', auth, companyMenu, productPermission('delete'), controller.companies.destroy)
   router.get('/api/v1/companies/:id/license', auth, companyMenu, productPermission('view'), controller.companies.license)
+  router.get('/api/v1/companies/:id/logo', auth, companyMenu, productPermission('view'), controller.companies.logo)
 
   router.get(
     '/api/v1/products',

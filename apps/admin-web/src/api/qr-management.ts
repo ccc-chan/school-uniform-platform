@@ -4,6 +4,7 @@ import type { PageData } from '@/types/common'
 export type QrManagementStatus = 'unbound' | 'bound'
 export interface QrManagementFilters {
   code: string
+  productionBatch: string
   studentName: string
   phone: string
   schoolName: string
@@ -14,7 +15,7 @@ export interface QrManagementFilters {
 }
 export interface QrStudentInput {
   parentAuthorized: boolean
-  schoolName: string
+  schoolId: number
   className: string
   studentName: string
   parentName: string
@@ -36,6 +37,7 @@ export interface QrManagementItem {
   productSku: string | null
   productionBatch: string | null
   schoolName: string | null
+  schoolId: number | null
   className: string | null
   studentName: string | null
   studentGender: string | null

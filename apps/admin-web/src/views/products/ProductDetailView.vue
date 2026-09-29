@@ -61,7 +61,7 @@ const selectedStatus = computed(() =>
 )
 
 const qrTypeLabels = {
-  product: '一品一码',
+  product: '一物一码',
   batch: '一批一码',
   school: '一校一码',
 } as const

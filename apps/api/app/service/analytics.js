@@ -287,9 +287,9 @@ class AnalyticsService extends Service {
     return createHmac('sha256', this.app.config.keys).update(source).digest('hex')
   }
 
-  async getPublicProductImage(code) {
+  async getPublicProductImage(code, index = 0) {
     const [item] = await this.app.model.query(
-      `SELECT p.image_id AS imageId
+      `SELECT p.image_id AS imageId, p.image_ids AS imageIds
        FROM qr_codes q
        JOIN qr_generation_batches b ON b.id = q.generation_batch_id
        JOIN prd_products p ON p.id = COALESCE(q.product_id, b.product_id)
@@ -297,8 +297,17 @@ class AnalyticsService extends Service {
        LIMIT 1`,
       { replacements: { code }, type: QueryTypes.SELECT },
     )
-    if (!item?.imageId) return null
-    return this.ctx.service.products.getImage(Number(item.imageId))
+    if (!item) return null
+    let imageIds = item.imageIds
+    if (typeof imageIds === 'string') {
+      try { imageIds = JSON.parse(imageIds) } catch { imageIds = [] }
+    }
+    imageIds = Array.isArray(imageIds)
+      ? imageIds.map(Number).filter(Number.isSafeInteger)
+      : []
+    if (!imageIds.length && item.imageId) imageIds = [Number(item.imageId)]
+    const imageId = imageIds[index]
+    return imageId ? this.ctx.service.products.getImage(imageId) : null
   }
 
   async recordScan(code, value = {}) {
@@ -318,12 +327,12 @@ class AnalyticsService extends Service {
           COALESCE(q.product_id, b.product_id) AS productId,
           p.code AS productCode, p.name AS productName,
           c.name AS brandName, c.name AS companyName,
-          c.english_name AS companyEnglishName,
+          c.brand_name AS companyEnglishName,
           c.credit_code AS companyCreditCode,
           c.legal_representative AS companyLegalRepresentative,
           c.industry AS companyIndustry, c.region AS companyRegion,
           c.address AS companyAddress, c.contact_phone AS companyContactPhone,
-          p.image_id AS imageId,
+          p.image_id AS imageId, p.image_ids AS imageIds,
           p.category, p.qr_code_type AS qrCodeType,
           p.season, p.style, p.color, p.sizes,
           p.applicable_schools AS applicableSchools,
@@ -399,6 +408,18 @@ class AnalyticsService extends Service {
         return []
       }
     }
+    const normalizeNumberArray = (source) => {
+      if (Array.isArray(source)) return source.map(Number).filter(Number.isSafeInteger)
+      if (typeof source !== 'string' || !source) return []
+      try {
+        const parsed = JSON.parse(source)
+        return Array.isArray(parsed) ? parsed.map(Number).filter(Number.isSafeInteger) : []
+      } catch {
+        return []
+      }
+    }
+    const productImageIds = normalizeNumberArray(item.imageIds)
+    if (!productImageIds.length && item.imageId) productImageIds.push(Number(item.imageId))
     return {
       code: item.code,
       status: item.status === 'bound' ? 'activated' : item.status,
@@ -408,9 +429,11 @@ class AnalyticsService extends Service {
       productCode: item.productCode || '',
       productName: item.productName || '',
       brandName: item.brandName || '',
-      productImageUrl: item.imageId
+      productImageUrl: productImageIds.length
         ? `/api/v1/public/qrcodes/${encodeURIComponent(item.code)}/image`
         : '',
+      productImageUrls: productImageIds.map((_, index) =>
+        `/api/v1/public/qrcodes/${encodeURIComponent(item.code)}/images/${index}`),
       category: item.category || '',
       season: item.season || '',
       style: item.style || '',

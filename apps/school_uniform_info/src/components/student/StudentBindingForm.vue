@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { reactive, shallowRef } from 'vue'
 import type { StudentBindingInput } from '@/api/school_uniform_info'
+import SchoolSelect from './SchoolSelect.vue'
 
 const props = defineProps<{ saving: boolean; error: string }>()
 const emit = defineEmits<{ submit: [value: StudentBindingInput] }>()
 const form = reactive<StudentBindingInput>({
-  studentName: '', schoolName: '', studentNo: '', grade: '', className: '',
+  studentName: '', schoolId: 0, studentNo: '', grade: '', className: '',
   parentName: '', parentRelation: '爸爸', phone: '', parentAuthorized: false,
 })
 const gradeGroups = [
@@ -35,8 +36,9 @@ function submit() {
   if (props.saving) return
   validationError.value = ''
   if (
-    ![form.studentName, form.schoolName, form.studentNo, form.parentName]
+    ![form.studentName, form.studentNo, form.parentName]
       .every((value) => value.trim())
+    || !form.schoolId
   ) {
     validationError.value = '请填写学生姓名、学校名称、学生编号和家长姓名'
     return
@@ -62,7 +64,7 @@ function submit() {
         <input v-model="form.studentName" required maxlength="100" placeholder="请输入学生姓名" autocomplete="off" />
       </label>
       <label class="field">学校名称 <span class="required">*</span>
-        <input v-model="form.schoolName" required maxlength="100" placeholder="请输入学校名称" autocomplete="organization" />
+        <SchoolSelect v-model="form.schoolId" />
       </label>
       <label class="field">学生编号 <span class="required">*</span>
         <input v-model="form.studentNo" required maxlength="100" placeholder="请输入学校提供的学生编号" autocomplete="off" />
@@ -138,28 +140,28 @@ function submit() {
 .required { color: #e64949; }
 .field input { display: block; box-sizing: border-box; width: 100%; min-width: 0; height: 46px; margin-top: 8px; padding: 0 13px; border: 1px solid #d5deeb; border-radius: 11px; background: #fff; color: #172236; font-size: 14px; font-weight: 400; }
 .field input::placeholder { color: #96a2b5; }
-.field input:focus { outline: 2px solid #b8d6ff; outline-offset: 1px; border-color: #2563a9; }
+.field input:focus { outline: 2px solid #b8d6ff; outline-offset: 1px; border-color: #1677ff; }
 .class-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .grade-field { position: relative; min-width: 0; }
 .grade-trigger { display: flex; box-sizing: border-box; width: 100%; min-width: 0; height: 46px; margin-top: 8px; padding: 0 12px 0 13px; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid #d5deeb; border-radius: 11px; background: #fff; color: #172236; font-size: 14px; font-weight: 400; text-align: left; }
 .grade-trigger--placeholder { color: #96a2b5; }
-.grade-trigger:focus-visible { outline: 2px solid #b8d6ff; outline-offset: 1px; border-color: #2563a9; }
+.grade-trigger:focus-visible { outline: 2px solid #b8d6ff; outline-offset: 1px; border-color: #1677ff; }
 .grade-trigger svg { flex: 0 0 auto; width: 18px; height: 18px; fill: none; stroke: currentcolor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
-.grade-menu { position: absolute; z-index: 10; top: calc(100% + 8px); left: 0; box-sizing: border-box; width: calc(200% + 10px); padding: 14px; border: 1px solid #cfdef0; border-radius: 14px; background: #fff; box-shadow: 0 16px 40px rgb(30 64 110 / 18%); }
+.grade-menu { position: absolute; z-index: 10; top: calc(100% + 8px); left: 0; box-sizing: border-box; width: calc(200% + 10px); padding: 14px; border: 1px solid #d6e7ff; border-radius: 14px; background: #fff; box-shadow: 0 16px 40px rgb(30 64 110 / 18%); }
 .grade-menu section + section { margin-top: 14px; }
 .grade-menu h3 { margin: 0 0 8px; color: #66758d; font-size: 12px; font-weight: 700; }
 .grade-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .grade-options button { min-width: 0; min-height: 40px; padding: 7px 4px; border: 1px solid #d5deeb; border-radius: 9px; background: #fff; color: #33445f; font-size: 13px; line-height: 1.25; }
-.grade-options button.selected { border-color: #2563a9; color: #2563a9; background: #eef5fc; font-weight: 700; }
+.grade-options button.selected { border-color: #1677ff; color: #1677ff; background: #f0f6ff; font-weight: 700; }
 .grade-options button:focus-visible { outline: 2px solid #b8d6ff; outline-offset: 1px; }
 .relation-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .relation-option { position: relative; display: grid; min-height: 40px; border: 1px solid #d5deeb; border-radius: 9px; color: #64748b; font-size: 13px; place-items: center; cursor: pointer; }
-.relation-option.selected { border-color: #2275e9; color: #2563a9; background: #f0f6ff; }
+.relation-option.selected { border-color: #1677ff; color: #1677ff; background: #f0f6ff; }
 .relation-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .relation-option:focus-within { outline: 2px solid #b8d6ff; outline-offset: 2px; }
 .consent { display: flex; align-items: flex-start; gap: 8px; color: #62718c; font-size: 12px; line-height: 1.7; }
-.consent input { flex-shrink: 0; width: 18px; height: 18px; margin: 1px 0 0; accent-color: #2563a9; }
-.submit-button { min-height: 48px; border: 0; border-radius: 12px; background: #2563a9; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; }
+.consent input { flex-shrink: 0; width: 18px; height: 18px; margin: 1px 0 0; accent-color: #1677ff; }
+.submit-button { min-height: 48px; border: 0; border-radius: 12px; background: #1677ff; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; }
 .form-fields:disabled { opacity: 0.65; }
 .form-error { margin: 0; color: #c03333; font-size: 13px; line-height: 1.6; }
 .form-footnote { margin: 14px 0 0; color: #8795ab; font-size: 12px; text-align: center; line-height: 1.7; }

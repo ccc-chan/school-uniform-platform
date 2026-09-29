@@ -52,7 +52,7 @@ function inspect(item: QrManagementItem, activeTab: string) {
       :items="items as unknown as Record<string, unknown>[]"
       row-key="id"
       :loading="loading"
-      :scroll-x="1110"
+      :scroll-x="1290"
       :total="total"
       :page="page"
       :page-size="pageSize"

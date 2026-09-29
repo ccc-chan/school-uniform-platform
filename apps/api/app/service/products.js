@@ -8,6 +8,7 @@ const { Service } = require('egg')
 
 const fieldMap = {
   imageId: 'product.field.image',
+  imageIds: 'product.field.image',
   code: 'product.field.code',
   name: 'product.field.name',
   category: 'product.field.category',
@@ -21,14 +22,27 @@ const fieldMap = {
  */
 class ProductsService extends Service {
   json(item, permissions = null) {
+    const schools = (item.schools || []).map((school) =>
+      this.ctx.service.schools.json(school),
+    )
+    const imageIds = Array.isArray(item.imageIds)
+      ? item.imageIds.map(Number)
+      : item.imageId
+        ? [Number(item.imageId)]
+        : []
     const data = {
       id: Number(item.id),
-      imageId: item.imageId ? Number(item.imageId) : null,
+      imageId: imageIds[0] || null,
+      imageIds,
       code: item.code,
       name: item.name,
       category: item.category,
       qrCodeType: item.qrCodeType,
-      applicableSchools: item.applicableSchools || [],
+      schools,
+      schoolIds: schools.map((school) => school.id),
+      applicableSchools: schools.length
+        ? schools.map((school) => school.name)
+        : item.applicableSchools || [],
       season: item.season,
       style: item.style,
       color: item.color,
@@ -102,7 +116,11 @@ class ProductsService extends Service {
 
     const { rows, count } = await this.app.model.Product.findAndCountAll({
       where,
-      include: [{ model: this.app.model.Company, as: 'company' }],
+      include: [
+        { model: this.app.model.Company, as: 'company' },
+        { model: this.app.model.School, as: 'schools', through: { attributes: [] } },
+      ],
+      distinct: true,
       order: [['id', 'DESC']],
       limit: pageSize,
       offset,
@@ -163,12 +181,18 @@ class ProductsService extends Service {
     }
   }
   async get(id) {
-    const item = await this.app.model.Product.findByPk(id, { include: [{ model: this.app.model.Company, as: 'company' }] })
+    const item = await this.app.model.Product.findByPk(id, { include: [
+      { model: this.app.model.Company, as: 'company' },
+      { model: this.app.model.School, as: 'schools', through: { attributes: [] } },
+    ] })
     return item ? this.json(item) : null
   }
 
   async detail(id, permissions) {
-    const product = await this.app.model.Product.findByPk(id, { include: [{ model: this.app.model.Company, as: 'company' }] })
+    const product = await this.app.model.Product.findByPk(id, { include: [
+      { model: this.app.model.Company, as: 'company' },
+      { model: this.app.model.School, as: 'schools', through: { attributes: [] } },
+    ] })
     if (!product) return null
 
     const hasPermission = (code) =>
@@ -373,43 +397,92 @@ class ProductsService extends Service {
     })
   }
 
-  async create(value, file) {
+  async create(value, files) {
     const company = await this.app.model.Company.findOne({ where: { id: value.companyId, status: 'enabled' } })
     if (!company) throw Object.assign(new Error('所选管理公司不存在或已停用'), { status: 400 })
-    const image = await this.saveImage(file)
+    const schools = await this.ctx.service.schools.enabled(value.schoolIds)
+    const { schoolIds, retainedImageIds, ...productValue } = value
+    const images = []
 
     try {
-      const item = await this.app.model.Product.create({
-        ...value,
-        imageId: image.id,
-        status: 'enabled',
+      for (const file of files) images.push(await this.saveImage(file))
+      const imageIds = images.map((image) => Number(image.id))
+      const item = await this.app.model.transaction(async (transaction) => {
+        const created = await this.app.model.Product.create({
+          ...productValue,
+          productionUnitName: company.name || '',
+          productionUnitCreditCode: company.creditCode || '',
+          productionUnitAddress: company.address || '',
+          productionUnitContact: company.contactPhone || '',
+          productionUnitLicense: '',
+          applicableSchools: schools.map((school) => school.name),
+          imageId: imageIds[0],
+          imageIds,
+          status: 'enabled',
+        }, { transaction })
+        await created.setSchools(schools, { transaction })
+        created.schools = schools
+        return created
       })
 
       await this.log('新增产品', item, {
-        image: { id: Number(image.id), name: image.originalName },
+        images: images.map((image) => ({
+          id: Number(image.id),
+          name: image.originalName,
+        })),
       })
 
       return this.json(item)
     } catch (e) {
-      await image.destroy()
-      await this.ctx.service.storage.delete(image.storedName).catch(() => {})
+      await Promise.all(images.map((image) => this.removeImage(image.id)))
       throw e
     }
   }
 
-  async update(id, value, file) {
+  async update(id, value, files) {
     const company = await this.app.model.Company.findOne({ where: { id: value.companyId, status: 'enabled' } })
     if (!company) throw Object.assign(new Error('所选管理公司不存在或已停用'), { status: 400 })
     const item = await this.app.model.Product.findByPk(id)
     if (!item) return null
 
     const before = { ...item.toJSON() }
-    const oldImageId = item.imageId
+    const oldImageIds = Array.isArray(item.imageIds)
+      ? item.imageIds.map(Number)
+      : item.imageId
+        ? [Number(item.imageId)]
+        : []
+    const selected = await this.ctx.service.schools.enabled(value.schoolIds)
+    const { schoolIds, retainedImageIds, ...productValue } = value
+    const retained = retainedImageIds.filter((imageId) =>
+      oldImageIds.includes(imageId),
+    )
 
-    let image = null
-    if (file) image = await this.saveImage(file)
+    const images = []
+    try {
+      for (const file of files) images.push(await this.saveImage(file))
+    } catch (error) {
+      await Promise.all(images.map((image) => this.removeImage(image.id)))
+      throw error
+    }
+    const imageIds = [...retained, ...images.map((image) => Number(image.id))]
 
-    await item.update({ ...value, ...(image ? { imageId: image.id } : {}) })
+    let schools
+    try {
+      schools = await this.app.model.transaction(async (transaction) => {
+        await item.update({
+          ...productValue,
+          applicableSchools: selected.map((school) => school.name),
+          imageId: imageIds[0],
+          imageIds,
+        }, { transaction })
+        await item.setSchools(selected, { transaction })
+        return selected
+      })
+    } catch (error) {
+      await Promise.all(images.map((image) => this.removeImage(image.id)))
+      throw error
+    }
+    item.schools = schools
 
     await this.log('编辑产品', item, {
       changed: Object.keys(value).filter(
@@ -417,7 +490,10 @@ class ProductsService extends Service {
       ),
     })
 
-    if (image && oldImageId) await this.removeImage(oldImageId)
+    const removedImageIds = oldImageIds.filter(
+      (imageId) => !retained.includes(imageId),
+    )
+    await Promise.all(removedImageIds.map((imageId) => this.removeImage(imageId)))
 
     return this.json(item)
   }
@@ -478,11 +554,15 @@ class ProductsService extends Service {
     const item = await this.app.model.Product.findByPk(id)
     if (!item) return null
 
-    const imageId = item.imageId
+    const imageIds = Array.isArray(item.imageIds)
+      ? item.imageIds.map(Number)
+      : item.imageId
+        ? [Number(item.imageId)]
+        : []
     await this.log('删除产品', item)
     await item.destroy()
 
-    if (imageId) await this.removeImage(imageId)
+    await Promise.all(imageIds.map((imageId) => this.removeImage(imageId)))
 
     return true
   }

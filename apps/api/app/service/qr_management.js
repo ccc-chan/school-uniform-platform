@@ -24,12 +24,12 @@ const itemFields = `q.id, q.code, q.status AS qrStatus, q.disabled,
   p.production_unit_address AS productionUnitAddress,
   p.production_unit_contact AS productionUnitContact,
   p.production_unit_license AS productionUnitLicense,
-  c.name AS companyName, c.english_name AS companyEnglishName,
+  c.name AS companyName, c.brand_name AS companyEnglishName,
   c.credit_code AS companyCreditCode,
   c.legal_representative AS companyLegalRepresentative,
   c.industry AS companyIndustry, c.region AS companyRegion,
   c.address AS companyAddress, c.contact_phone AS companyContactPhone,
-  b.school_name AS schoolName, b.class_name AS className,
+  b.school_id AS schoolId, b.school_name AS schoolName, b.class_name AS className,
   b.student_name AS studentName, b.student_gender AS studentGender,
   b.grade, b.student_no AS studentNo, b.parent_name AS parentName,
   b.parent_relation AS parentRelation,
@@ -41,6 +41,7 @@ function itemJson(item) {
   return {
     ...item,
     id: Number(item.id),
+    schoolId: item.schoolId == null ? null : Number(item.schoolId),
     disabled: Boolean(item.disabled),
     version: Number(item.version),
     scanCount: Number(item.scanCount),
@@ -63,6 +64,7 @@ class QrManagementService extends Service {
     // LOCATE 按字面片段匹配；用户输入的 % 和 _ 不会变成通配符。
     for (const [key, column] of [
       ['code', 'q.code'],
+      ['productionBatch', 'q.production_batch'],
       ['studentName', 'b.student_name'],
       ['phone', 'b.phone'],
     ]) {
@@ -211,8 +213,13 @@ class QrManagementService extends Service {
         fail('绑定信息已被其他人修改，请刷新列表后重试', 409)
       }
       if (!existing && !value.phone) fail('首次绑定必须填写手机号')
+      const [school] = await this.ctx.service.schools.enabled(
+        [value.schoolId],
+        transaction,
+      )
       const payload = {
-        schoolName: value.schoolName,
+        schoolId: school.id,
+        schoolName: school.name,
         className: value.className,
         studentName: value.studentName,
         parentName: value.parentName,

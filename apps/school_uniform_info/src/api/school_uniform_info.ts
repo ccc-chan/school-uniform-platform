@@ -17,7 +17,7 @@ export interface StudentBinding {
 
 export interface StudentBindingInput {
   studentName: string
-  schoolName: string
+  schoolId: number
   studentNo: string
   grade: string
   className: string
@@ -75,6 +75,7 @@ export interface SchoolUniformInfo {
   productName: string | null
   brandName: string | null
   productImageUrl?: string | null
+  productImageUrls: string[]
   category: string | null
   season: string | null
   style: string | null

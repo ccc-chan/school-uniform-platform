@@ -2,6 +2,7 @@
 
 module.exports = (app) => app.model.define('QrStudentBinding', {
   qrCodeId: { type: app.Sequelize.BIGINT.UNSIGNED, primaryKey: true, field: 'qr_code_id' },
+  schoolId: { type: app.Sequelize.BIGINT.UNSIGNED, field: 'school_id' },
   schoolName: { type: app.Sequelize.STRING(100), field: 'school_name' },
   className: { type: app.Sequelize.STRING(100), field: 'class_name' },
   studentName: { type: app.Sequelize.STRING(100), field: 'student_name' },

@@ -1,21 +1,43 @@
 <script setup lang="ts">
-import { InboxOutlined } from '@ant-design/icons-vue'
+import { InboxOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import type { CascaderProps } from 'ant-design-vue'
 import message from 'ant-design-vue/es/message'
 import { pcaTextArr } from 'element-china-area-data'
-import { createCompany, updateCompany, type Company, type CompanyInput } from '@/api/companies'
+import { checkCompanyCode, createCompany, getCompanyLogo, updateCompany, type Company, type CompanyInput } from '@/api/companies'
 
 const props = defineProps<{ open: boolean; company: Company | null }>()
 const emit = defineEmits<{ close: []; saved: [] }>()
 const saving = shallowRef(false)
+const checkingCode = shallowRef(false)
+const codeExists = shallowRef(false)
 const regionPath = shallowRef<string[]>([])
-const empty = (): CompanyInput => ({ name: '', englishName: '', creditCode: '', legalRepresentative: '', industry: '', region: '', address: '', contactPhone: '', license: null })
+const logoPreviewUrl = shallowRef('')
+const companyImageTypes = ['image/jpeg', 'image/png', 'image/webp']
+const empty = (): CompanyInput => ({ code: '', name: '', brandName: '', creditCode: '', legalRepresentative: '', region: '', address: '', contactPhone: '', introduction: '', logo: null, license: null })
 const form = reactive<CompanyInput>(empty())
 const isEdit = computed(() => Boolean(props.company))
-watch(() => [props.open, props.company] as const, ([open, company]) => {
+let codeCheckTimer: ReturnType<typeof setTimeout> | undefined
+let codeCheckSequence = 0
+function clearLogoPreview() {
+  if (logoPreviewUrl.value) URL.revokeObjectURL(logoPreviewUrl.value)
+  logoPreviewUrl.value = ''
+}
+watch(() => [props.open, props.company] as const, async ([open, company]) => {
   if (!open) return
-  Object.assign(form, empty(), company ? { name: company.name, englishName: company.englishName, creditCode: company.creditCode, legalRepresentative: company.legalRepresentative, industry: company.industry, region: company.region, address: company.address, contactPhone: company.contactPhone } : {})
+  if (codeCheckTimer) clearTimeout(codeCheckTimer)
+  codeExists.value = false
+  checkingCode.value = false
+  clearLogoPreview()
+  Object.assign(form, empty(), company ? { code: company.code, name: company.name, brandName: company.brandName, creditCode: company.creditCode, legalRepresentative: company.legalRepresentative, region: company.region, address: company.address, contactPhone: company.contactPhone, introduction: company.introduction } : {})
   regionPath.value = form.region ? form.region.split(/\s*\/\s*/) : []
+  if (company?.logoFileId) {
+    try { logoPreviewUrl.value = URL.createObjectURL(await getCompanyLogo(company.id)) }
+    catch { logoPreviewUrl.value = '' }
+  }
+})
+onBeforeUnmount(() => {
+  clearLogoPreview()
+  if (codeCheckTimer) clearTimeout(codeCheckTimer)
 })
 type CascaderValue = Parameters<NonNullable<CascaderProps['onChange']>>[0]
 
@@ -24,15 +46,39 @@ function handleRegionChange(value: CascaderValue) {
   regionPath.value = path
   form.region = path.join(' / ')
 }
-function beforeUpload(file: File) {
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { message.error('营业执照仅支持 JPG、PNG、WEBP'); return false }
-  if (file.size > 10 * 1024 * 1024) { message.error('营业执照图片不能超过 10MB'); return false }
-  form.license = file
-  return false
+function handleLogoSelected(file: File) {
+  clearLogoPreview()
+  logoPreviewUrl.value = URL.createObjectURL(file)
+}
+function handleCompanyCode(value: string) {
+  form.code = value.toUpperCase().replace(/[^A-Z]/g, '')
+  if (codeCheckTimer) clearTimeout(codeCheckTimer)
+  codeExists.value = false
+  const code = form.code
+  if (!/^[A-Z]{2,32}$/.test(code)) return
+
+  const sequence = ++codeCheckSequence
+  codeCheckTimer = setTimeout(async () => {
+    checkingCode.value = true
+    try {
+      const result = await checkCompanyCode(code, props.company?.id)
+      if (sequence === codeCheckSequence && code === form.code) {
+        codeExists.value = result.exists
+      }
+    } catch (error) {
+      if (sequence === codeCheckSequence) {
+        message.error(error instanceof Error ? error.message : '公司编码检查失败')
+      }
+    } finally {
+      if (sequence === codeCheckSequence) checkingCode.value = false
+    }
+  }, 300)
 }
 async function submit() {
-  if (!form.name.trim() || !form.creditCode.trim() || !form.legalRepresentative.trim() || !form.region.trim() || !form.address.trim() || !form.contactPhone.trim()) { message.warning('请完整填写公司必填信息'); return }
+  if (!form.code.trim() || !form.name.trim() || !form.creditCode.trim() || !form.legalRepresentative.trim() || !form.region.trim() || !form.address.trim() || !form.contactPhone.trim()) { message.warning('请完整填写公司必填信息'); return }
   if (!props.company && !form.license) { message.warning('请上传营业执照'); return }
+  if (!/^[A-Z]{2,32}$/.test(form.code)) { message.warning('公司编码应为 2～32 位大写英文字母'); return }
+  if (checkingCode.value || codeExists.value) { message.warning(checkingCode.value ? '正在检查公司编码，请稍候' : '公司编码已存在'); return }
   if (!/^[0-9A-Z]{18}$/.test(form.creditCode.trim().toUpperCase())) { message.warning('统一社会信用代码应为18位数字或大写字母'); return }
   saving.value = true
   try {
@@ -71,14 +117,28 @@ async function submit() {
         </header>
 
         <div class="company-editor__grid">
+          <label class="company-editor__field">
+            <span>公司编码 <em>*</em></span>
+            <a-input
+              :value="form.code"
+              :maxlength="32"
+              :status="codeExists ? 'error' : undefined"
+              placeholder="请输入公司编码"
+              @update:value="handleCompanyCode(String($event))"
+            />
+            <small v-if="checkingCode">正在检查编码...</small>
+            <small v-else-if="codeExists" class="company-editor__field-error">公司编码已存在</small>
+            <small v-else>仅支持大写英文字母，输入小写将自动转为大写</small>
+          </label>
+
           <label class="company-editor__field company-editor__field--full">
             <span>企业名称 <em>*</em></span>
             <a-input v-model:value="form.name" placeholder="请输入营业执照上的企业名称" />
           </label>
 
           <label class="company-editor__field">
-            <span>公司英文名称</span>
-            <a-input v-model:value="form.englishName" placeholder="请输入英文名称（选填）" />
+            <span>品牌名称</span>
+            <a-input v-model:value="form.brandName" placeholder="请输入品牌名称（选填）" />
           </label>
 
           <label class="company-editor__field">
@@ -95,14 +155,36 @@ async function submit() {
             <a-input v-model:value="form.legalRepresentative" placeholder="请输入法人姓名" />
           </label>
 
-          <label class="company-editor__field">
-            <span>所属行业</span>
-            <a-input v-model:value="form.industry" placeholder="如：纺织服装制造" />
-          </label>
-
           <label class="company-editor__field company-editor__field--full">
             <span>企业联系电话 <em>*</em></span>
             <a-input v-model:value="form.contactPhone" placeholder="请输入企业联系电话" />
+          </label>
+        </div>
+
+        <div class="company-editor__profile-grid">
+          <label class="company-editor__field">
+            <span>品牌 Logo</span>
+            <FileUpload
+              v-model:file="form.logo"
+              mode="custom"
+              :auto-upload="false"
+              :allowed-types="companyImageTypes"
+              accept="image/jpeg,image/png,image/webp"
+              :max-size-mb="2"
+              invalid-type-message="品牌 Logo 仅支持 JPG、PNG、WEBP"
+              @select="handleLogoSelected"
+            >
+              <span class="company-editor__logo-upload">
+                <img v-if="logoPreviewUrl" :src="logoPreviewUrl" alt="品牌 Logo 预览" />
+                <PlusOutlined v-else />
+              </span>
+            </FileUpload>
+            <small>建议上传正方形图片，支持 JPG、PNG、WEBP，最大 2MB</small>
+          </label>
+
+          <label class="company-editor__field">
+            <span>企业介绍</span>
+            <a-textarea v-model:value="form.introduction" :maxlength="2000" :rows="5" show-count placeholder="请输入企业介绍（选填）" />
           </label>
         </div>
       </section>
@@ -119,10 +201,15 @@ async function submit() {
         <label class="company-editor__upload-label">
           营业执照 <em v-if="!company?.licenseFileId">*</em>
         </label>
-        <a-upload-dragger
-          :before-upload="beforeUpload"
-          :show-upload-list="false"
+        <FileUpload
+          v-model:file="form.license"
+          mode="custom"
+          dragger
+          :auto-upload="false"
+          :allowed-types="companyImageTypes"
           accept="image/jpeg,image/png,image/webp"
+          :max-size-mb="10"
+          invalid-type-message="营业执照仅支持 JPG、PNG、WEBP"
         >
           <div class="company-editor__upload">
             <span class="company-editor__upload-icon">
@@ -147,7 +234,7 @@ async function submit() {
               </p>
             </div>
           </div>
-        </a-upload-dragger>
+        </FileUpload>
       </section>
 
       <section class="company-editor__section">
@@ -222,6 +309,10 @@ async function submit() {
   font-weight: 800;
 }
 
+.company-editor__field-error {
+  color: #ef4444 !important;
+}
+
 .company-editor__drawer-title div {
   display: flex;
   flex-direction: column;
@@ -285,6 +376,42 @@ async function submit() {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px 16px;
+}
+
+.company-editor__profile-grid {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 18px 16px;
+  margin-top: 18px;
+}
+
+.company-editor__field small {
+  color: #8a96a8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.company-editor__logo-upload {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px dashed #cfd9e8;
+  border-radius: 8px;
+  color: #64748b;
+  background: #f8faff;
+}
+
+.company-editor__logo-upload:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.company-editor__logo-upload img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .company-editor__field {
@@ -416,6 +543,10 @@ async function submit() {
   }
 
   .company-editor__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .company-editor__profile-grid {
     grid-template-columns: 1fr;
   }
 
