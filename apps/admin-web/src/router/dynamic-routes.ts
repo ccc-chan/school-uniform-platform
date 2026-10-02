@@ -19,6 +19,17 @@ const RolePermissionsView = () =>
   import('@/views/system/RolePermissionsView.vue')
 const OperationLogsView = () => import('@/views/system/OperationLogsView.vue')
 
+const productDetailRoute: RouteRecordRaw = {
+  path: 'products/:id',
+  name: 'product-detail',
+  component: ProductDetailView,
+  meta: {
+    title: '产品详情',
+    requiresAuth: true,
+    requiredPermission: 'product.view',
+  },
+}
+
 const definitions: Record<string, RouteRecordRaw[]> = {
   shortcut_dashboard: [
     {
@@ -53,17 +64,6 @@ const definitions: Record<string, RouteRecordRaw[]> = {
         menuCode: 'shortcut_products',
         requiredPermission: 'product.edit',
         breadcrumb: [{ title: '产品管理', path: '/products' }],
-      },
-    },
-    {
-      path: 'products/:id',
-      name: 'product-detail',
-      component: ProductDetailView,
-      meta: {
-        title: '产品详情',
-        requiresAuth: true,
-        menuCode: 'shortcut_products',
-        requiredPermission: 'product.view',
       },
     },
     {
@@ -193,6 +193,15 @@ export function syncDynamicRoutes(router: Router, menuCodes: string[]) {
     if (router.hasRoute(name)) router.removeRoute(name)
   }
   registeredNames.clear()
+
+  const canAccessProductDetail = menuCodes.some((code) =>
+    ['shortcut_products', 'shortcut_production'].includes(code),
+  )
+
+  if (canAccessProductDetail) {
+    router.addRoute('admin', productDetailRoute)
+    registeredNames.add(String(productDetailRoute.name))
+  }
 
   for (const code of menuCodes) {
     for (const route of definitions[code] || []) {

@@ -2,7 +2,7 @@
 import { productCategoryOptions, productSchoolStageOptions, type Product } from '@/api/products'
 
 const props = defineProps<{ items: readonly Product[]; loading: boolean; permissions: readonly string[]; canEdit: boolean; canStatus: boolean; canDelete: boolean }>()
-const emit = defineEmits<{ view: [product: Product]; edit: [product: Product]; toggle: [product: Product]; delete: [product: Product] }>()
+const emit = defineEmits<{ edit: [product: Product]; toggle: [product: Product]; delete: [product: Product] }>()
 const categoryLabels = Object.fromEntries(productCategoryOptions.map((item) => [item.value, item.label]))
 const schoolStageLabels = Object.fromEntries(productSchoolStageOptions.map((item) => [item.value, item.label]))
 const hasPermission = (code: string) => props.permissions.includes(code) || ((code.endsWith('.view') || code.includes('.field.')) && props.permissions.includes('view'))
@@ -55,7 +55,6 @@ const hasPermission = (code: string) => props.permissions.includes(code) || ((co
           <span v-else />
 
           <div class="product-card__actions">
-            <a-button type="link" size="small" @click="emit('view', product)">详情</a-button>
             <a-button v-if="canEdit" type="link" size="small" @click="emit('edit', product)">编辑</a-button>
             <a-button v-if="canStatus" type="link" size="small" @click="emit('toggle', product)">
               {{ product.status === 'enabled' ? '停用' : '启用' }}

@@ -43,7 +43,6 @@ const safe = async (action: () => Promise<void>, fallback: string) => {
 }
 const changePage = (value: number) =>
   safe(() => setPage(value), '加载失败')
-const view = (p: Product) => router.push(`/products/${p.id}`)
 
 function openCreateDrawer() {
   editingProductId.value = null
@@ -147,7 +146,6 @@ onMounted(() => safe(load, '产品数据加载失败'))
         :can-edit="has('product.edit')"
         :can-status="has('product.status')"
         :can-delete="has('product.delete')"
-        @view="view"
         @edit="edit"
         @toggle="toggle"
         @delete="destroy"

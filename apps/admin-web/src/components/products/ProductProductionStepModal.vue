@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import DatePicker from 'ant-design-vue/es/date-picker'
 import message from 'ant-design-vue/es/message'
-import {
-  type ProductProductionStepInput,
-  type ProductProductionStepStatus,
-} from '@/api/products'
+import type { ProductProductionStepInput } from '@/api/products'
 import { getProductionOptions } from '@/api/production'
 
 const open = defineModel<boolean>('open', { required: true })
@@ -34,18 +31,7 @@ const form = reactive({
   operatorName: '',
   startedAt: '',
   completedAt: '',
-  status: 'completed' as ProductProductionStepStatus,
-  notes: '',
 })
-
-const statusOptions: Array<{
-  label: string
-  value: ProductProductionStepStatus
-}> = [
-  { label: '已完成', value: 'completed' },
-  { label: '进行中', value: 'in_progress' },
-  { label: '待开始', value: 'pending' },
-]
 
 function reset() {
   form.processId = undefined
@@ -53,8 +39,6 @@ function reset() {
   form.operatorName = ''
   form.startedAt = ''
   form.completedAt = ''
-  form.status = 'completed'
-  form.notes = ''
   photo.value = null
 }
 
@@ -126,8 +110,8 @@ function submit() {
     operatorName: form.operatorName.trim(),
     startedAt: form.startedAt,
     completedAt: form.completedAt,
-    status: form.status,
-    notes: form.notes.trim(),
+    status: 'completed',
+    notes: '',
     photo: photo.value,
   })
 }
@@ -209,34 +193,6 @@ watch(open, (visible) => {
             />
           </section>
         </div>
-
-        <section class="production-step-modal__field">
-          <label>环节状态</label>
-          <div class="production-step-modal__statuses">
-            <label
-              v-for="item in statusOptions"
-              :key="item.value"
-              :class="{ active: form.status === item.value }"
-            >
-              <input
-                v-model="form.status"
-                type="radio"
-                :value="item.value"
-              />
-              <span>{{ item.label }}</span>
-            </label>
-          </div>
-        </section>
-
-        <section class="production-step-modal__field">
-          <label>备注 <small>（可选）</small></label>
-          <a-textarea
-            v-model:value="form.notes"
-            :maxlength="500"
-            :rows="4"
-            placeholder="添加备注信息..."
-          />
-        </section>
 
         <section class="production-step-modal__field">
           <label>现场照片 <small>（可选）</small></label>
@@ -353,46 +309,6 @@ watch(open, (visible) => {
   padding-inline: 16px;
 }
 
-.production-step-modal__field :deep(textarea.ant-input) {
-  min-height: 124px;
-  resize: none;
-}
-
-.production-step-modal__statuses {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.production-step-modal__statuses label {
-  display: flex;
-  min-width: 150px;
-  height: 58px;
-  padding: 0 22px;
-  cursor: pointer;
-  align-items: center;
-  gap: 12px;
-  border: 2px solid #dfe6ef;
-  border-radius: 13px;
-  background: #fff;
-  transition:
-    border-color 0.2s,
-    background-color 0.2s,
-    color 0.2s;
-}
-
-.production-step-modal__statuses label.active {
-  border-color: #b9d8ff;
-  color: #2563eb;
-  background: #f1f7ff;
-}
-
-.production-step-modal__statuses input {
-  width: 18px;
-  height: 18px;
-  accent-color: #2563eb;
-}
-
 .production-step-modal__field :deep(.ant-upload-drag) {
   min-height: 154px;
   border-color: #d8e2ee;
@@ -449,13 +365,5 @@ watch(open, (visible) => {
     grid-template-columns: 1fr;
   }
 
-  .production-step-modal__statuses {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .production-step-modal__statuses label {
-    width: 100%;
-  }
 }
 </style>

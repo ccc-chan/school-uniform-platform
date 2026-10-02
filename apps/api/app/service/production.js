@@ -277,8 +277,14 @@ class ProductionService extends Service {
     }
     const data = { ...base, ...values[resource] }
     if (permissions) {
+      const hasPermission = (code) =>
+        permissions.includes(code) ||
+        permissions.includes(
+          this.ctx.service.auth.genericPermissionCode(code),
+        )
+
       for (const [key, permission] of Object.entries(fieldPermissions)) {
-        if (!permissions.includes(permission)) delete data[key]
+        if (!hasPermission(permission)) delete data[key]
       }
     }
     return data

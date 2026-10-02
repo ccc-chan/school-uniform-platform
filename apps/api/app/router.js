@@ -42,6 +42,9 @@ module.exports = (app) => {
   const productMenu = app.middleware.menuPermission({
     code: 'shortcut_products',
   })
+  const productDetailMenu = app.middleware.menuPermission({
+    codes: ['shortcut_products', 'shortcut_production'],
+  })
   const productPermission = (code) =>
     app.middleware.operationPermission({ code })
   const companyMenu = app.middleware.menuPermission({ code: 'shortcut_companies' })
@@ -150,14 +153,14 @@ module.exports = (app) => {
   router.get(
     '/api/v1/products/images/:id',
     auth,
-    productMenu,
+    productDetailMenu,
     productPermission('product.field.image'),
     controller.products.image,
   )
   router.get(
     '/api/v1/products/:id/detail',
     auth,
-    productMenu,
+    productDetailMenu,
     productPermission('product.view'),
     controller.products.detail,
   )
