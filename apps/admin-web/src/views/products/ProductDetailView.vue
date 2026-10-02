@@ -327,6 +327,7 @@ watch(id, () => load(null), { immediate: true })
       <ProductBatchCreateModal
         v-model:open="batchEditorOpen"
         :product-id="detail.product.id"
+        :product-name="detail.product.name || '未命名产品'"
         @created="handleBatchCreated"
       />
 

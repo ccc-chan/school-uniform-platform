@@ -37,6 +37,11 @@ export interface ProductionItem {
   batchNo?: string
   orderId?: number
   productionDate?: string
+  fabricComponents?: readonly string[]
+  fabricRatio?: string
+  qualityReportFileId?: number | null
+  qualityReportFileName?: string
+  qualityReportFileSize?: number
   factoryName?: string
   responsibleEmployeeId?: number
   responsibleEmployeeName?: string
@@ -61,6 +66,18 @@ export interface ProductionItem {
 }
 
 export type ProductionInput = Record<string, unknown>
+
+export interface ProductionBatchCreate {
+  quantity: number
+  productionDate: string
+  executionStandard: string
+  safetyCategory: string
+  fabricItems: Array<{
+    component: string
+    ratio: string
+  }>
+  qualityReport: File | null
+}
 
 export interface ProductionOrderFilters {
   keyword: string
@@ -110,6 +127,34 @@ export function createProductionItem(
     method: 'POST',
     body: JSON.stringify(data),
   })
+}
+
+export function createProductionOrderBatch(
+  orderId: number,
+  data: ProductionBatchCreate,
+) {
+  const body = new FormData()
+  const { qualityReport, ...payload } = data
+  body.append('payload', JSON.stringify(payload))
+  if (qualityReport) body.append('file', qualityReport)
+  return request<ProductionItem>(
+    `/api/v1/production/orders/${orderId}/batches`,
+    { method: 'POST', body },
+  )
+}
+
+export function createProductionProductBatch(
+  productId: number,
+  data: ProductionBatchCreate,
+) {
+  const body = new FormData()
+  const { qualityReport, ...payload } = data
+  body.append('payload', JSON.stringify(payload))
+  if (qualityReport) body.append('file', qualityReport)
+  return request<ProductionItem>(
+    `/api/v1/production/products/${productId}/batches`,
+    { method: 'POST', body },
+  )
 }
 
 export function updateProductionItem(

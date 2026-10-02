@@ -14,6 +14,21 @@ const batchStepPhotoExtensions = {
   'image/webp': '.webp',
 }
 
+const batchReportExtensions = {
+  'application/pdf': '.pdf',
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+}
+
+const batchExecutionStandards = new Set([
+  'GB/T 31888-2015《中小学生校服》',
+])
+
+const batchSafetyCategories = new Set([
+  'GB 18401-2010《国家纺织产品基本安全技术规范》B类',
+  'GB 31701-2015《婴幼儿及儿童纺织产品安全技术规范》B类',
+])
+
 const statuses = {
   orders: new Set([
     'pending',
@@ -122,6 +137,11 @@ class ProductionService extends Service {
           as: 'responsibleEmployee',
           attributes: ['id', 'name'],
         },
+        {
+          model: model.File,
+          as: 'qualityReportFile',
+          attributes: ['id', 'originalName', 'size'],
+        },
       ]
     if (resource === 'records')
       return [
@@ -188,6 +208,30 @@ class ProductionService extends Service {
         productName: item.product?.name || '',
         quantity: Number(item.quantity),
         productionDate: item.productionDate,
+        executionStandard: item.executionStandard || '',
+        safetyCategory: item.safetyCategory || '',
+        fabricComponents: Array.isArray(item.fabricComponents)
+          ? item.fabricComponents
+          : [],
+        fabricRatio: item.fabricRatio || '',
+        fabricItems: Array.isArray(item.fabricComponents)
+          ? item.fabricComponents.map((entry, index) =>
+              typeof entry === 'string'
+                ? {
+                    component: entry,
+                    ratio: index === 0 ? item.fabricRatio || '' : '',
+                  }
+                : {
+                    component: String(entry?.component || ''),
+                    ratio: String(entry?.ratio || ''),
+                  },
+            )
+          : [],
+        qualityReportFileId: item.qualityReportFileId
+          ? Number(item.qualityReportFileId)
+          : null,
+        qualityReportFileName: item.qualityReportFile?.originalName || '',
+        qualityReportFileSize: Number(item.qualityReportFile?.size || 0),
         factoryName: item.factoryName || '',
         responsibleEmployeeId: item.responsibleEmployeeId
           ? Number(item.responsibleEmployeeId)
@@ -289,6 +333,23 @@ class ProductionService extends Service {
     const sequence = Number(String(latest?.orderNo || '').slice(-2)) + 1
     if (sequence > 99) invalid('当日工单数量已达上限')
     return `${prefix}${String(sequence).padStart(2, '0')}`
+  }
+
+  async batchNumber(transaction) {
+    const now = new Date()
+    const prefix = `PC${String(now.getFullYear()).slice(-2)}${String(
+      now.getMonth() + 1,
+    ).padStart(2, '0')}`
+    const latest = await this.app.model.ProductionBatch.findOne({
+      where: { batchNo: { [Op.like]: `${prefix}%` } },
+      attributes: ['batchNo'],
+      order: [['batchNo', 'DESC']],
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })
+    const sequence = Number(String(latest?.batchNo || '').slice(prefix.length)) + 1
+    if (sequence > 999) invalid('当月生产批次数量已达上限')
+    return `${prefix}${String(sequence).padStart(3, '0')}`
   }
 
   where(resource, query) {
@@ -637,6 +698,137 @@ class ProductionService extends Service {
       return Number(item.id)
     })
     return this.get(resource, id)
+  }
+
+  async createOrderBatch(orderId, value, file = null) {
+    return this.createScopedBatch({ orderId }, value, file)
+  }
+
+  async createProductBatch(productId, value, file = null) {
+    return this.createScopedBatch({ productId }, value, file)
+  }
+
+  async createScopedBatch(scope, value, file = null) {
+    const quantity = positiveInteger(value.quantity, '生产数量')
+    const productionDate = validDate(value.productionDate, '生产日期')
+    const executionStandard = required(value.executionStandard, '执行标准', 160)
+    const safetyCategory = required(value.safetyCategory, '安全类别', 255)
+    if (!batchExecutionStandards.has(executionStandard)) invalid('执行标准无效')
+    if (!batchSafetyCategories.has(safetyCategory)) invalid('安全类别无效')
+
+    const fabricItems = Array.isArray(value.fabricItems)
+      ? value.fabricItems
+        .map((item) => ({
+          component: String(item?.component || '').trim(),
+          ratio: String(item?.ratio || '').trim(),
+        }))
+        .filter((item) => item.component || item.ratio)
+        .slice(0, 12)
+      : []
+    if (fabricItems.some((item) => !item.component || !item.ratio)) {
+      invalid('每行面料成分与面料配比需同时填写')
+    }
+    if (fabricItems.some((item) => item.component.length > 40)) {
+      invalid('单个面料成分不能超过 40 个字符')
+    }
+    if (fabricItems.some((item) => item.ratio.length > 60)) {
+      invalid('单个面料配比不能超过 60 个字符')
+    }
+
+    let reportStat = null
+    let reportPath = ''
+    let reportStoredName = ''
+    if (file) {
+      const extension = batchReportExtensions[file.mime]
+      if (!extension) invalid('质检报告仅支持 PNG、JPG、JPEG 或 PDF')
+      reportStat = await fsp.stat(file.filepath)
+      if (reportStat.size > 10 * 1024 * 1024) invalid('质检报告不能超过 10MB')
+      reportStoredName = `${crypto.randomUUID()}${extension}`
+      const uploadDir = path.join(this.app.baseDir, 'storage', 'uploads')
+      reportPath = path.join(uploadDir, reportStoredName)
+      await fsp.mkdir(uploadDir, { recursive: true })
+      await fsp.copyFile(file.filepath, reportPath)
+    }
+
+    try {
+      const id = await this.app.model.transaction(async (transaction) => {
+        const order = scope.orderId
+          ? await this.app.model.ProductionOrder.findByPk(scope.orderId, {
+              transaction,
+              lock: transaction.LOCK.UPDATE,
+            })
+          : null
+        if (scope.orderId && !order) invalid('生产工单不存在', 404)
+        const productId = order?.productId || positiveInteger(scope.productId, '产品')
+        if (!order && !(await this.app.model.Product.findByPk(productId, { transaction }))) {
+          invalid('产品不存在', 404)
+        }
+
+        let qualityReportFileId = null
+        if (file && reportStat) {
+          const report = await this.app.model.File.create({
+            originalName: file.filename,
+            storedName: reportStoredName,
+            mimeType: file.mime,
+            category: 'production_batch_report',
+            size: reportStat.size,
+            uploadedBy: this.ctx.state.user.id,
+          }, { transaction })
+          qualityReportFileId = Number(report.id)
+        }
+
+        const item = await this.app.model.ProductionBatch.create({
+          batchNo: await this.batchNumber(transaction),
+          orderId: order ? Number(order.id) : null,
+          orderNo: order?.orderNo || '',
+          productId: Number(productId),
+          quantity,
+          productionDate,
+          executionStandard,
+          safetyCategory,
+          fabricComponents: fabricItems,
+          fabricRatio: '',
+          qualityReportFileId,
+          factoryName: '',
+          responsibleEmployeeId: null,
+          responsibleEmployeeName: '',
+          status: 'planned',
+          notes: '',
+          createdBy: this.ctx.state.user.id,
+        }, { transaction })
+        await this.log('工单新增批次', 'batches', item, {
+          orderId: order ? Number(order.id) : null,
+          productId: Number(productId),
+          batchNo: item.batchNo,
+          quantity,
+          qualityReportFileId,
+        }, transaction)
+        return Number(item.id)
+      })
+      return this.get('batches', id)
+    } catch (error) {
+      if (reportPath) await fsp.unlink(reportPath).catch(() => undefined)
+      throw error
+    }
+  }
+
+  async getBatchReportFile(id) {
+    const batch = await this.app.model.ProductionBatch.findByPk(id)
+    if (!batch?.qualityReportFileId) return null
+    const item = await this.app.model.File.findOne({
+      where: {
+        id: batch.qualityReportFileId,
+        category: 'production_batch_report',
+      },
+    })
+    if (!item) return null
+    const filePath = path.join(this.app.baseDir, 'storage', 'uploads', item.storedName)
+    try {
+      await fsp.access(filePath)
+      return { item, filePath }
+    } catch {
+      return null
+    }
   }
 
   async update(resource, id, value) {

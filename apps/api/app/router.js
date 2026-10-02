@@ -311,6 +311,20 @@ module.exports = (app) => {
     productionPermission('delete'),
     controller.production.destroy,
   )
+  router.post(
+    '/api/v1/production/orders/:id/batches',
+    auth,
+    productionMenu,
+    productionPermission('production.batch.manage'),
+    controller.production.createOrderBatch,
+  )
+  router.post(
+    '/api/v1/production/products/:id/batches',
+    auth,
+    productionMenu,
+    productionPermission('production.batch.manage'),
+    controller.production.createProductBatch,
+  )
   router.get(
     '/api/v1/production/batches',
     auth,
@@ -338,6 +352,13 @@ module.exports = (app) => {
     productionMenu,
     productionPermission('production.batch.manage'),
     controller.production.updateStatus,
+  )
+  router.get(
+    '/api/v1/production/batches/:id/report',
+    auth,
+    productionMenu,
+    productionPermission('production.view'),
+    controller.production.batchReportFile,
   )
   router.post(
     '/api/v1/production/batches/:id/steps',

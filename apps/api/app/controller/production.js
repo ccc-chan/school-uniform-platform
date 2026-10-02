@@ -97,6 +97,64 @@ class ProductionController extends Controller {
     this.ok(await this.ctx.service.production.options())
   }
 
+  async createOrderBatch() {
+    const file = this.ctx.request.files?.[0]
+    let value = this.ctx.request.body || {}
+    if (value.payload) {
+      try {
+        value = JSON.parse(value.payload)
+      } catch {
+        value = {}
+      }
+    }
+    try {
+      await this.run(async () => {
+        const item = await this.ctx.service.production.createOrderBatch(
+          Number(this.ctx.params.id),
+          value,
+          file,
+        )
+        this.ok(item, '批次创建成功')
+      })
+    } finally {
+      await this.ctx.cleanupRequestFiles()
+    }
+  }
+
+  async createProductBatch() {
+    const file = this.ctx.request.files?.[0]
+    let value = this.ctx.request.body || {}
+    if (value.payload) {
+      try {
+        value = JSON.parse(value.payload)
+      } catch {
+        value = {}
+      }
+    }
+    try {
+      await this.run(async () => {
+        const item = await this.ctx.service.production.createProductBatch(
+          Number(this.ctx.params.id),
+          value,
+          file,
+        )
+        this.ok(item, '批次创建成功')
+      })
+    } finally {
+      await this.ctx.cleanupRequestFiles()
+    }
+  }
+
+  async batchReportFile() {
+    const result = await this.ctx.service.production.getBatchReportFile(
+      Number(this.ctx.params.id),
+    )
+    if (!result) return this.fail('质检报告不存在', 404)
+    this.ctx.attachment(result.item.originalName)
+    this.ctx.type = result.item.mimeType
+    this.ctx.body = require('node:fs').createReadStream(result.filePath)
+  }
+
   async createBatchStep() {
     const file = this.ctx.request.files?.[0]
     let value = this.ctx.request.body || {}

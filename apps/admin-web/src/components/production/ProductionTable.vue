@@ -2,8 +2,8 @@
 import type { ProductionItem } from '@/api/production'
 import { productCategoryOptions, productQrCodeTypeOptions } from '@/api/products'
 
-defineProps<{ items: readonly ProductionItem[]; loading: boolean; canEdit: boolean; canDelete: boolean; canChangeStatus: boolean }>()
-const emit = defineEmits<{ detail: [item: ProductionItem]; edit: [item: ProductionItem]; delete: [item: ProductionItem]; trace: [item: ProductionItem]; status: [value: { item: ProductionItem; status: string }] }>()
+defineProps<{ items: readonly ProductionItem[]; loading: boolean; canEdit: boolean; canDelete: boolean; canChangeStatus: boolean; canManageBatch: boolean }>()
+const emit = defineEmits<{ detail: [item: ProductionItem]; edit: [item: ProductionItem]; delete: [item: ProductionItem]; trace: [item: ProductionItem]; createBatch: [item: ProductionItem]; status: [value: { item: ProductionItem; status: string }] }>()
 const categoryLabels = Object.fromEntries(productCategoryOptions.map(item => [item.value, item.label]))
 const qrLabels = Object.fromEntries(productQrCodeTypeOptions.map(item => [item.value, item.label]))
 const statusOptions = [{ label: '待生产', value: 'pending' }, { label: '生产中', value: 'producing' }, { label: '已完工', value: 'completed' }, { label: '已入库', value: 'warehoused' }]
@@ -22,7 +22,7 @@ const inspectionLabels: Record<string, string> = { pending: '待审核', approve
         <td>{{ categoryLabels[item.category || ''] || '—' }}<div class="subtext">{{ qrLabels[item.qrCodeType || ''] || '' }}</div></td><td><span class="line-clamp">{{ item.safetyCategory || '—' }}</span></td><td><span class="line-clamp">{{ item.executionStandard || '—' }}</span></td><td><span class="line-clamp">{{ item.fabricSummary || '—' }}</span></td>
         <td><a-tag :color="item.qualityStatus === 'qualified' ? 'green' : item.qualityStatus === 'unqualified' ? 'red' : 'default'">{{ qualityLabels[item.qualityStatus || 'missing'] || item.qualityStatus }}</a-tag></td>
         <td><strong>{{ Number(item.productionQuantity || 0).toLocaleString('zh-CN') }}</strong> 件<div class="subtext">{{ item.batchCount || 0 }} 个批次</div></td><td>{{ inspectionLabels[item.inspectionStatus || 'missing'] || item.inspectionStatus }}</td>
-        <td><a-button type="link" size="small" @click="emit('trace', item)">查看追溯</a-button></td><td><a-select v-if="canChangeStatus" :value="item.status" :options="statusOptions" size="small" class="status-select" @change="emit('status', { item, status: String($event) })" /><span v-else>{{ statusOptions.find(option => option.value === item.status)?.label || '—' }}</span></td><td><div class="actions"><a-button type="link" size="small" @click="emit('detail', item)">详情</a-button><a-button v-if="canEdit" type="link" size="small" @click="emit('edit', item)">编辑</a-button><a-button v-if="canDelete" type="link" danger size="small" @click="emit('delete', item)">删除</a-button></div></td>
+        <td><a-button type="link" size="small" @click="emit('trace', item)">查看追溯</a-button></td><td><a-select v-if="canChangeStatus" :value="item.status" :options="statusOptions" size="small" class="status-select" @change="emit('status', { item, status: String($event) })" /><span v-else>{{ statusOptions.find(option => option.value === item.status)?.label || '—' }}</span></td><td><div class="actions"><a-button v-if="canManageBatch" type="link" size="small" @click="emit('createBatch', item)">新增批次</a-button><a-button type="link" size="small" @click="emit('detail', item)">详情</a-button><a-button v-if="canEdit" type="link" size="small" @click="emit('edit', item)">编辑</a-button><a-button v-if="canDelete" type="link" danger size="small" @click="emit('delete', item)">删除</a-button></div></td>
       </tr></tbody>
     </table></div>
   </a-spin>
