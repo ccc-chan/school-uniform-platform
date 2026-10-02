@@ -197,6 +197,32 @@ async function submit() {
             <span>企业联系电话 <em>*</em></span>
             <a-input v-model:value="form.contactPhone" placeholder="请输入企业联系电话" />
           </label>
+
+          <div class="company-editor__subsection-title">
+            <div>
+              <strong>经营地址</strong>
+              <small>选择行政区域并补充具体门牌地址</small>
+            </div>
+            <span>地址信息</span>
+          </div>
+
+          <label class="company-editor__field company-editor__field--region">
+            <span>所属地区 <em>*</em></span>
+            <a-cascader
+              :value="regionPath"
+              :options="pcaTextArr"
+              placeholder="请选择省 / 市 / 区"
+              @change="handleRegionChange"
+            />
+          </label>
+
+          <label class="company-editor__field company-editor__field--address">
+            <span>详细地址 <em>*</em></span>
+            <a-input
+              v-model:value="form.address"
+              placeholder="请输入街道、门牌号等详细地址"
+            />
+          </label>
         </div>
 
         <div class="company-editor__profile-grid">
@@ -275,32 +301,6 @@ async function submit() {
         </FileUpload>
       </section>
 
-      <section class="company-editor__section">
-        <header class="company-editor__section-header">
-          <div>
-            <h3>企业地址</h3>
-            <p>选择行政区域并补充具体门牌地址</p>
-          </div>
-          <span>经营地址</span>
-        </header>
-
-        <div class="company-editor__grid">
-          <label class="company-editor__field company-editor__field--full">
-            <span>所属地区 <em>*</em></span>
-            <a-cascader
-              :value="regionPath"
-              :options="pcaTextArr"
-              placeholder="请选择省 / 市 / 区"
-              @change="handleRegionChange"
-            />
-          </label>
-
-          <label class="company-editor__field company-editor__field--full">
-            <span>详细地址 <em>*</em></span>
-            <a-input v-model:value="form.address" placeholder="请输入街道、门牌号等详细地址" />
-          </label>
-        </div>
-      </section>
     </div>
 
     <template #footer>
@@ -633,6 +633,48 @@ async function submit() {
   grid-column: span 7;
 }
 
+.company-editor__subsection-title {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 1px solid #edf1f7;
+}
+
+.company-editor__subsection-title > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.company-editor__subsection-title strong {
+  color: #25324a;
+  font-size: 13px;
+}
+
+.company-editor__subsection-title small {
+  color: #8a96a8;
+  font-size: 11px;
+}
+
+.company-editor__subsection-title > span {
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #9a6700;
+  background: #fff7df;
+  font-size: 11px;
+}
+
+.company-editor__field--region {
+  grid-column: span 5;
+}
+
+.company-editor__field--address {
+  grid-column: span 7;
+}
+
 .company-editor__field > span,
 .company-editor__upload-label {
   color: #46546a;
@@ -767,7 +809,9 @@ async function submit() {
   .company-editor__field--brand,
   .company-editor__field--credit,
   .company-editor__field--legal,
-  .company-editor__field--phone {
+  .company-editor__field--phone,
+  .company-editor__field--region,
+  .company-editor__field--address {
     grid-column: 1 / -1;
   }
 
