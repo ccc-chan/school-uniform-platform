@@ -51,7 +51,7 @@ module.exports = (app) => {
   const qrcodePermission = (code) =>
     app.middleware.operationPermission({ code })
   const productionMenu = app.middleware.menuPermission({
-    code: 'shortcut_products',
+    code: 'shortcut_production',
   })
   const productionPermission = (code) =>
     app.middleware.operationPermission({ code })
@@ -134,6 +134,12 @@ module.exports = (app) => {
   router.get('/api/v1/companies/:id/license', auth, companyMenu, productPermission('view'), controller.companies.license)
   router.get('/api/v1/companies/:id/logo', auth, companyMenu, productPermission('view'), controller.companies.logo)
 
+  router.get(
+    '/api/v1/products/code-availability',
+    auth,
+    productMenu,
+    controller.products.codeAvailability,
+  )
   router.get(
     '/api/v1/products',
     auth,
@@ -297,6 +303,13 @@ module.exports = (app) => {
     productionMenu,
     productionPermission('production.order.status'),
     controller.production.updateStatus,
+  )
+  router.delete(
+    '/api/v1/production/orders/:id',
+    auth,
+    productionMenu,
+    productionPermission('delete'),
+    controller.production.destroy,
   )
   router.get(
     '/api/v1/production/batches',

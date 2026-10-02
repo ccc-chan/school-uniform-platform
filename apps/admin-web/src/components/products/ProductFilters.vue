@@ -10,9 +10,10 @@
 <script setup lang="ts">
 import {
   productCategoryOptions,
+  productSchoolStageOptions,
   type ProductCategory,
   type ProductFilters,
-  type ProductStatus,
+  type ProductSchoolStage,
 } from '@/api/products'
 import QueryFilterBar from '@/components/common/QueryFilterBar.vue'
 
@@ -67,26 +68,26 @@ function updateFilter<Key extends keyof ProductFilters>(
     </a-form-item>
     <a-form-item class="product-filters__item product-filters__item--select">
       <a-select
-        :value="filters.category || undefined"
+        :value="filters.schoolStage || undefined"
         allow-clear
-        placeholder="全部分类"
-        :options="productCategoryOptions"
+        placeholder="全部学段年级"
+        :options="productSchoolStageOptions"
         @update:value="
-          updateFilter('category', ($event ?? '') as ProductCategory | '')
+          updateFilter(
+            'schoolStage',
+            ($event ?? '') as ProductSchoolStage | '',
+          )
         "
       />
     </a-form-item>
     <a-form-item class="product-filters__item product-filters__item--select">
       <a-select
-        :value="filters.status || undefined"
+        :value="filters.category || undefined"
         allow-clear
-        placeholder="全部状态"
-        :options="[
-          { label: '已启用', value: 'enabled' },
-          { label: '已停用', value: 'disabled' },
-        ]"
+        placeholder="全部产品类型"
+        :options="productCategoryOptions"
         @update:value="
-          updateFilter('status', ($event ?? '') as ProductStatus | '')
+          updateFilter('category', ($event ?? '') as ProductCategory | '')
         "
       />
     </a-form-item>

@@ -5,11 +5,26 @@ import type { SchoolOption } from '@/api/schools'
 // 产品档案、图片及关联生产批次/二维码数据接口。
 export type ProductStatus = 'enabled' | 'disabled'
 export type ProductCategory =
-  | 'single_top'
-  | 'single_pants'
-  | 'single_outerwear'
+  | 'short_sleeve_top'
+  | 'long_sleeve_top'
+  | 'shorts'
+  | 'trousers'
+  | 'outerwear'
   | 'set'
+  | 'skirt'
+  | 'shirt'
+  | 'formalwear'
+  | 'tshirt'
   | 'accessory'
+export type ProductSchoolStage =
+  | 'universal'
+  | 'primary'
+  | 'junior_high'
+  | 'senior_high'
+  | 'secondary_vocational'
+  | 'higher_vocational'
+  | 'kindergarten'
+export type ProductGender = 'unisex' | 'male' | 'female'
 export type ProductQrCodeType = 'product' | 'batch' | 'school'
 export type ProductSeason =
   | 'spring'
@@ -37,6 +52,8 @@ export interface Product {
   code?: string
   name?: string
   category?: ProductCategory
+  schoolStage?: ProductSchoolStage
+  gender?: ProductGender
   qrCodeType?: ProductQrCodeType
   season?: ProductSeason
   status?: ProductStatus
@@ -126,33 +143,46 @@ export interface ProductInput {
   name: string
   code: string
   category: ProductCategory
-  qrCodeType: ProductQrCodeType
-  schoolIds: number[]
-  season: ProductSeason | ''
-  style: string
-  color: string
-  sizes: ProductSize[]
-  fabricInfo: string
-  executionStandard: string
-  washingInstructions: string
-  safetyCategory: string
-  companyId: number | null
+  schoolStage: ProductSchoolStage
+  gender: ProductGender
+  season: ProductSeason
+  /** @deprecated 仅供旧版未挂载表单组件保持类型兼容。 */
+  schoolIds?: number[]
   images: File[]
   retainedImageIds: number[]
 }
 export interface ProductFilters {
   keyword: string
+  schoolStage: ProductSchoolStage | ''
   category: ProductCategory | ''
-  qrCodeType: ProductQrCodeType | ''
-  status: ProductStatus | ''
 }
 export const productCategoryOptions = [
-  { label: '单上衣', value: 'single_top' },
-  { label: '单裤子', value: 'single_pants' },
-  { label: '单外套', value: 'single_outerwear' },
+  { label: '短袖上衣', value: 'short_sleeve_top' },
+  { label: '长袖上衣', value: 'long_sleeve_top' },
+  { label: '短裤子', value: 'shorts' },
+  { label: '长裤子', value: 'trousers' },
+  { label: '外套', value: 'outerwear' },
   { label: '套装', value: 'set' },
+  { label: '裙子', value: 'skirt' },
+  { label: '衬衫', value: 'shirt' },
+  { label: '礼服', value: 'formalwear' },
+  { label: 'T桖', value: 'tshirt' },
   { label: '饰品', value: 'accessory' },
 ] satisfies Array<{ label: string; value: ProductCategory }>
+export const productSchoolStageOptions = [
+  { label: '通用', value: 'universal' },
+  { label: '小学', value: 'primary' },
+  { label: '初中', value: 'junior_high' },
+  { label: '高中', value: 'senior_high' },
+  { label: '中职', value: 'secondary_vocational' },
+  { label: '高职', value: 'higher_vocational' },
+  { label: '幼儿园', value: 'kindergarten' },
+] satisfies Array<{ label: string; value: ProductSchoolStage }>
+export const productGenderOptions = [
+  { label: '通用款', value: 'unisex' },
+  { label: '男款', value: 'male' },
+  { label: '女款', value: 'female' },
+] satisfies Array<{ label: string; value: ProductGender }>
 export const productExecutionStandardOptions = [
   {
     label: 'GBT 31888-2015《中小学生校服》',
@@ -205,6 +235,16 @@ export const getProducts = (params: Record<string, string | number>) =>
   request<PageData<Product>>(`/api/v1/products?${qs(params)}`)
 export const getProduct = (id: number) =>
   request<Product>(`/api/v1/products/${id}`)
+export const checkProductCodeExists = (
+  code: string,
+  excludeId?: number | null,
+) =>
+  request<{ exists: boolean }>(
+    `/api/v1/products/code-availability?${qs({
+      code,
+      excludeId: excludeId || '',
+    })}`,
+  )
 export const getProductDetail = (id: number) =>
   request<ProductDetail>(`/api/v1/products/${id}/detail`)
 export const createProductBatchStep = (

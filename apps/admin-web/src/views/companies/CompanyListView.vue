@@ -22,9 +22,9 @@ onMounted(() => safe(load, '公司数据加载失败'))
 
 <template>
   <section class="company-page">
-    <header class="company-page__header"><div><h2 class="page-title">公司管理</h2><p>维护产品所属管理公司及企业资质信息</p></div><a-button v-if="has('create')" type="primary" @click="openEditor()">＋ 新增公司</a-button></header>
+    <header class="company-page__header"><div><h2 class="page-title">企业管理</h2><p>维护产品所属企业及主体资质信息</p></div><a-button v-if="has('create')" type="primary" @click="openEditor()">＋ 新增企业</a-button></header>
     <div class="company-page__card"><CompanyFilters :filters="filters" :loading="loading" @update:filters="setFilters" @search="safe(search, '查询失败')" @reset="safe(reset, '重置失败')" /></div>
-    <div class="company-page__card"><CompanyTable :items="tableItems" :loading="loading" :can-edit="has('edit')" :can-delete="has('delete')" @edit="openEditor" @toggle="toggle" @delete="destroy" /><div v-if="total" class="company-page__pagination"><span>共 {{ total }} 家公司</span><a-pagination :current="page" :page-size="pageSize" :total="total" @change="value => safe(() => setPage(value), '加载失败')" /></div></div>
+    <div class="company-page__card"><CompanyTable :items="tableItems" :loading="loading" :can-edit="has('edit')" :can-delete="has('delete')" @edit="openEditor" @toggle="toggle" @delete="destroy" /><div v-if="total" class="company-page__pagination"><span>共 {{ total }} 家企业</span><a-pagination :current="page" :page-size="pageSize" :total="total" @change="value => safe(() => setPage(value), '加载失败')" /></div></div>
     <CompanyEditorDrawer :open="editorOpen" :company="editing" @close="closeEditor" @saved="saved" />
   </section>
 </template>

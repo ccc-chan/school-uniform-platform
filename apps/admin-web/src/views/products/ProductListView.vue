@@ -9,7 +9,7 @@
 -->
 <script setup lang="ts">
 import message from 'ant-design-vue/es/message'
-import type { Product, ProductQrCodeType } from '@/api/products'
+import type { Product } from '@/api/products'
 import { useProducts } from '@/composables/useProducts'
 import { useAuthStore } from '@/stores/auth'
 import { confirmAction, confirmDisable } from '@/utils/modal'
@@ -40,10 +40,6 @@ const safe = async (action: () => Promise<void>, fallback: string) => {
   } catch (e) {
     message.error(e instanceof Error ? e.message : fallback)
   }
-}
-async function selectQrCodeType(value: ProductQrCodeType | '') {
-  setFilters({ qrCodeType: value })
-  await safe(search, '二维码类型筛选失败')
 }
 const changePage = (value: number) =>
   safe(() => setPage(value), '加载失败')
@@ -142,12 +138,6 @@ onMounted(() => safe(load, '产品数据加载失败'))
         @reset="safe(reset, '重置失败')"
       />
     </div>
-
-    <ProductQrTypeTabs
-      :value="filters.qrCodeType"
-      :loading="loading"
-      @select="selectQrCodeType"
-    />
 
     <div class="product-list-page__results">
       <ProductTable

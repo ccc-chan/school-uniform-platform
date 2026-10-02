@@ -24,6 +24,7 @@ module.exports = (app) => {
         type: app.Sequelize.STRING,
         field: 'school_stage',
       },
+      gender: app.Sequelize.STRING,
       price: app.Sequelize.DECIMAL(10, 2),
       status: app.Sequelize.STRING,
       description: app.Sequelize.STRING,

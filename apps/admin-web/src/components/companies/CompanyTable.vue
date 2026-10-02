@@ -3,7 +3,7 @@ import type { Company } from '@/api/companies'
 defineProps<{ items: Company[]; loading: boolean; canEdit: boolean; canDelete: boolean }>()
 const emit = defineEmits<{ edit: [item: Company]; toggle: [item: Company]; delete: [item: Company] }>()
 const asCompany = (value: Record<string, unknown>) => value as unknown as Company
-const columns = [{ title: '公司名称', key: 'name' }, { title: '统一社会信用代码', dataIndex: 'creditCode' }, { title: '法人', dataIndex: 'legalRepresentative' }, { title: '地址', dataIndex: 'address' }, { title: '联系电话', dataIndex: 'contactPhone' }, { title: '状态', key: 'status', width: 90 }, { title: '操作', key: 'actions', width: 210 }]
+const columns = [{ title: '企业名称', key: 'name' }, { title: '统一社会信用代码', dataIndex: 'creditCode' }, { title: '法人', dataIndex: 'legalRepresentative' }, { title: '地址', dataIndex: 'address' }, { title: '联系电话', dataIndex: 'contactPhone' }, { title: '状态', key: 'status', width: 90 }, { title: '操作', key: 'actions', width: 210 }]
 </script>
 
 <template>

@@ -24,8 +24,8 @@ class CompaniesController extends Controller {
   ok(data, message = 'success') { this.ctx.body = { code: 200, message, data } }
   fail(message, status = 400) { this.ctx.status = status; this.ctx.body = { code: status, message, data: null } }
   valid(value) {
-    if (!value.code || !value.name || !value.creditCode || !value.legalRepresentative || !value.address || !value.contactPhone) return '请完整填写公司必填信息'
-    if (!/^[A-Z]{2,32}$/.test(value.code)) return '公司编码应为 2～32 位大写英文字母'
+    if (!value.code || !value.name || !value.brandName || !value.creditCode || !value.legalRepresentative || !value.address || !value.contactPhone) return '请完整填写企业必填信息'
+    if (!/^[A-Z0-9]{1,3}$/.test(value.code)) return '企业编码仅支持 1～3 位大写英文字母或数字'
     if (!/^[0-9A-Z]{18}$/.test(value.creditCode)) return '统一社会信用代码应为18位数字或大写字母'
     return ''
   }
@@ -34,7 +34,7 @@ class CompaniesController extends Controller {
   async codeAvailability() {
     const code = String(this.ctx.query.code || '').trim().toUpperCase()
     const excludeId = Number(this.ctx.query.excludeId) || null
-    if (!/^[A-Z]{2,32}$/.test(code)) return this.fail('公司编码格式不正确')
+    if (!/^[A-Z0-9]{1,3}$/.test(code)) return this.fail('企业编码格式不正确')
     this.ok({ exists: await this.ctx.service.companies.codeExists(code, excludeId) })
   }
   async create() {

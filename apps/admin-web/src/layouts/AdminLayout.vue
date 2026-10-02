@@ -63,8 +63,8 @@ watch(
         ? 'shortcut_qr_management'
         : path.startsWith('/qrcodes')
         ? 'qrcodes'
-        : path.startsWith('/production')
-          ? 'production'
+      : path.startsWith('/production')
+          ? 'shortcut_production'
           : path.startsWith('/quality')
             ? 'quality'
             : path.startsWith('/analytics')
@@ -81,6 +81,7 @@ const rootSubmenuKeys = [
   'shortcut_products',
   'shortcut_companies',
   'shortcut_qr_management',
+  'shortcut_production',
   'products',
   'qrcodes',
   'production',
@@ -117,6 +118,7 @@ const menuPresentation: Record<string, { icon: string; implemented: boolean }> =
     shortcut_products: { icon: '▣', implemented: true },
     shortcut_companies: { icon: '企', implemented: true },
     shortcut_qr_management: { icon: '⌗', implemented: true },
+    shortcut_production: { icon: '◇', implemented: true },
     shortcut_label_print: { icon: '⌗', implemented: true },
     shortcut_employees: { icon: '⚙', implemented: true },
     shortcut_system: { icon: '⚙', implemented: true },

@@ -17,10 +17,9 @@ const batchStepPhotoExtensions = {
 const statuses = {
   orders: new Set([
     'pending',
-    'scheduled',
     'producing',
     'completed',
-    'cancelled',
+    'warehoused',
   ]),
   batches: new Set(['planned', 'in_progress', 'paused', 'completed']),
   processes: new Set(['enabled', 'disabled']),
@@ -99,8 +98,12 @@ class ProductionService extends Service {
         {
           model: model.Product,
           as: 'product',
-          attributes: ['id', 'code', 'name'],
+          attributes: [
+            'id', 'code', 'name', 'imageId', 'style', 'category',
+            'safetyCategory', 'executionStandard', 'fabricInfo', 'qrCodeType',
+          ],
         },
+        { model: model.Company, as: 'company', attributes: ['id', 'name'] },
       ]
     if (resource === 'batches')
       return [
@@ -157,12 +160,23 @@ class ProductionService extends Service {
     const values = {
       orders: {
         orderNo: item.orderNo,
-        customerName: item.customerName,
         productId: Number(item.productId),
+        companyId: item.companyId ? Number(item.companyId) : null,
+        companyName: item.company?.name || '',
+        sizes: Array.isArray(item.sizes) ? item.sizes : [],
         productCode: item.product?.code || '',
         productName: item.product?.name || '',
-        quantity: Number(item.quantity),
-        deliveryDate: item.deliveryDate,
+        productImageId: item.product?.imageId ? Number(item.product.imageId) : null,
+        style: item.product?.style || '',
+        category: item.product?.category || '',
+        safetyCategory: item.product?.safetyCategory || '',
+        executionStandard: item.product?.executionStandard || '',
+        fabricSummary: item.product?.fabricInfo || '',
+        qrCodeType: item.product?.qrCodeType || '',
+        productionQuantity: Number(item.get?.('productionQuantity') || 0),
+        batchCount: Number(item.get?.('batchCount') || 0),
+        qualityStatus: item.get?.('qualityStatus') || 'missing',
+        inspectionStatus: item.get?.('inspectionStatus') || 'missing',
         notes: item.notes || '',
       },
       batches: {
@@ -259,6 +273,24 @@ class ProductionService extends Service {
     return `${prefix}${stamp}${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`
   }
 
+  async workOrderNumber(transaction) {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const prefix = `WO${year}${month}${day}`
+    const latest = await this.app.model.ProductionOrder.findOne({
+      where: { orderNo: { [Op.like]: `${prefix}%` } },
+      attributes: ['orderNo'],
+      order: [['orderNo', 'DESC']],
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    })
+    const sequence = Number(String(latest?.orderNo || '').slice(-2)) + 1
+    if (sequence > 99) invalid('当日工单数量已达上限')
+    return `${prefix}${String(sequence).padStart(2, '0')}`
+  }
+
   where(resource, query) {
     const keyword = String(query.keyword || '').trim()
     const where = {}
@@ -287,12 +319,61 @@ class ProductionService extends Service {
     return where
   }
 
+  orderWhere(query) {
+    const where = {}
+    const sequelize = this.app.model.ProductionOrder.sequelize
+    const conditions = []
+    const keyword = String(query.keyword || '').trim()
+    if (query.status) where.status = String(query.status)
+    if (keyword) {
+      const like = { [Op.like]: `%${keyword}%` }
+      conditions.push({
+        [Op.or]: [
+          { '$product.name$': like },
+          { '$product.code$': like },
+        ],
+      })
+    }
+    if (query.safetyCategory) where['$product.safetyCategory$'] = String(query.safetyCategory)
+    if (query.qrCodeType) where['$product.qrCodeType$'] = String(query.qrCodeType)
+    if (query.batchNo) {
+      const value = sequelize.escape(`%${String(query.batchNo).trim()}%`)
+      conditions.push(sequelize.literal(
+        `EXISTS (SELECT 1 FROM production_batches pb WHERE pb.order_id = ProductionOrder.id AND pb.batch_no LIKE ${value})`,
+      ))
+    }
+    if (query.qualityReport === 'uploaded') {
+      conditions.push(sequelize.literal(
+        'EXISTS (SELECT 1 FROM quality_reports qr WHERE qr.product_id = ProductionOrder.product_id)',
+      ))
+    }
+    if (query.qualityReport === 'missing') {
+      conditions.push(sequelize.literal(
+        'NOT EXISTS (SELECT 1 FROM quality_reports qr WHERE qr.product_id = ProductionOrder.product_id)',
+      ))
+    }
+    if (conditions.length) where[Op.and] = conditions
+    return where
+  }
+
   async list(resource, query, permissions) {
     const { page, pageSize, offset } = this.ctx.helper.pagination(query)
+    const attributes = resource === 'orders'
+      ? {
+          include: [
+            [this.app.model.ProductionOrder.sequelize.literal('(SELECT COALESCE(SUM(pb.quantity), 0) FROM production_batches pb WHERE pb.order_id = ProductionOrder.id)'), 'productionQuantity'],
+            [this.app.model.ProductionOrder.sequelize.literal('(SELECT COUNT(*) FROM production_batches pb WHERE pb.order_id = ProductionOrder.id)'), 'batchCount'],
+            [this.app.model.ProductionOrder.sequelize.literal("COALESCE((SELECT qr.conclusion FROM quality_reports qr WHERE qr.product_id = ProductionOrder.product_id ORDER BY qr.id DESC LIMIT 1), 'missing')"), 'qualityStatus'],
+            [this.app.model.ProductionOrder.sequelize.literal("COALESCE((SELECT qr.status FROM quality_reports qr WHERE qr.product_id = ProductionOrder.product_id ORDER BY qr.id DESC LIMIT 1), 'missing')"), 'inspectionStatus'],
+          ],
+        }
+      : undefined
     const { rows, count } = await this.model(resource).findAndCountAll({
-      where: this.where(resource, query),
+      where: resource === 'orders' ? this.orderWhere(query) : this.where(resource, query),
+      attributes,
       include: this.include(resource),
       distinct: true,
+      subQuery: resource === 'orders' ? false : undefined,
       order:
         resource === 'processes'
           ? [
@@ -332,7 +413,6 @@ class ProductionService extends Service {
         order: [['name', 'ASC']],
       }),
       model.ProductionOrder.findAll({
-        where: { status: { [Op.ne]: 'cancelled' } },
         include: this.include('orders'),
         order: [['id', 'DESC']],
       }),
@@ -361,7 +441,7 @@ class ProductionService extends Service {
         orderNo: item.orderNo,
         productId: Number(item.productId),
         productName: item.product?.name || '',
-        quantity: Number(item.quantity),
+        quantity: Number(item.quantity || 0),
       })),
       batches: batches.map((item) => ({
         id: Number(item.id),
@@ -381,10 +461,11 @@ class ProductionService extends Service {
     if (!statuses[resource].has(status)) invalid('状态值无效')
     if (resource === 'orders')
       return {
-        customerName: required(value.customerName, '客户名称', 120),
         productId: positiveInteger(value.productId, '产品'),
-        quantity: positiveInteger(value.quantity, '订单数量'),
-        deliveryDate: validDate(value.deliveryDate, '交付日期'),
+        companyId: positiveInteger(value.companyId, '企业'),
+        sizes: Array.isArray(value.sizes)
+          ? [...new Set(value.sizes.map(item => String(item)))].filter(item => /^(12[05]|1[3-9][05]|200)$/.test(item))
+          : [],
         status,
         notes: String(value.notes || '')
           .trim()
@@ -463,19 +544,18 @@ class ProductionService extends Service {
     // 在写入事务内检查关联对象及累计数量，降低并发修改造成的数据不一致。
     const model = this.app.model
     if (resource === 'orders') {
-      if (!(await model.Product.findByPk(payload.productId, { transaction })))
-        invalid('所选产品不存在')
+      const [product, company] = await Promise.all([
+        model.Product.findByPk(payload.productId, { transaction }),
+        model.Company.findByPk(payload.companyId, { transaction }),
+      ])
+      if (!product) invalid('所选产品不存在')
+      if (!company) invalid('所选企业不存在')
+      if (!payload.sizes.length) invalid('请选择型号尺码')
       if (currentId) {
         const current = await model.ProductionOrder.findByPk(currentId, {
           transaction,
         })
-        const allocated = Number(
-          (await model.ProductionBatch.sum('quantity', {
-            where: { orderId: currentId },
-            transaction,
-          })) || 0,
-        )
-        if (payload.quantity < allocated) invalid('订单数量不能小于已排产数量')
+        const allocated = Number((await model.ProductionBatch.count({ where: { orderId: currentId }, transaction })) || 0)
         if (
           allocated > 0 &&
           current &&
@@ -546,7 +626,7 @@ class ProductionService extends Service {
     const id = await this.app.model.transaction(async (transaction) => {
       let payload = this.payload(resource, value)
       payload = await this.validateRelations(resource, payload, 0, transaction)
-      if (resource === 'orders') payload.orderNo = this.number('PO')
+      if (resource === 'orders') payload.orderNo = await this.workOrderNumber(transaction)
       if (resource === 'batches') payload.batchNo = this.number('PB')
       if (resource === 'outbounds') payload.outboundNo = this.number('OUT')
       const item = await this.model(resource).create(
@@ -571,6 +651,30 @@ class ProductionService extends Service {
       return true
     })
     return updated ? this.get(resource, id) : null
+  }
+
+  async destroy(resource, id) {
+    if (resource !== 'orders') invalid('生产资源类型无效', 404)
+    return this.app.model.transaction(async (transaction) => {
+      const item = await this.app.model.ProductionOrder.findByPk(id, {
+        transaction,
+      })
+      if (!item) return false
+      const batchCount = await this.app.model.ProductionBatch.count({
+        where: { orderId: id },
+        transaction,
+      })
+      if (batchCount > 0) invalid('工单已有生产批次，不能删除')
+      await this.log(
+        '删除orders',
+        resource,
+        item,
+        { orderNo: item.orderNo },
+        transaction,
+      )
+      await item.destroy({ transaction })
+      return true
+    })
   }
 
   async createBatchStep(batchId, value, file = null) {

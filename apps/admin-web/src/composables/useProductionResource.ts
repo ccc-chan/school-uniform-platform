@@ -1,5 +1,6 @@
 import {
   createProductionItem,
+  deleteProductionItem,
   getProductionList,
   updateProductionItem,
   updateProductionStatus,
@@ -10,7 +11,14 @@ import {
 import { usePagedList } from '@/composables/usePagedList'
 import type { MaybeRef } from 'vue'
 
-const defaultFilters = () => ({ keyword: '', status: '' })
+const defaultFilters = () => ({
+  keyword: '',
+  batchNo: '',
+  safetyCategory: '',
+  qrCodeType: '',
+  qualityReport: '',
+  status: '',
+})
 
 /**
  * 把通用分页列表适配为生产资源 CRUD。
@@ -42,9 +50,15 @@ export function useProductionResource(resource: MaybeRef<ProductionResource>) {
     await load()
   }
 
+  async function remove(id: number) {
+    await deleteProductionItem(toValue(resource), id)
+    await load()
+  }
+
   return {
     ...list,
     save,
     changeStatus,
+    remove,
   }
 }

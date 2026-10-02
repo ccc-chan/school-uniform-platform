@@ -12,6 +12,8 @@ const fieldMap = {
   code: 'product.field.code',
   name: 'product.field.name',
   category: 'product.field.category',
+  schoolStage: 'product.field.category',
+  gender: 'product.field.category',
   season: 'product.field.season',
   status: 'product.field.status',
   createdAt: 'product.field.created_at',
@@ -37,6 +39,8 @@ class ProductsService extends Service {
       code: item.code,
       name: item.name,
       category: item.category,
+      schoolStage: item.schoolStage,
+      gender: item.gender,
       qrCodeType: item.qrCodeType,
       schools,
       schoolIds: schools.map((school) => school.id),
@@ -97,6 +101,13 @@ class ProductsService extends Service {
     this.ctx.state.operationLogIds ||= []
     this.ctx.state.operationLogIds.push(Number(row.id))
   }
+
+  async codeExists(code, excludeId = null) {
+    const where = { code }
+    if (excludeId) where.id = { [Op.ne]: excludeId }
+    return Boolean(await this.app.model.Product.findOne({ where }))
+  }
+
   async list(query, permissions) {
     const { page, pageSize, offset } = this.ctx.helper.pagination(query)
     const where = {}
@@ -108,6 +119,7 @@ class ProductsService extends Service {
         },
       }))
     }
+    if (query.schoolStage) where.schoolStage = query.schoolStage
     if (query.category) where.category = query.category
     if (['product', 'batch', 'school'].includes(query.qrCodeType)) {
       where.qrCodeType = query.qrCodeType
@@ -398,10 +410,7 @@ class ProductsService extends Service {
   }
 
   async create(value, files) {
-    const company = await this.app.model.Company.findOne({ where: { id: value.companyId, status: 'enabled' } })
-    if (!company) throw Object.assign(new Error('所选管理公司不存在或已停用'), { status: 400 })
-    const schools = await this.ctx.service.schools.enabled(value.schoolIds)
-    const { schoolIds, retainedImageIds, ...productValue } = value
+    const { retainedImageIds, ...productValue } = value
     const images = []
 
     try {
@@ -410,18 +419,22 @@ class ProductsService extends Service {
       const item = await this.app.model.transaction(async (transaction) => {
         const created = await this.app.model.Product.create({
           ...productValue,
-          productionUnitName: company.name || '',
-          productionUnitCreditCode: company.creditCode || '',
-          productionUnitAddress: company.address || '',
-          productionUnitContact: company.contactPhone || '',
+          qrCodeType: 'product',
+          productionUnitName: '',
+          productionUnitCreditCode: '',
+          productionUnitAddress: '',
+          productionUnitContact: '',
           productionUnitLicense: '',
-          applicableSchools: schools.map((school) => school.name),
+          applicableSchools: [],
+          sizes: [],
+          executionStandard: '',
+          washingInstructions: '',
+          safetyCategory: '',
+          companyId: null,
           imageId: imageIds[0],
           imageIds,
           status: 'enabled',
         }, { transaction })
-        await created.setSchools(schools, { transaction })
-        created.schools = schools
         return created
       })
 
@@ -440,8 +453,6 @@ class ProductsService extends Service {
   }
 
   async update(id, value, files) {
-    const company = await this.app.model.Company.findOne({ where: { id: value.companyId, status: 'enabled' } })
-    if (!company) throw Object.assign(new Error('所选管理公司不存在或已停用'), { status: 400 })
     const item = await this.app.model.Product.findByPk(id)
     if (!item) return null
 
@@ -451,8 +462,7 @@ class ProductsService extends Service {
       : item.imageId
         ? [Number(item.imageId)]
         : []
-    const selected = await this.ctx.service.schools.enabled(value.schoolIds)
-    const { schoolIds, retainedImageIds, ...productValue } = value
+    const { retainedImageIds, ...productValue } = value
     const retained = retainedImageIds.filter((imageId) =>
       oldImageIds.includes(imageId),
     )
@@ -466,24 +476,18 @@ class ProductsService extends Service {
     }
     const imageIds = [...retained, ...images.map((image) => Number(image.id))]
 
-    let schools
     try {
-      schools = await this.app.model.transaction(async (transaction) => {
+      await this.app.model.transaction(async (transaction) => {
         await item.update({
           ...productValue,
-          applicableSchools: selected.map((school) => school.name),
           imageId: imageIds[0],
           imageIds,
         }, { transaction })
-        await item.setSchools(selected, { transaction })
-        return selected
       })
     } catch (error) {
       await Promise.all(images.map((image) => this.removeImage(image.id)))
       throw error
     }
-    item.schools = schools
-
     await this.log('编辑产品', item, {
       changed: Object.keys(value).filter(
         (key) => JSON.stringify(before[key]) !== JSON.stringify(value[key]),

@@ -5,6 +5,8 @@ const DashboardView = () => import('@/views/DashboardView.vue')
 const ProductListView = () => import('@/views/products/ProductListView.vue')
 const ProductDetailView = () => import('@/views/products/ProductDetailView.vue')
 const CompanyListView = () => import('@/views/companies/CompanyListView.vue')
+const ProductionManagementView = () =>
+  import('@/views/production/ProductionManagementView.vue')
 const QrGenerateView = () => import('@/views/qrcodes/QrGenerateView.vue')
 const QrBindView = () => import('@/views/qrcodes/QrBindView.vue')
 const QrLabelPrintView = () => import('@/views/qrcodes/QrLabelPrintView.vue')
@@ -82,6 +84,19 @@ const definitions: Record<string, RouteRecordRaw[]> = {
       name: 'companies',
       component: CompanyListView,
       meta: { title: '公司列表', requiresAuth: true, menuCode: 'shortcut_companies' },
+    },
+  ],
+  shortcut_production: [
+    {
+      path: 'production/orders',
+      name: 'production-orders',
+      component: ProductionManagementView,
+      meta: {
+        title: '生产管理',
+        requiresAuth: true,
+        menuCode: 'shortcut_production',
+        requiredPermission: 'production.view',
+      },
     },
   ],
   shortcut_qr_management: [
@@ -194,6 +209,7 @@ export function getDefaultRoute(menuCodes: string[]) {
   if (menuCodes.includes('shortcut_dashboard')) return '/dashboard'
   if (menuCodes.includes('shortcut_products')) return '/products'
   if (menuCodes.includes('shortcut_companies')) return '/companies'
+  if (menuCodes.includes('shortcut_production')) return '/production/orders'
   if (menuCodes.includes('shortcut_qr_management')) return '/qrcodes/list'
   if (menuCodes.includes('shortcut_label_print')) {
     return '/qrcodes/label-print'

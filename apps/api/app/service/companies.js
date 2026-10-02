@@ -67,7 +67,7 @@ class CompaniesService extends Service {
   }
 
   async create(value, files) {
-    if (await this.codeExists(value.code)) throw Object.assign(new Error('公司编码已存在'), { status: 400 })
+    if (await this.codeExists(value.code)) throw Object.assign(new Error('企业编码已存在，请更换'), { status: 400 })
     let logo = null
     let license = null
     try {
@@ -85,7 +85,7 @@ class CompaniesService extends Service {
   async update(id, value, files) {
     const item = await this.app.model.Company.findByPk(id)
     if (!item) return null
-    if (await this.codeExists(value.code, id)) throw Object.assign(new Error('公司编码已存在'), { status: 400 })
+    if (await this.codeExists(value.code, id)) throw Object.assign(new Error('企业编码已存在，请更换'), { status: 400 })
     let logo = null
     let license = null
     try {

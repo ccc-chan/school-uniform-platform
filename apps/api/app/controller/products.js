@@ -3,40 +3,30 @@ const { Controller } = require('egg')
 
 // 控制器使用固定集合校验枚举值，避免任意分类、季节或尺码写入数据库。
 const categories = new Set([
-  'single_top',
-  'single_pants',
-  'single_outerwear',
+  'short_sleeve_top',
+  'long_sleeve_top',
+  'shorts',
+  'trousers',
+  'outerwear',
   'set',
+  'skirt',
+  'shirt',
+  'formalwear',
+  'tshirt',
   'accessory',
 ])
 
 const seasons = new Set(['spring', 'summer', 'autumn', 'winter', 'all_season'])
-const qrCodeTypes = new Set(['product', 'batch', 'school'])
-const executionStandards = new Set(['0'])
-const safetyCategories = new Set(['0', '1'])
-const productSizes = new Set([
-  'xs',
-  's',
-  'm',
-  'l',
-  'xl',
-  'xxl',
-  '120',
-  '130',
-  '140',
-  '150',
-  '160',
-  '170',
+const schoolStages = new Set([
+  'universal',
+  'primary',
+  'junior_high',
+  'senior_high',
+  'secondary_vocational',
+  'higher_vocational',
+  'kindergarten',
 ])
-
-// 将多选字段统一转换为去除空白后的字符串数组。
-const array = (value) =>
-  Array.isArray(value)
-    ? value
-        .map(String)
-        .map((v) => v.trim())
-        .filter(Boolean)
-    : []
+const genders = new Set(['unisex', 'male', 'female'])
 
 const ids = (value) =>
   Array.isArray(value)
@@ -62,17 +52,9 @@ function payload(ctx) {
       .trim()
       .toUpperCase(),
     category: String(value.category || ''),
-    qrCodeType: String(value.qrCodeType || ''),
-    schoolIds: ids(value.schoolIds),
+    schoolStage: String(value.schoolStage || ''),
+    gender: String(value.gender || ''),
     season: String(value.season || ''),
-    style: String(value.style || '').trim(),
-    color: String(value.color || '').trim(),
-    sizes: array(value.sizes).map((size) => size.toLowerCase()),
-    fabricInfo: String(value.fabricInfo || '').trim(),
-    executionStandard: String(value.executionStandard || '').trim(),
-    washingInstructions: String(value.washingInstructions || '').trim(),
-    safetyCategory: String(value.safetyCategory || '').trim(),
-    companyId: Number(value.companyId),
     retainedImageIds: ids(value.retainedImageIds),
   }
 }
@@ -83,31 +65,28 @@ function invalid(value, imageCount) {
     !value.name ||
     !value.code ||
     !value.category ||
-    !value.qrCodeType ||
-    !value.executionStandard ||
-    !value.washingInstructions ||
-    !value.safetyCategory ||
-    !Number.isSafeInteger(value.companyId) || value.companyId < 1
+    !value.schoolStage ||
+    !value.gender ||
+    !value.season
   ) {
     return '请完整填写产品必填信息'
   }
-  if (!/^[A-Z0-9][A-Z0-9_-]{2,49}$/.test(value.code)) {
-    return '产品编号格式不正确'
+  if ([...value.name].length > 10) {
+    return '产品名称不能超过 10 个字'
+  }
+  if (!/^[A-Z0-9]{1,5}$/.test(value.code)) {
+    return '产品编码只能包含大写字母和数字，且不超过 5 位'
   }
   if (
     !categories.has(value.category) ||
-    (value.season && !seasons.has(value.season)) ||
-    !qrCodeTypes.has(value.qrCodeType) ||
-    !executionStandards.has(value.executionStandard) ||
-    !safetyCategories.has(value.safetyCategory)
+    !schoolStages.has(value.schoolStage) ||
+    !genders.has(value.gender) ||
+    !seasons.has(value.season)
   ) {
-    return '产品分类、溯源模式、季节、执行标准或安全类别无效'
-  }
-  if (value.sizes.some((size) => !productSizes.has(size))) {
-    return '产品尺码无效'
+    return '产品类型、学段年级、性别或季节无效'
   }
   if (imageCount < 1) return '请上传产品图片'
-  if (imageCount > 3) return '产品图片最多上传 3 张'
+  if (imageCount > 5) return '产品图片最多上传 5 张'
   return ''
 }
 
@@ -129,6 +108,17 @@ class ProductsController extends Controller {
       this.ctx.state.user.id,
     )
     this.ok(await this.ctx.service.products.list(this.ctx.query, permissions))
+  }
+
+  async codeAvailability() {
+    const code = String(this.ctx.query.code || '').trim().toUpperCase()
+    const excludeId = Number(this.ctx.query.excludeId) || null
+    if (!/^[A-Z0-9]{1,5}$/.test(code)) {
+      return this.fail('产品编码格式不正确')
+    }
+    this.ok({
+      exists: await this.ctx.service.products.codeExists(code, excludeId),
+    })
   }
 
   async show() {
@@ -207,6 +197,9 @@ class ProductsController extends Controller {
       )
       return item ? this.ok(item, '产品更新成功') : this.fail('产品不存在', 404)
     } catch (e) {
+      if (e.name === 'SequelizeUniqueConstraintError') {
+        return this.fail('产品编码已存在')
+      }
       if (e.status === 400) return this.fail(e.message)
       throw e
     } finally {

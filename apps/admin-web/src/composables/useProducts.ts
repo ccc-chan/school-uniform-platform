@@ -11,9 +11,8 @@ import { usePagedList } from '@/composables/usePagedList'
 
 const defaultFilters = (): ProductFilters => ({
   keyword: '',
+  schoolStage: '',
   category: '',
-  qrCodeType: '',
-  status: '',
 })
 
 // 管理产品分页列表，以及状态切换和删除后的列表同步。

@@ -18,6 +18,20 @@ export interface ProductionItem {
   productId?: number
   productCode?: string
   productName?: string
+  productImageId?: number | null
+  companyId?: number | null
+  companyName?: string
+  sizes?: readonly string[]
+  style?: string
+  category?: string
+  safetyCategory?: string
+  executionStandard?: string
+  fabricSummary?: string
+  qrCodeType?: string
+  qualityStatus?: string
+  inspectionStatus?: string
+  productionQuantity?: number
+  batchCount?: number
   quantity?: number
   deliveryDate?: string
   batchNo?: string
@@ -47,6 +61,15 @@ export interface ProductionItem {
 }
 
 export type ProductionInput = Record<string, unknown>
+
+export interface ProductionOrderFilters {
+  keyword: string
+  batchNo: string
+  safetyCategory: string
+  qrCodeType: string
+  qualityReport: string
+  status: string
+}
 
 export interface ProductionOptions {
   products: Array<{ id: number; code: string; name: string }>
@@ -109,6 +132,15 @@ export function updateProductionStatus(
     `/api/v1/production/${resource}/${id}/status`,
     { method: 'PATCH', body: JSON.stringify({ status }) },
   )
+}
+
+export function deleteProductionItem(
+  resource: ProductionResource,
+  id: number,
+) {
+  return request<null>(`/api/v1/production/${resource}/${id}`, {
+    method: 'DELETE',
+  })
 }
 
 export function getProductionOptions() {

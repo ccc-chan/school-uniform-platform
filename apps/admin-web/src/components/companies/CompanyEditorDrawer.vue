@@ -51,11 +51,11 @@ function handleLogoSelected(file: File) {
   logoPreviewUrl.value = URL.createObjectURL(file)
 }
 function handleCompanyCode(value: string) {
-  form.code = value.toUpperCase().replace(/[^A-Z]/g, '')
+  form.code = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3)
   if (codeCheckTimer) clearTimeout(codeCheckTimer)
   codeExists.value = false
   const code = form.code
-  if (!/^[A-Z]{2,32}$/.test(code)) return
+  if (!/^[A-Z0-9]{1,3}$/.test(code)) return
 
   const sequence = ++codeCheckSequence
   codeCheckTimer = setTimeout(async () => {
@@ -67,7 +67,7 @@ function handleCompanyCode(value: string) {
       }
     } catch (error) {
       if (sequence === codeCheckSequence) {
-        message.error(error instanceof Error ? error.message : '公司编码检查失败')
+        message.error(error instanceof Error ? error.message : '企业编码检查失败')
       }
     } finally {
       if (sequence === codeCheckSequence) checkingCode.value = false
@@ -75,10 +75,10 @@ function handleCompanyCode(value: string) {
   }, 300)
 }
 async function submit() {
-  if (!form.code.trim() || !form.name.trim() || !form.creditCode.trim() || !form.legalRepresentative.trim() || !form.region.trim() || !form.address.trim() || !form.contactPhone.trim()) { message.warning('请完整填写公司必填信息'); return }
+  if (!form.code.trim() || !form.name.trim() || !form.brandName.trim() || !form.creditCode.trim() || !form.legalRepresentative.trim() || !form.region.trim() || !form.address.trim() || !form.contactPhone.trim()) { message.warning('请完整填写企业必填信息'); return }
   if (!props.company && !form.license) { message.warning('请上传营业执照'); return }
-  if (!/^[A-Z]{2,32}$/.test(form.code)) { message.warning('公司编码应为 2～32 位大写英文字母'); return }
-  if (checkingCode.value || codeExists.value) { message.warning(checkingCode.value ? '正在检查公司编码，请稍候' : '公司编码已存在'); return }
+  if (!/^[A-Z0-9]{1,3}$/.test(form.code)) { message.warning('企业编码仅支持 1～3 位大写英文字母或数字'); return }
+  if (checkingCode.value || codeExists.value) { message.warning(checkingCode.value ? '正在检查企业编码，请稍候' : '企业编码已存在，请更换'); return }
   if (!/^[0-9A-Z]{18}$/.test(form.creditCode.trim().toUpperCase())) { message.warning('统一社会信用代码应为18位数字或大写字母'); return }
   saving.value = true
   try {
@@ -93,20 +93,58 @@ async function submit() {
 <template>
   <a-drawer
     :open="open"
-    width="min(720px, 100vw)"
+    width="min(820px, 100vw)"
+    class="company-editor-drawer"
     @close="emit('close')"
   >
     <template #title>
       <div class="company-editor__drawer-title">
         <span class="company-editor__title-mark">企</span>
-        <div>
-          <strong>{{ isEdit ? '编辑企业档案' : '新增企业档案' }}</strong>
-          <small>{{ isEdit ? '更新企业主体、资质与地址信息' : '录入企业主体、资质与地址信息' }}</small>
+        <div class="company-editor__title-copy">
+          <small>ENTERPRISE PROFILE · 企业档案</small>
+          <strong>{{ isEdit ? '编辑企业资料' : '建立企业档案' }}</strong>
         </div>
+        <span class="company-editor__required-note"><i />带 * 项为必填</span>
       </div>
     </template>
 
     <div class="company-editor">
+      <section class="company-editor__identity">
+        <span class="company-editor__identity-logo">
+          <img v-if="logoPreviewUrl" :src="logoPreviewUrl" alt="品牌 Logo 预览" />
+          <span v-else>企</span>
+        </span>
+
+        <div class="company-editor__identity-copy">
+          <small>当前企业档案</small>
+          <strong>{{ form.name || '待填写企业名称' }}</strong>
+          <span>{{ form.brandName || '品牌名称将在这里显示' }}</span>
+        </div>
+
+        <div class="company-editor__identity-code">
+          <small>企业编码</small>
+          <strong>{{ form.code || '—' }}</strong>
+          <span
+            :class="{
+              'company-editor__identity-status--checking': checkingCode,
+              'company-editor__identity-status--error': codeExists,
+              'company-editor__identity-status--success': form.code && !checkingCode && !codeExists,
+            }"
+            class="company-editor__identity-status"
+          >
+            {{
+              checkingCode
+                ? '正在查重'
+                : codeExists
+                  ? '编码重复'
+                  : form.code
+                    ? '编码可用'
+                    : '等待录入'
+            }}
+          </span>
+        </div>
+      </section>
+
       <section class="company-editor__section">
         <header class="company-editor__section-header">
           <div>
@@ -117,31 +155,31 @@ async function submit() {
         </header>
 
         <div class="company-editor__grid">
-          <label class="company-editor__field">
-            <span>公司编码 <em>*</em></span>
+          <label class="company-editor__field company-editor__field--code">
+            <span>企业编码 <em>*</em></span>
             <a-input
               :value="form.code"
-              :maxlength="32"
+              :maxlength="3"
               :status="codeExists ? 'error' : undefined"
-              placeholder="请输入公司编码"
+              placeholder="请输入企业编码"
               @update:value="handleCompanyCode(String($event))"
             />
             <small v-if="checkingCode">正在检查编码...</small>
-            <small v-else-if="codeExists" class="company-editor__field-error">公司编码已存在</small>
-            <small v-else>仅支持大写英文字母，输入小写将自动转为大写</small>
+            <small v-else-if="codeExists" class="company-editor__field-error">企业编码已存在，请更换</small>
+            <small v-else>限 1～3 位大写英文字母或数字，不支持中文、空格及特殊字符</small>
           </label>
 
-          <label class="company-editor__field company-editor__field--full">
+          <label class="company-editor__field company-editor__field--name">
             <span>企业名称 <em>*</em></span>
             <a-input v-model:value="form.name" placeholder="请输入营业执照上的企业名称" />
           </label>
 
-          <label class="company-editor__field">
-            <span>品牌名称</span>
-            <a-input v-model:value="form.brandName" placeholder="请输入品牌名称（选填）" />
+          <label class="company-editor__field company-editor__field--brand">
+            <span>品牌名称 <em>*</em></span>
+            <a-input v-model:value="form.brandName" placeholder="请输入品牌名称" />
           </label>
 
-          <label class="company-editor__field">
+          <label class="company-editor__field company-editor__field--credit">
             <span>统一社会信用代码 <em>*</em></span>
             <a-input
               v-model:value="form.creditCode"
@@ -150,12 +188,12 @@ async function submit() {
             />
           </label>
 
-          <label class="company-editor__field">
+          <label class="company-editor__field company-editor__field--legal">
             <span>企业法人 <em>*</em></span>
             <a-input v-model:value="form.legalRepresentative" placeholder="请输入法人姓名" />
           </label>
 
-          <label class="company-editor__field company-editor__field--full">
+          <label class="company-editor__field company-editor__field--phone">
             <span>企业联系电话 <em>*</em></span>
             <a-input v-model:value="form.contactPhone" placeholder="请输入企业联系电话" />
           </label>
@@ -283,17 +321,18 @@ async function submit() {
 .company-editor {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   min-height: 100%;
   margin: -24px;
   padding: 24px;
-  background: #f4f7fb;
+  background: #f3f6fb;
 }
 
 .company-editor__drawer-title {
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
 }
 
 .company-editor__title-mark {
@@ -313,30 +352,176 @@ async function submit() {
   color: #ef4444 !important;
 }
 
-.company-editor__drawer-title div {
+.company-editor__title-copy {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 2px;
 }
 
-.company-editor__drawer-title strong {
+.company-editor__title-copy strong {
   color: #172033;
   font-size: 16px;
   line-height: 1.3;
 }
 
-.company-editor__drawer-title small {
-  color: #8490a3;
-  font-size: 12px;
+.company-editor__title-copy small {
+  color: #7387a2;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.company-editor__required-note {
+  display: flex;
+  margin-left: auto;
+  align-items: center;
+  gap: 7px;
+  color: #7a8ba2;
+  font-size: 11px;
   font-weight: 400;
 }
 
+.company-editor__required-note i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+
+.company-editor__identity {
+  display: grid;
+  overflow: hidden;
+  padding: 18px 20px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #d7e3f5;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 100% 0, rgb(37 99 235 / 12%), transparent 34%),
+    linear-gradient(135deg, #f9fbff, #eef4ff);
+}
+
+.company-editor__identity-logo {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid rgb(37 99 235 / 15%);
+  border-radius: 17px;
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 10px 24px rgb(37 99 235 / 20%);
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.company-editor__identity-logo img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.company-editor__identity-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.company-editor__identity-copy small,
+.company-editor__identity-code small {
+  color: #7a8da8;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.company-editor__identity-copy strong {
+  overflow: hidden;
+  color: #172033;
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-editor__identity-copy span {
+  color: #718198;
+  font-size: 12px;
+}
+
+.company-editor__identity-code {
+  display: grid;
+  min-width: 116px;
+  padding-left: 20px;
+  border-left: 1px solid #d7e3f5;
+  justify-items: end;
+}
+
+.company-editor__identity-code strong {
+  color: #1d4ed8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 22px;
+  letter-spacing: 0.12em;
+}
+
+.company-editor__identity-status {
+  position: relative;
+  margin-top: 3px;
+  padding-left: 12px;
+  color: #8391a5;
+  font-size: 11px;
+}
+
+.company-editor__identity-status::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+  content: '';
+  transform: translateY(-50%);
+}
+
+.company-editor__identity-status--checking {
+  color: #d97706;
+}
+
+.company-editor__identity-status--error {
+  color: #dc2626;
+}
+
+.company-editor__identity-status--success {
+  color: #16a34a;
+}
+
 .company-editor__section {
-  padding: 20px;
-  border: 1px solid #e5eaf2;
-  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  border: 1px solid #e2e8f2;
+  border-radius: 18px;
   background: #fff;
-  box-shadow: 0 3px 12px rgb(15 23 42 / 4%);
+  box-shadow: 0 8px 28px rgb(31 54 88 / 5%);
+}
+
+.company-editor__section::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  content: '';
+  background: #2563eb;
+}
+
+.company-editor__section:nth-of-type(3)::before {
+  background: #0891b2;
+}
+
+.company-editor__section:nth-of-type(4)::before {
+  background: #f59e0b;
 }
 
 .company-editor__section-header {
@@ -344,9 +529,7 @@ async function submit() {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
-  padding-left: 11px;
-  border-left: 3px solid #2563eb;
+  margin-bottom: 22px;
 }
 
 .company-editor__section-header h3 {
@@ -374,15 +557,17 @@ async function submit() {
 
 .company-editor__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px 16px;
 }
 
 .company-editor__profile-grid {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 18px 16px;
-  margin-top: 18px;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #edf1f7;
 }
 
 .company-editor__field small {
@@ -393,25 +578,30 @@ async function submit() {
 
 .company-editor__logo-upload {
   display: grid;
-  width: 40px;
-  height: 40px;
-  overflow: hidden;
+  width: 72px;
+  height: 72px;
   place-items: center;
-  border: 1px dashed #cfd9e8;
-  border-radius: 8px;
-  color: #64748b;
-  background: #f8faff;
+  border: 1px dashed #b9c8dd;
+  border-radius: 16px;
+  color: #53708f;
+  background: linear-gradient(145deg, #f7faff, #eef4fc);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .company-editor__logo-upload:hover {
   border-color: #2563eb;
   color: #2563eb;
+  box-shadow: 0 8px 20px rgb(37 99 235 / 12%);
+  transform: translateY(-1px);
 }
 
 .company-editor__logo-upload img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .company-editor__field {
@@ -423,6 +613,24 @@ async function submit() {
 
 .company-editor__field--full {
   grid-column: 1 / -1;
+}
+
+.company-editor__field--code {
+  grid-column: span 4;
+}
+
+.company-editor__field--name {
+  grid-column: span 8;
+}
+
+.company-editor__field--brand,
+.company-editor__field--legal {
+  grid-column: span 5;
+}
+
+.company-editor__field--credit,
+.company-editor__field--phone {
+  grid-column: span 7;
 }
 
 .company-editor__field > span,
@@ -543,7 +751,7 @@ async function submit() {
   }
 
   .company-editor__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
   .company-editor__profile-grid {
@@ -551,11 +759,33 @@ async function submit() {
   }
 
   .company-editor__field--full {
-    grid-column: auto;
+    grid-column: 1 / -1;
+  }
+
+  .company-editor__field--code,
+  .company-editor__field--name,
+  .company-editor__field--brand,
+  .company-editor__field--credit,
+  .company-editor__field--legal,
+  .company-editor__field--phone {
+    grid-column: 1 / -1;
+  }
+
+  .company-editor__identity {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .company-editor__identity-code {
+    grid-column: 1 / -1;
+    padding: 14px 0 0;
+    border-top: 1px solid #d7e3f5;
+    border-left: 0;
+    justify-items: start;
   }
 
   .company-editor__section-header > span,
-  .company-editor__footer > span {
+  .company-editor__footer > span,
+  .company-editor__required-note {
     display: none;
   }
 

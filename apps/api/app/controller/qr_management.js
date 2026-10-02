@@ -2,6 +2,18 @@
 
 const { Controller } = require('egg')
 
+const grades = new Set([
+  '小班', '中班', '大班',
+  '一年级', '二年级', '三年级', '四年级', '五年级', '六年级',
+  '七年级', '八年级', '九年级',
+  '初一', '初二', '初三', '高一', '高二', '高三',
+  '中职一年级', '中职二年级', '中职三年级',
+  '大一', '大二', '大三', '大四', '大五', '研究生',
+])
+const classes = new Set(
+  Array.from({ length: 30 }, (_, index) => `${index + 1}班`),
+)
+
 function text(value, max, label) {
   if (value == null) return ''
   if (typeof value !== 'string' || value.trim().length > max) {
@@ -64,6 +76,8 @@ class QrManagementController extends Controller {
       value.studentGender = text(body.studentGender, 10, '性别')
       if (!['', 'male', 'female', 'unknown'].includes(value.studentGender)) this.ctx.throw(400, '性别无效')
       value.grade = text(body.grade, 100, '年级')
+      if (!grades.has(value.grade)) this.ctx.throw(400, '请选择有效年级')
+      if (!classes.has(value.className)) this.ctx.throw(400, '请选择有效班级')
       value.studentNo = text(body.studentNo, 100, '学号')
       value.parentRelation = text(body.parentRelation, 50, '家长关系')
       if (value.phone && !/^1[3-9]\d{9}$/.test(value.phone)) this.ctx.throw(400, '请输入有效的11位手机号')

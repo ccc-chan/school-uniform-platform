@@ -9,7 +9,7 @@ function updateStatus(value: unknown) {
 
 <template>
   <div class="company-filters">
-    <a-input :value="props.filters.keyword" allow-clear placeholder="公司名称 / 品牌名称 / 信用代码" @update:value="emit('update:filters', { keyword: $event })" @press-enter="emit('search')" />
+    <a-input :value="props.filters.keyword" allow-clear placeholder="企业名称 / 品牌名称 / 信用代码" @update:value="emit('update:filters', { keyword: $event })" @press-enter="emit('search')" />
     <a-select :value="props.filters.status || undefined" allow-clear placeholder="全部状态" :options="[{ label: '启用', value: 'enabled' }, { label: '停用', value: 'disabled' }]" @update:value="updateStatus" />
     <a-button type="primary" :loading="loading" @click="emit('search')">查询</a-button>
     <a-button :disabled="loading" @click="emit('reset')">重置</a-button>

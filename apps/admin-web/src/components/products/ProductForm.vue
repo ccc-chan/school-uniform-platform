@@ -56,7 +56,7 @@ const fields: ConfigFormField[] = [
     key: 'schoolIds',
     label: '适用学校',
     type: 'input',
-    placeholder: '输入学校名称或学校代码搜索',
+    placeholder: '输入学校名称搜索',
   },
   {
     key: 'season',
@@ -140,9 +140,7 @@ function removeExistingImage(imageId: number) {
 function removePendingImage(index: number) {
   const preview = previews.value[index]
   if (preview) URL.revokeObjectURL(preview)
-  previews.value = previews.value.filter(
-    (_, itemIndex) => itemIndex !== index,
-  )
+  previews.value = previews.value.filter((_, itemIndex) => itemIndex !== index)
   model.value = {
     ...model.value,
     images: model.value.images.filter((_, itemIndex) => itemIndex !== index),

@@ -20,6 +20,7 @@ module.exports = (app) => {
 
   Company.associate = () => {
     Company.hasMany(app.model.Product, { as: 'products', foreignKey: 'companyId' })
+    Company.hasMany(app.model.ProductionOrder, { as: 'productionOrders', foreignKey: 'companyId' })
     Company.belongsTo(app.model.File, { as: 'licenseFile', foreignKey: 'licenseFileId' })
     Company.belongsTo(app.model.File, { as: 'logoFile', foreignKey: 'logoFileId' })
   }

@@ -80,6 +80,19 @@ class ProductionController extends Controller {
     })
   }
 
+  async destroy() {
+    await this.run(async () => {
+      const resource = this.resource()
+      const deleted = await this.ctx.service.production.destroy(
+        resource,
+        Number(this.ctx.params.id),
+      )
+      return deleted
+        ? this.ok(null, '删除成功')
+        : this.fail('数据不存在', 404)
+    })
+  }
+
   async options() {
     this.ok(await this.ctx.service.production.options())
   }
